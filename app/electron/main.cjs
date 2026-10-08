@@ -741,7 +741,7 @@ function runAi(sender, { prompt, model, web, provider }) {
     if (aiChild && aiChild.exitCode === null && !aiChild.killed)
       return resolve({ ok: false, error: `다른 AI 작업(${aiChildKind})이 진행 중이에요. 끝나거나 취소한 뒤 다시 눌러 주세요.` })
     const found = findCli(p)
-    if (!found) return resolve({ ok: false, code: 'not_installed', error: `${PROVIDER_LABEL[p]}를 찾지 못했어요. 백업 · 데이터 → AI 설정에서 설치 방법을 확인하세요.` })
+    if (!found) return resolve({ ok: false, code: 'not_installed', error: `${PROVIDER_LABEL[p]}를 찾지 못했어요. 설정 → AI 설정에서 설치 방법을 확인하세요.` })
     const { bin, cli } = found
     // agy 는 로그인 안 된 채 돌리면 브라우저를 열고 60초 기다리다 실패하므로 미리 막는다
     if (cli === 'agy' && geminiLoggedIn('agy') === false) return resolve({ ok: false, code: 'gemini_login', error: GEMINI_LOGIN_ERROR })
