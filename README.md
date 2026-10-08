@@ -4,7 +4,7 @@ AI와 함께 자소서를 쓰는 윈도우 데스크톱 앱이에요. **추가 �
 
 ## 설치
 
-**[최신 설치 파일 받기 (Essay-Setup-x.y.z.exe)](https://github.com/hyilkimm/Essay/releases/latest)**
+**[최신 설치 파일 받기 (Essay-Setup-x.y.z.exe)](https://github.com/brothrone/Essay/releases/latest)**
 
 1. 받은 `Essay-Setup-x.y.z.exe` 를 더블클릭하세요.
 2. 파란 **"Windows의 PC 보호"** 창이 뜨면 **추가 정보 → 실행**. (아직 코드 서명이 없어서 뜨는 안내예요.)

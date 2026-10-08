@@ -5,14 +5,14 @@
 
 ## 설치 · 실행
 
-1. [GitHub Releases](https://github.com/hyilkimm/Essay/releases/latest)에서 `Essay-Setup-<버전>.exe` 를 받아 실행. 원클릭 설치라 바로 앱이 열리고, 바탕화면과 시작 메뉴에 **Essay**가 생깁니다.
+1. [GitHub Releases](https://github.com/brothrone/Essay/releases/latest)에서 `Essay-Setup-<버전>.exe` 를 받아 실행. 원클릭 설치라 바로 앱이 열리고, 바탕화면과 시작 메뉴에 **Essay**가 생깁니다.
 2. 코드 서명이 없어서 처음 실행할 때 SmartScreen 경고가 뜹니다 → **추가 정보 → 실행**.
 3. 처음 켜면 환영 안내가 AI 연결(CLI 설치 · 구독 로그인)을 단계별로 안내합니다. 막히면 **F1**.
 4. 데이터 파일: `문서\Essay\Essay-데이터.json` · 자동 백업: 같은 폴더의 `자동백업\` (매일 첫 저장 직전 상태, 30일치)
 
 ## 자동 업데이트 · 배포
 
-- 앱은 켜질 때와 6시간마다 GitHub Releases(`hyilkimm/Essay`)에서 새 버전을 확인하고(electron-updater), 조용히 내려받은 뒤 화면 아래 띠에서 **[지금 다시 시작]** 또는 다음에 끌 때 적용합니다. **백업 · 데이터 → 업데이트**에서 직접 확인할 수도 있습니다.
+- 앱은 켜질 때와 6시간마다 GitHub Releases(`brothrone/Essay`)에서 새 버전을 확인하고(electron-updater), 조용히 내려받은 뒤 화면 아래 띠에서 **[지금 다시 시작]** 또는 다음에 끌 때 적용합니다. **백업 · 데이터 → 업데이트**에서 직접 확인할 수도 있습니다.
 - 새 버전 올리기: `package.json` 의 `version` 을 올리고 `app\` 에서 `.\scripts\release.ps1`. 빌드 후 `Essay-Setup-<버전>.exe` · `latest.yml` · `.blockmap` 을 릴리스 `v<버전>` 에 올립니다. GitHub 토큰은 `GH_TOKEN` 또는 Git Credential Manager 에 저장된 로그인을 씁니다.
 
 ## 윈도우 전용으로 되어 있는 것

@@ -1,4 +1,4 @@
-# Essay 새 버전 배포: 빌드 → GitHub Releases(hyilkimm/Essay)에 올리기 → 설치된 앱들이 자동 업데이트.
+# Essay 새 버전 배포: 빌드 → GitHub Releases(brothrone/Essay)에 올리기 → 설치된 앱들이 자동 업데이트.
 #
 # 쓰는 법 (app 폴더에서, PowerShell):
 #   1) package.json 의 "version" 을 올린다 (예: 1.2.0 → 1.2.1). 올리지 않으면 같은 버전은 업데이트로 안 잡힌다.
@@ -6,7 +6,7 @@
 #      - node 가 PATH 에 있어야 한다.
 #      - GitHub 토큰은 (a) 환경변수 GH_TOKEN, 없으면 (b) Git Credential Manager 에 저장된 github.com 로그인에서 가져온다.
 #        (b) 가 없으면 한 번 `git push` 를 해서 브라우저 로그인을 마치면 저장된다.
-#   3) 끝나면 https://github.com/hyilkimm/Essay/releases 에 v<버전> 릴리스와 Essay-Setup-<버전>.exe · latest.yml · .blockmap 이 올라간다.
+#   3) 끝나면 https://github.com/brothrone/Essay/releases 에 v<버전> 릴리스와 Essay-Setup-<버전>.exe · latest.yml · .blockmap 이 올라간다.
 #      latest.yml 이 있어야 앱이 새 버전을 알아보니 파일을 지우지 말 것.
 #
 # 옵션:  -NoPublish  빌드만 하고 올리지 않는다 (release\ 에 파일만 만든다)
@@ -49,4 +49,4 @@ $hash = (Get-FileHash $exe -Algorithm SHA256).Hash
 Write-Host ''
 Write-Host "완료: $exe" -ForegroundColor Green
 Write-Host "SHA-256: $hash"
-if (-not $NoPublish) { Write-Host "릴리스: https://github.com/hyilkimm/Essay/releases/tag/v$version" }
+if (-not $NoPublish) { Write-Host "릴리스: https://github.com/brothrone/Essay/releases/tag/v$version" }

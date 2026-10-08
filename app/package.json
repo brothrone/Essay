@@ -5,10 +5,10 @@
   "type": "module",
   "description": "자소서 · 스펙 관리 윈도우 데스크톱 앱",
   "author": "brothrone",
-  "homepage": "https://github.com/hyilkimm/Essay",
+  "homepage": "https://github.com/brothrone/Essay",
   "repository": {
     "type": "git",
-    "url": "https://github.com/hyilkimm/Essay.git"
+    "url": "https://github.com/brothrone/Essay.git"
   },
   "main": "electron/main.cjs",
   "scripts": {
@@ -43,7 +43,7 @@
     "publish": [
       {
         "provider": "github",
-        "owner": "hyilkimm",
+        "owner": "brothrone",
         "repo": "Essay",
         "releaseType": "release"
       }
