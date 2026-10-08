@@ -28,9 +28,10 @@ if (-not $NoPublish -and -not $env:GH_TOKEN) {
     if ($t) { $env:GH_TOKEN = $t.Trim() }
   }
   if (-not $env:GH_TOKEN) {
-    $fill = "protocol=https`nhost=github.com`n`n" | git credential fill 2>$null
-    $line = $fill | Where-Object { $_ -like 'password=*' } | Select-Object -First 1
-    if ($line) { $env:GH_TOKEN = $line.Substring(9) }
+    $fill = "protocol=https`nhost=github.com`n`n" | git credential-manager get 2>$null
+    if (-not $fill) { $fill = "protocol=https`nhost=github.com`n`n" | git credential fill 2>$null }
+    $line = $fill | Where-Object { "$_" -like 'password=*' } | Select-Object -First 1
+    if ($line) { $env:GH_TOKEN = "$line".Substring(9) }
   }
   if (-not $env:GH_TOKEN) { throw 'GitHub 토큰이 없어요. gh auth login 을 하거나, git push 로 한 번 로그인하거나, $env:GH_TOKEN 을 설정해 주세요.' }
 }
@@ -45,6 +46,13 @@ if (-not $NoPublish) {
   # GitHub 는 "published" 릴리스에 실제 태그가 있어야 받아 준다 → 태그를 먼저 만들어 올린다 (이미 있으면 그대로)
   git tag "v$version" 2>$null
   git push origin "v$version" 2>&1 | Out-Null
+  # electron-builder 가 자산을 병렬로 올리며 릴리스를 두 번 만드는 경쟁을 막기 위해 릴리스를 먼저 만들어 둔다
+  $h = @{ Authorization = "Bearer $env:GH_TOKEN"; Accept = 'application/vnd.github+json'; 'User-Agent' = 'essay-release' }
+  try { Invoke-RestMethod -Headers $h "https://api.github.com/repos/brothrone/Essay/releases/tags/v$version" | Out-Null }
+  catch {
+    $body = @{ tag_name = "v$version"; name = "Essay $version"; draft = $false; prerelease = $false } | ConvertTo-Json
+    Invoke-RestMethod -Headers $h -Method Post "https://api.github.com/repos/brothrone/Essay/releases" -Body $body -ContentType 'application/json' | Out-Null
+  }
 }
 node node_modules/electron-builder/cli.js --win --x64 --publish $publish
 if ($LASTEXITCODE -ne 0) { throw 'electron-builder 실패' }
