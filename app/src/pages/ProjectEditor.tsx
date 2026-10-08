@@ -7,6 +7,7 @@ import {
   ChevronUp,
   Copy,
   ExternalLink,
+  Lightbulb,
   PanelRight,
   Pencil,
   Plus,
@@ -387,8 +388,8 @@ function QuestionEditor({
       {warnings.length > 0 && (
         <ul className="answer-warnings">
           {warnings.map((w) => (
-            <li key={w.kind} className={w.kind}>
-              <AlertTriangle size={14} /> {w.text}
+            <li key={w.kind} className={`${w.kind} ${w.level}`}>
+              {w.level === 'tip' ? <Lightbulb size={14} /> : <AlertTriangle size={14} />} {w.text}
             </li>
           ))}
         </ul>

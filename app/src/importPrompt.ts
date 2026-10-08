@@ -7,7 +7,7 @@ import { similarity } from './utils'
 
 /** 예전 자소서 한 편(또는 한 조각)에서 뽑아낼 것 */
 export interface Extracted {
-  profile: { targetJob: string; skills: string }
+  profile: { name: string; targetJob: string; skills: string }
   specs: { category: SpecCategory; data: Record<string, string> }[]
   experiences: Partial<Experience>[]
   projects: { company: string; position: string; year: string; questions: { prompt: string; answer: string; limit: number | null }[] }[]
@@ -39,6 +39,16 @@ export function extractPrompt(docName: string, text: string, part: { index: numb
   return `아래는 지원자가 예전에 쓴 자기소개서(또는 이력서) 원문입니다${part.total > 1 ? ` (${part.index + 1}/${part.total} 조각)` : ''}. 파일 이름: ${docName}
 여기서 지원자의 **경험, 스펙(학력·어학·자격증·수상·경력·대외활동·교육), 희망 직무·보유 스킬, 그리고 자소서 문항과 답변**을 구조화해 주세요.
 
+[꼭 찾아낼 것 — 원문에 조금이라도 단서가 있으면 빠뜨리지 마세요]
+- 이름(지원자 본인 이름이 적혀 있으면), 희망 직무, 보유 스킬(도구·언어·프로그램)
+- 학력: 학교, 학위, 전공, 복수·부전공, 학적 상태(재학·휴학·졸업예정·졸업), 입학·졸업 연월, 전체 학점과 만점(예: 3.8/4.5), 전공 학점
+- 어학: 시험 이름, 점수·등급, 응시 연월 (TOEIC, TOEIC Speaking, OPIc, TEPS, JLPT, HSK 등)
+- 자격증: 이름, 등급, 발행기관, 취득 연월
+- 수상·공모전: 대회·공모전 이름, 수상 등급(최우수상·장려상 등), 주최, 연월 → award
+- 경력·인턴·아르바이트: 회사, 구분(인턴·정규직·아르바이트 등), 부서, 역할, 기간 → career
+- 대외활동·동아리·학회·서포터즈·봉사·해외경험 → activity (공모전 '참가'만 했고 수상이 없으면 activity, 수상했으면 award)
+- 교육·부트캠프·강의 이수 → training (기관, 기간, 시간)
+
 [원칙]
 - 원문에 있는 사실만 쓰고 지어내지 마세요. 모르는 값은 빈 문자열("")로 두세요.
 - 날짜는 YYYY-MM-DD 또는 YYYY-MM 형식. 연도만 알면 "YYYY-01" 처럼 쓰지 말고 알 수 있는 만큼만.
@@ -51,7 +61,7 @@ ${fieldList}
 
 [출력 형식]
 <json>
-{"profile":{"targetJob":"희망 직무(쉼표 구분)","skills":"보유 스킬(쉼표 구분)"},"specs":[{"category":"education","data":{"school":"","degree":"","major":"","status":"","start":"","end":"","gpa":"","gpaMax":""}}],"experiences":[{"title":"","type":"","org":"","role":"","start":"YYYY-MM","end":"YYYY-MM","summary":"한 줄 요약","situation":"","task":"","action":"","result":"","learned":"","tags":[]}],"projects":[{"company":"","position":"","year":"YYYY","questions":[{"prompt":"","answer":"","limit":null}]}]}
+{"profile":{"name":"지원자 이름(없으면 빈 문자열)","targetJob":"희망 직무(쉼표 구분)","skills":"보유 스킬(쉼표 구분)"},"specs":[{"category":"education","data":{"school":"","degree":"","major":"","minor":"","status":"","start":"","end":"","gpa":"","gpaMax":"","majorGpa":""}},{"category":"language","data":{"test":"","score":"","date":""}},{"category":"certificate","data":{"name":"","grade":"","issuer":"","date":""}},{"category":"award","data":{"title":"","rank":"","organizer":"","date":""}}],"experiences":[{"title":"","type":"","org":"","role":"","start":"YYYY-MM","end":"YYYY-MM","summary":"한 줄 요약","situation":"","task":"","action":"","result":"","learned":"","tags":[]}],"projects":[{"company":"","position":"","year":"YYYY","questions":[{"prompt":"","answer":"","limit":null}]}]}
 </json>
 <json> 밖에는 아무것도 쓰지 마세요.
 
@@ -103,12 +113,12 @@ export function parseExtracted(text: string): Extracted | null {
       .map((q) => ({ prompt: str(q.prompt), answer: str(q.answer), limit: typeof q.limit === 'number' && q.limit > 0 ? Math.round(q.limit) : null }))
       .filter((q) => q.prompt || q.answer),
   }))
-  return { profile: { targetJob: str(profile.targetJob), skills: str(profile.skills) }, specs, experiences, projects }
+  return { profile: { name: str(profile.name).slice(0, 20), targetJob: str(profile.targetJob), skills: str(profile.skills) }, specs, experiences, projects }
 }
 
 /** 여러 조각·여러 파일에서 나온 결과를 합치고, 이미 있는 데이터와 겹치는 것은 뺀다 */
 export interface MergePlan {
-  profile: Partial<{ targetJob: string; skills: string }>
+  profile: Partial<{ name: string; targetJob: string; skills: string }>
   specs: SpecItem[]
   experiences: Experience[]
   projects: Project[]
@@ -122,8 +132,10 @@ export function planMerge(data: AppData, parts: Extracted[]): MergePlan {
   const plan: MergePlan = { profile: {}, specs: [], experiences: [], projects: [], skipped: { experiences: 0, specs: 0, projects: 0 } }
 
   // 기본 정보는 비어 있을 때만 채운다
+  const name = parts.map((p) => p.profile.name).find(Boolean)
   const targetJob = parts.map((p) => p.profile.targetJob).find(Boolean)
   const skills = [...new Set(parts.flatMap((p) => p.profile.skills.split(/[,·/]/).map((s) => s.trim()).filter(Boolean)))].join(', ')
+  if (name && !data.profile.name) plan.profile.name = name
   if (targetJob && !data.profile.targetJob) plan.profile.targetJob = targetJob
   if (skills && !data.profile.skills) plan.profile.skills = skills
 

@@ -1288,8 +1288,8 @@ function buildMenu() {
     {
       label: '도움말(&H)',
       submenu: [
-        { label: '도움말 · 막혔을 때', accelerator: 'F1', click: send('app:help') },
-        { label: '처음 설정 안내 (설치 · AI 연결)', click: send('app:welcome') },
+        { label: '도움말', accelerator: 'F1', click: send('app:help') },
+        { label: '처음 설정 안내', click: send('app:welcome') },
         { type: 'separator' },
         { label: '예전 자소서 불러오기', click: send('app:import') },
         { label: '로그 폴더 열기', click: () => shell.openPath(app.getPath('logs')) },

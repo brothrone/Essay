@@ -282,7 +282,9 @@ function ImportModal({ onClose }: { onClose: () => void }) {
               title="기본 정보"
               sub={
                 Object.keys(plan.profile).length
-                  ? [plan.profile.targetJob && `희망 직무: ${plan.profile.targetJob}`, plan.profile.skills && `스킬: ${plan.profile.skills}`].filter(Boolean).join(' · ')
+                  ? [plan.profile.name && `이름: ${plan.profile.name}`, plan.profile.targetJob && `희망 직무: ${plan.profile.targetJob}`, plan.profile.skills && `스킬: ${plan.profile.skills}`]
+                      .filter(Boolean)
+                      .join(' · ')
                   : '이미 채워져 있어 바꾸지 않아요'
               }
             />

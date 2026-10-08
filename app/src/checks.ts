@@ -1,3 +1,4 @@
+import { CLICHES, postingKeywords } from './prompts'
 import type { AppData, Project, Question } from './types'
 import { similarity } from './utils'
 
@@ -10,11 +11,14 @@ export function coreCompanyName(company: string) {
 }
 
 export interface AnswerWarning {
-  kind: 'company' | 'similar' | 'check'
+  kind: 'company' | 'similar' | 'check' | 'keywords' | 'cliche' | 'lead'
+  /** warn = 제출 전에 꼭 볼 것, tip = 더 좋게 만드는 힌트 */
+  level: 'warn' | 'tip'
   text: string
 }
 
-/** 제출 전에 자주 하는 실수: 다른 회사 이름, 다른 자소서와 거의 같은 답변, AI가 남긴 확인 표시 */
+/** 제출 전에 자주 하는 실수와 "더 좋은 자소서" 힌트: 다른 회사 이름, 다른 자소서와 거의 같은 답변, AI가 남긴 확인 표시,
+ *  공고 키워드 미반영, 상투어, 두괄식 아님 */
 export function answerWarnings(data: AppData, project: Project, q: Question): AnswerWarning[] {
   const text = q.answer
   if (!text.trim()) return []
@@ -32,6 +36,7 @@ export function answerWarnings(data: AppData, project: Project, q: Question): An
   if (others.size)
     out.push({
       kind: 'company',
+      level: 'warn',
       text: `다른 지원처 이름이 들어 있어요: ${[...others].join(', ')} — 다른 자소서에서 옮겨 온 문장인지 확인하세요.`,
     })
 
@@ -48,12 +53,46 @@ export function answerWarnings(data: AppData, project: Project, q: Question): An
     if (best.score >= 0.55)
       out.push({
         kind: 'similar',
+        level: 'warn',
         text: `'${best.company}' ${best.index + 1}번 답변과 ${Math.round(best.score * 100)}% 비슷해요 — 이 회사·직무에 맞게 바꿨는지 확인하세요.`,
       })
   }
 
-  const marks = text.match(/\(확인 필요\)/g)?.length ?? 0
-  if (marks) out.push({ kind: 'check', text: `AI가 표시한 '(확인 필요)'가 ${marks}군데 남아 있어요. 사실을 확인하고 지워 주세요.` })
+  const marks = text.match(/\(확인 필요[^)]*\)/g)?.length ?? 0
+  if (marks) out.push({ kind: 'check', level: 'warn', text: `AI가 표시한 '(확인 필요)'가 ${marks}군데 남아 있어요. 사실을 확인하고 지워 주세요.` })
+
+  // 공고 분석 키워드가 있으면 답변에 얼마나 녹였는지 (억지 나열이 아니라 '하나도 없음'만 알린다)
+  const keywords = postingKeywords(project.notes)
+  if (keywords.length >= 3 && [...text].length >= 200) {
+    const lower = text.toLowerCase()
+    const hit = keywords.filter((k) => lower.includes(k.toLowerCase()))
+    if (hit.length === 0)
+      out.push({
+        kind: 'keywords',
+        level: 'tip',
+        text: `공고 키워드(${keywords.slice(0, 5).join(', ')}…)가 답변에 하나도 없어요. 문항과 맞는 키워드 1~2개를 경험 설명에 자연스럽게 녹여 보세요.`,
+      })
+  }
+
+  const found = CLICHES.filter((c) => text.includes(c))
+  if (found.length)
+    out.push({
+      kind: 'cliche',
+      level: 'tip',
+      text: `상투어가 있어요: ${found.join(', ')} — 인사담당자가 'AI 글'로 느끼기 쉬운 표현이에요. 구체적인 행동이나 수치로 바꿔 보세요.`,
+    })
+
+  // 두괄식 점검: 첫 문단(소제목 제외)의 첫 문장이 질문·배경 설명으로 시작하면 힌트
+  if ([...text].length >= 300) {
+    const body = text.replace(/^\s*\[[^\]]{1,30}\]\s*/, '').trim()
+    const first = body.split(/(?<=[.!?다요])\s/)[0] ?? ''
+    if (/^(저는|나는)?\s*(어릴|어렸|고등학교|대학교|대학 시절|입학|처음)/.test(first) && !/[0-9%]/.test(first))
+      out.push({
+        kind: 'lead',
+        level: 'tip',
+        text: '첫 문장이 배경 설명으로 시작해요. 결론(이 문항에 대한 내 답)을 먼저 쓰고 배경은 뒤로 보내면 읽는 사람이 바로 핵심을 잡아요.',
+      })
+  }
 
   return out
 }

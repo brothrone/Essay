@@ -24,7 +24,7 @@ export function HelpDialogHost() {
   }, [])
   if (!open) return null
   return (
-    <Modal title="도움말 · 막혔을 때" onClose={() => setOpen(false)} wide>
+    <Modal title="도움말" onClose={() => setOpen(false)} wide>
       <HelpContent />
     </Modal>
   )
@@ -185,10 +185,7 @@ export function HelpContent() {
 
       <section className="help-group">
         <h3>직접 명령어로 하기 (버튼이 안 될 때만)</h3>
-        <p className="muted small">
-          <b>[PowerShell 열기]</b>로 창을 열고, 아래 줄을 <b>[복사]</b>한 뒤 그 창에서 <b>마우스 오른쪽 클릭</b>(붙여넣기) → <b>Enter</b>. 한 줄씩 차례로
-          하세요.
-        </p>
+        <p className="muted small">PowerShell 창을 열고, 명령을 복사해 마우스 오른쪽 클릭으로 붙여넣은 뒤 Enter. 한 줄씩.</p>
         <div className="btn-row">
           <button type="button" className="btn small" onClick={() => desktop.ai.openTerminal('open-shell')}>
             <TerminalSquare size={14} /> PowerShell 열기

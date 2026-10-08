@@ -21,10 +21,10 @@ export function UpdateBanner() {
     <div className="update-banner" role="status">
       <Download size={16} />
       <span>
-        <b>Essay {status.version}</b> 새 버전이 준비됐어요. 다시 시작하면 적용돼요. 지금 안 해도 다음에 끌 때 저절로 설치돼요.
+        새 버전 {status.version} 준비됨. 다시 시작하면 적용돼요.
       </span>
       <button type="button" className="btn small primary" onClick={() => desktop.update.install()}>
-        <RotateCcw size={14} /> 지금 다시 시작
+        <RotateCcw size={14} /> 다시 시작
       </button>
       <button type="button" className="icon-btn" aria-label="나중에" onClick={() => setHidden(status.version || '')}>
         <X size={16} />
@@ -48,19 +48,19 @@ export function UpdateCard() {
   const text = (() => {
     switch (status.state) {
       case 'checking':
-        return '새 버전이 있는지 확인하는 중…'
+        return '확인 중…'
       case 'available':
-        return `${status.version} 새 버전을 찾았어요. 내려받기 시작…`
+        return `${status.version} 내려받기 시작`
       case 'downloading':
         return `${status.version} 내려받는 중 · ${status.percent ?? 0}%`
       case 'ready':
-        return `${status.version} 준비됐어요. 다시 시작하면 적용돼요.`
+        return `${status.version} 준비됨. 다시 시작하면 적용돼요.`
       case 'none':
-        return '지금이 최신 버전이에요.'
+        return '최신 버전이에요.'
       case 'error':
-        return `확인하지 못했어요 (${status.message})`
+        return `확인 실패 (${status.message})`
       default:
-        return '앱을 켤 때와 6시간마다 GitHub에서 새 버전을 확인해요.'
+        return '켤 때와 6시간마다 자동으로 확인해요.'
     }
   })()
   return (

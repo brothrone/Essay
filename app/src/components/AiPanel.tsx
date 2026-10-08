@@ -4,6 +4,7 @@ import {
   ExternalLink,
   LoaderCircle,
   MessageSquareText,
+  MessagesSquare,
   PenLine,
   Scissors,
   Sparkles,
@@ -12,7 +13,7 @@ import {
 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { desktop, type AiProvider, type AiStatus } from '../desktop'
-import { draftPrompt, feedbackPrompt, fitPrompt, parseAiAnswer, revisePrompt } from '../prompts'
+import { draftPrompt, feedbackPrompt, fitPrompt, interviewPrompt, parseAiAnswer, revisePrompt } from '../prompts'
 import { useStore } from '../store'
 import { toast } from '../toast'
 import type { Experience, Project, Question } from '../types'
@@ -20,7 +21,7 @@ import { noteAiResult } from '../useAiStatus'
 import { AI_MODELS, AI_PROVIDERS, saveAiModel, saveAiProvider, savedAiModel, savedAiProvider } from '../useAiTask'
 import { copyText, countChars } from '../utils'
 
-type Kind = 'draft' | 'feedback' | 'fit' | 'revise'
+type Kind = 'draft' | 'feedback' | 'fit' | 'revise' | 'interview'
 type Result = { kind: Kind; answer: string; note: string; seconds: number; model: string }
 
 const RUNNING_LABEL: Record<Kind, string> = {
@@ -28,6 +29,7 @@ const RUNNING_LABEL: Record<Kind, string> = {
   feedback: '피드백을 정리하는',
   fit: '글자수를 맞추는',
   revise: '피드백을 반영해 고쳐 쓰는',
+  interview: '면접 꼬리질문을 뽑는',
 }
 
 export function AiPanel({
@@ -102,7 +104,7 @@ export function AiPanel({
       if (!r.cancelled) setError(r.error)
       return
     }
-    const parsed = kind === 'feedback' ? { answer: r.text.trim(), note: '' } : parseAiAnswer(r.text)
+    const parsed = kind === 'feedback' || kind === 'interview' ? { answer: r.text.trim(), note: '' } : parseAiAnswer(r.text)
     setResult({ kind, ...parsed, seconds: r.seconds, model: r.model })
   }
 
@@ -139,6 +141,14 @@ export function AiPanel({
       desc: q.limit ? `내용은 두고 ${q.limit.toLocaleString()}${unit} 안으로 다듬어요` : '내용은 두고 문장을 다듬어요',
       disabled: !hasAnswer,
       make: () => fitPrompt(q),
+    },
+    {
+      key: 'interview',
+      icon: <MessagesSquare size={18} />,
+      title: '면접 꼬리질문',
+      desc: '이 답변에서 면접관이 파고들 질문 5개와 답변 방향을 물어봐요',
+      disabled: !hasAnswer,
+      make: () => interviewPrompt(data, project, q, exps),
     },
   ]
 
@@ -228,7 +238,20 @@ export function AiPanel({
                 >
                   <Scissors size={14} /> 글자수 맞추기
                 </button>
+                <button
+                  type="button"
+                  className="btn small"
+                  disabled={!!running || !hasAnswer}
+                  title="이 답변으로 면접에서 나올 꼬리질문 5개와 답변 방향"
+                  onClick={() => run('interview', interviewPrompt(data, project, q, exps))}
+                >
+                  <MessagesSquare size={14} /> 면접 질문
+                </button>
               </div>
+              <p className="muted small ai-method">
+                초안은 문항 의도 → 핵심 메시지 → 두괄식 구성으로, 피드백은 100점 채점 · 고칠 문장 · 첫 문장 대안 3개로 돌려줘요. 상투어와 번역투는
+                자동으로 피해요.
+              </p>
 
               {running && (
                 <div className="ai-running">
@@ -249,6 +272,31 @@ export function AiPanel({
               )}
 
               {error && <p className="ai-error">{error}</p>}
+
+              {result && result.kind === 'interview' && (
+                <div className="ai-result">
+                  <div className="ai-result-meta">
+                    <strong>면접 꼬리질문</strong>
+                    <span className="muted small">{result.seconds}초</span>
+                  </div>
+                  <div className="ai-result-text">{result.answer}</div>
+                  <div className="ai-result-actions">
+                    <button
+                      type="button"
+                      className="btn small"
+                      onClick={() => onPatch({ memo: q.memo.trim() ? `${q.memo.trimEnd()}\n\n[면접 꼬리질문]\n${result.answer}` : `[면접 꼬리질문]\n${result.answer}` })}
+                    >
+                      <Check size={14} /> 작성 메모에 저장
+                    </button>
+                    <button type="button" className="btn ghost small" onClick={() => copyText(result.answer)}>
+                      <Copy size={14} /> 복사
+                    </button>
+                    <button type="button" className="btn ghost small" onClick={() => setResult(null)}>
+                      <X size={14} /> 닫기
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {result && result.kind === 'feedback' && (
                 <div className="ai-result">

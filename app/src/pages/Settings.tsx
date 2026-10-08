@@ -239,10 +239,10 @@ function AiSettings() {
       <AiSetup provider={provider} status={status} checking={checking} refresh={refresh} />
       <div className="btn-row">
         <button type="button" className="btn small" onClick={openWelcomeDialog}>
-          <BookOpen size={14} /> 처음 설정 안내 다시 보기
+          <BookOpen size={14} /> 처음 설정 안내
         </button>
         <button type="button" className="btn small ghost" onClick={openHelpDialog}>
-          <CircleHelp size={14} /> 막혔을 때 (F1)
+          <CircleHelp size={14} /> 도움말 (F1)
         </button>
       </div>
       <p className="muted small">

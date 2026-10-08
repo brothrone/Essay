@@ -1,4 +1,4 @@
-import { Check, CircleHelp, Download, ExternalLink, KeyRound, LoaderCircle, RefreshCw, Settings2, Sparkles, TerminalSquare } from 'lucide-react'
+import { Check, Download, ExternalLink, KeyRound, LoaderCircle, RefreshCw, Settings2, Sparkles, TerminalSquare } from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
 import { desktop, type AiProvider, type AiStatus, type TerminalAction } from '../desktop'
 import { toast } from '../toast'
@@ -17,6 +17,7 @@ export function AiSetup({
   refresh,
   onProvider,
   onLater,
+  title,
 }: {
   provider: AiProvider
   status: AiStatus | null
@@ -25,6 +26,8 @@ export function AiSetup({
   /** 없으면 제공자 선택 UI를 숨긴다 (설정 화면처럼 바깥에 이미 있을 때) */
   onProvider?: (p: AiProvider) => void
   onLater?: () => void
+  /** 카드 제목 (기본 'AI 연결하기'). 처음 설정 안내에서 카드가 여러 개일 때 'Gemini' · 'Claude' 로 */
+  title?: string
 }) {
   const [busy, setBusy] = useState<TerminalAction | 'web' | 'login' | null>(null)
   const [loginError, setLoginError] = useState('')
@@ -111,8 +114,7 @@ export function AiSetup({
       ) : (
         <>
           <p className="muted small">
-            둘 중 하나만 설치하면 돼요. <b>Antigravity CLI</b>는 Google AI 구독(Pro·Ultra) 사용량을, <b>Gemini CLI</b>는 Google 계정의 무료 한도를
-            써요. 버튼을 누르면 여기서 바로 설치돼요. 창이 따로 뜨지 않아요.
+            Antigravity CLI는 Google AI 구독, Gemini CLI는 무료 한도를 써요. 하나만 설치하면 돼요.
           </p>
           <div className="btn-row">
             {btn('install-agy', 'Antigravity CLI 설치 (권장)', true)}
@@ -139,15 +141,14 @@ export function AiSetup({
             <p className="muted small">설치가 끝나면 로그인할 수 있어요.</p>
           ) : g.cli === 'gemini' ? (
             loginGuide([
-              '[로그인 창 열기]를 누르면 PowerShell 창에서 gemini가 실행돼요.',
-              '로그인 방법을 물으면 "Login with Google"을 고르고 브라우저에서 Google 계정으로 로그인하세요.',
-              'PowerShell 창에서 /quit 로 끝내고 Essay로 돌아와 [로그인 마쳤어요]를 누르세요.',
+              '열리는 창에서 "Login with Google"을 고르고 브라우저에서 로그인.',
+              '창에 /quit 를 입력해 끝낸 뒤 [로그인 마쳤어요].',
             ])
           ) : (
             loginGuide([
-              '[로그인]을 누르면 브라우저가 열려요. 구독 중인 Google 계정으로 로그인하세요.',
-              '로그인하면 브라우저에 "Paste this code into your application"과 긴 인증 코드가 떠요. [Copy to Clipboard]를 누르세요.',
-              'Essay에 뜬 안내 창에 Ctrl+V로 붙여넣고 [코드 보내기]. 나머지는 Essay가 알아서 끝내요.',
+              '브라우저가 열리면 Google 계정으로 로그인.',
+              '화면에 뜨는 인증 코드를 [Copy to Clipboard]로 복사.',
+              'Essay 창에 붙여넣고 [코드 보내기].',
             ])
           )}
           {g?.available && (
@@ -172,7 +173,7 @@ export function AiSetup({
         done: g.webAllowed,
         body: g.webAllowed ? null : (
           <>
-            <p className="muted small">Antigravity CLI가 공고 페이지를 읽으려면 허용 규칙 read_url(*) 이 필요해요. 글쓰기만 쓸 거면 건너뛰어도 돼요.</p>
+            <p className="muted small">맞춤 공고와 공고 링크 불러오기에 필요해요. 글쓰기만 쓰면 건너뛰어도 돼요.</p>
             <button type="button" className="btn small" disabled={busy !== null} onClick={allowWeb}>
               웹 읽기 권한 허용
             </button>
@@ -189,7 +190,7 @@ export function AiSetup({
         <span className="muted small">{c.path}</span>
       ) : (
         <>
-          <p className="muted small">버튼을 누르면 여기서 바로 설치돼요. 창이 따로 뜨지 않고 1~2분이면 끝나요.</p>
+          <p className="muted small">1~2분 걸려요.</p>
           <div className="btn-row">{btn('install-claude', 'Claude Code 설치', true)}</div>
         </>
       ),
@@ -202,9 +203,9 @@ export function AiSetup({
         <>
           {c?.available ? (
             loginGuide([
-              '[로그인 창 열기]를 누르면 PowerShell 창이 열리고 브라우저가 떠요. Claude 구독 계정(Pro·Max)으로 로그인하세요. Anthropic Console 계정은 API 요금이 나가요.',
-              '브라우저에 인증 코드가 뜨면 복사해 PowerShell 창에 붙여넣고(마우스 오른쪽 클릭) Enter.',
-              '완료 메시지가 뜨면 창을 닫고 Essay로 돌아오세요. 상태가 자동으로 다시 확인돼요.',
+              '브라우저가 열리면 Claude 구독 계정으로 로그인. (Anthropic Console 계정은 API 요금이 나가요.)',
+              '인증 코드를 복사해 열린 창에 붙여넣고(마우스 오른쪽 클릭) Enter.',
+              '완료 메시지가 뜨면 창을 닫으세요.',
             ])
           ) : (
             <p className="muted small">설치가 끝나면 로그인할 수 있어요.</p>
@@ -225,9 +226,7 @@ export function AiSetup({
   return (
     <section className={'card ai-setup' + (ready ? ' ready' : '')}>
       <header className="card-head">
-        <h3>
-          <Sparkles size={18} /> AI 연결하기
-        </h3>
+        <h3>{title ? title : <><Sparkles size={18} /> AI 연결하기</>}</h3>
         <div className="btn-row">
           {!status ? (
             <span className="muted small">확인 중…</span>
@@ -269,10 +268,9 @@ export function AiSetup({
       </ol>
 
       <p className="muted small">
-        <b>유료 API 키는 쓰지 않아요.</b> 내 구독 계정으로 로그인한 CLI를 실행하니 추가 요금이 없어요. 글쓰기는 도구를 끈 채, 웹 검색은 검색·페이지
-        읽기만 허용한 채 빈 임시 폴더에서 돌아요.{' '}
+        API 키 없이 로그인한 CLI만 실행해요. 요금이 따로 나가지 않아요.{' '}
         <button type="button" className="link-btn" onClick={() => openHelpDialog()}>
-          <CircleHelp size={11} /> 막혔나요?
+          도움말
         </button>{' '}
         {provider === 'gemini' ? (
           <a href="https://antigravity.google/cli" target="_blank" rel="noreferrer" className="link-btn">

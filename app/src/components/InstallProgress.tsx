@@ -102,11 +102,7 @@ export function InstallPanel({ installer }: { installer: Installer }) {
               : `${name} ${phase}…`}
           </strong>
           <span className="muted small">
-            {state.done
-              ? ok
-                ? `${state.done.seconds}초 걸렸어요`
-                : '아래 [다시 시도]를 누르거나, 안 되면 PowerShell 창에서 직접 설치해 보세요'
-              : `${elapsed}초 · 창이 따로 뜨지 않아요. 여기서 기다리면 돼요`}
+            {state.done ? (ok ? `${state.done.seconds}초` : '다시 시도하거나 PowerShell 창에서 설치하세요') : `${elapsed}초`}
           </span>
         </div>
         {!state.done && (
@@ -133,7 +129,7 @@ export function InstallPanel({ installer }: { installer: Installer }) {
                 <button type="button" className="btn small primary" onClick={() => desktop.relaunch()}>
                   <RotateCcw size={14} /> Essay 다시 시작
                 </button>
-                <span className="muted small">새로 설치한 Node.js를 읽으려면 한 번 다시 켜야 해요</span>
+                <span className="muted small">다시 켜야 Node.js가 잡혀요</span>
               </>
             ) : (
               <button type="button" className="btn small" onClick={installer.dismiss}>

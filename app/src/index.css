@@ -923,7 +923,7 @@ textarea:focus-visible {
 .modal {
   display: flex;
   flex-direction: column;
-  width: min(560px, 100%);
+  width: min(640px, 100%);
   max-height: calc(100vh - 48px);
   background: var(--surface);
   border-radius: 20px;
@@ -999,10 +999,35 @@ textarea:focus-visible {
 
 /* ---------- new project modal ---------- */
 
+/* 자주 나오는 문항: 두 줄로 접어 창 높이를 줄인다 */
 .preset-list {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 6px;
+}
+
+.preset-list .preset {
+  font-size: 13px;
+  padding: 8px 10px;
+  line-height: 1.4;
+}
+
+.np-ai-row {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+  padding: 10px 12px;
+  border: 1px dashed var(--border-strong);
+  border-radius: 10px;
+}
+
+.np-ai-row > .full {
+  flex-basis: 100%;
+}
+
+.ai-method {
+  line-height: 1.5;
 }
 
 .preset {
@@ -2581,6 +2606,15 @@ textarea:focus-visible {
     --sidebar-w: 216px;
   }
 
+  .new-btn {
+    white-space: nowrap;
+    padding: 11px 10px;
+  }
+
+  .new-btn kbd {
+    display: none;
+  }
+
   .dash-grid {
     grid-template-columns: 1fr 1fr;
   }
@@ -2899,6 +2933,17 @@ textarea:focus-visible {
 .answer-warnings li.company {
   background: var(--danger-soft);
   color: #b42318;
+}
+
+/* 힌트(공고 키워드 · 상투어 · 두괄식)는 경고보다 차분한 색 */
+.answer-warnings li.tip {
+  background: var(--primary-soft);
+  color: var(--primary-text);
+}
+
+:root[data-theme='dark'] .answer-warnings li.tip {
+  background: var(--primary-soft);
+  color: var(--primary-text);
 }
 
 .answer-warnings svg {
@@ -3669,7 +3714,7 @@ textarea:focus-visible {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  min-height: 300px;
+  min-height: 240px;
 }
 
 .welcome .ai-setup {
@@ -3679,74 +3724,37 @@ textarea:focus-visible {
 .welcome-hero {
   display: flex;
   align-items: center;
-  gap: 18px;
-  padding: 18px 20px;
-  border-radius: 16px;
-  background: linear-gradient(135deg, var(--primary-soft), var(--surface) 70%);
-  border: 1px solid #c9d6ff;
-}
-
-:root[data-theme='dark'] .welcome-hero {
-  border-color: #33415f;
+  gap: 16px;
+  padding: 4px 0 14px;
+  border-bottom: 1px solid var(--border);
 }
 
 .welcome-hero h3 {
-  font-size: 19px;
-  font-weight: 800;
+  font-size: 18px;
+  font-weight: 700;
   line-height: 1.35;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 
 .welcome-points {
   list-style: none;
   margin: 0;
   padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.welcome-points.grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px 18px;
-}
-
-.welcome-points li {
-  display: grid;
-  grid-template-columns: 34px minmax(0, 1fr);
-  gap: 10px;
-  align-items: start;
+  gap: 14px 24px;
 }
 
 .welcome-points strong {
   display: block;
   font-size: 14px;
-  margin-bottom: 1px;
+  margin-bottom: 2px;
 }
 
 .welcome-points p {
   color: var(--text-2);
-  font-size: 12.5px;
+  font-size: 13px;
   line-height: 1.55;
-}
-
-.welcome-icon {
-  display: grid;
-  place-items: center;
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
-  background: var(--primary-soft);
-  color: var(--primary-text);
-}
-
-.welcome-ready {
-  padding: 12px 14px;
-  border-radius: 12px;
-  background: var(--surface-2);
-  font-size: 13.5px;
-  color: var(--text-2);
 }
 
 .ai-choice-list {
@@ -3796,6 +3804,15 @@ textarea:focus-visible {
   background: var(--primary);
 }
 
+/* 여러 개 고를 수 있는 선택은 네모 체크 상자로 */
+.ai-choice-radio.check {
+  border-radius: 6px;
+}
+
+.welcome .ai-setup + .ai-setup {
+  margin-top: 4px;
+}
+
 .ai-choice-text {
   display: flex;
   flex-direction: column;
@@ -3805,20 +3822,8 @@ textarea:focus-visible {
 }
 
 .ai-choice-text strong {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 15.5px;
+  font-size: 15px;
   color: var(--text);
-}
-
-.ai-choice-text em {
-  font-style: normal;
-}
-
-.ai-choice-cost {
-  font-weight: 600;
-  color: #15803d;
 }
 
 .import-ok.big {
@@ -3846,29 +3851,10 @@ textarea:focus-visible {
   gap: 10px;
   margin-top: 4px;
   padding: 14px 16px;
-  border-radius: 14px;
-  border: 1px solid #c9d6ff;
-  background: linear-gradient(135deg, var(--primary-soft), var(--surface) 65%);
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
   animation: rise 0.18s ease;
-}
-
-:root[data-theme='dark'] .install-panel {
-  border-color: #33415f;
-}
-
-.install-panel.ok {
-  border-color: #bbe5c8;
-  background: linear-gradient(135deg, #ecfdf3, var(--surface) 65%);
-}
-
-:root[data-theme='dark'] .install-panel.ok {
-  border-color: #245c3a;
-  background: linear-gradient(135deg, #16301f, var(--surface) 65%);
-}
-
-.install-panel.fail {
-  border-color: #f3c7c9;
-  background: linear-gradient(135deg, var(--danger-soft), var(--surface) 65%);
 }
 
 .install-head {
@@ -3987,16 +3973,12 @@ textarea:focus-visible {
   align-items: center;
   gap: 12px;
   padding: 12px 14px 12px 18px;
-  border: 1px solid #c9d6ff;
-  border-radius: 16px;
+  border: 1px solid var(--border-strong);
+  border-radius: 14px;
   background: var(--surface);
   box-shadow: var(--shadow-lg);
   font-size: 14px;
   animation: rise 0.2s ease;
-}
-
-:root[data-theme='dark'] .update-banner {
-  border-color: #33415f;
 }
 
 .update-banner > svg {
