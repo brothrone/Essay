@@ -1,4 +1,4 @@
-import { Database, FileText, GraduationCap, House, Lightbulb, LoaderCircle, Plus, Radar } from 'lucide-react'
+import { Archive, Database, FileText, GraduationCap, House, Lightbulb, LoaderCircle, Plus, Radar, Settings } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
 import { useJobSearch } from '../jobSearch'
 import { useStore } from '../store'
@@ -64,8 +64,14 @@ export function Sidebar({ onNew }: { onNew: () => void }) {
       </div>
 
       <div className="sidebar-foot">
-        <NavLink to="/settings" title="백업 · 데이터 (Ctrl+,)">
-          <Database size={18} /> 백업 · 데이터
+        <NavLink to="/backup" title="백업 (Ctrl+6)">
+          <Archive size={18} /> 백업
+        </NavLink>
+        <NavLink to="/data" title="데이터 (Ctrl+7)">
+          <Database size={18} /> 데이터
+        </NavLink>
+        <NavLink to="/settings" title="설정 (Ctrl+,)">
+          <Settings size={18} /> 설정
         </NavLink>
       </div>
     </aside>

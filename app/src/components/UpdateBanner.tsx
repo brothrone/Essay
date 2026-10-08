@@ -33,7 +33,7 @@ export function UpdateBanner() {
   )
 }
 
-/** 백업 · 데이터 화면의 업데이트 카드 */
+/** 설정 화면의 업데이트 카드 */
 export function UpdateCard() {
   const status = useUpdateStatus()
   const [checking, setChecking] = useState(false)

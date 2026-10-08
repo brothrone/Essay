@@ -9,6 +9,8 @@ const ProjectEditor = lazy(() => import('./pages/ProjectEditor').then((m) => ({ 
 const Jobs = lazy(() => import('./pages/Jobs').then((m) => ({ default: m.Jobs })))
 const Experiences = lazy(() => import('./pages/Experiences').then((m) => ({ default: m.Experiences })))
 const Specs = lazy(() => import('./pages/Specs').then((m) => ({ default: m.Specs })))
+const Backup = lazy(() => import('./pages/Backup').then((m) => ({ default: m.Backup })))
+const DataPage = lazy(() => import('./pages/Data').then((m) => ({ default: m.DataPage })))
 const Settings = lazy(() => import('./pages/Settings').then((m) => ({ default: m.Settings })))
 
 const page = (el: React.ReactNode) => <Suspense fallback={<div className="page-loading" />}>{el}</Suspense>
@@ -23,6 +25,8 @@ export default function App() {
         <Route path="jobs" element={page(<Jobs />)} />
         <Route path="experiences" element={page(<Experiences />)} />
         <Route path="specs" element={page(<Specs />)} />
+        <Route path="backup" element={page(<Backup />)} />
+        <Route path="data" element={page(<DataPage />)} />
         <Route path="settings" element={page(<Settings />)} />
         <Route path="*" element={<Home />} />
       </Route>

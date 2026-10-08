@@ -15,7 +15,7 @@ const DONE_KEY = 'essay/welcome-done'
 
 type Listener = () => void
 const listeners = new Set<Listener>()
-/** 어디서든 처음 설정 안내를 연다 (도움말 메뉴 · 백업·데이터 화면) */
+/** 어디서든 처음 설정 안내를 연다 (도움말 메뉴 · 설정 화면) */
 export function openWelcomeDialog() {
   listeners.forEach((l) => l())
 }
@@ -213,7 +213,7 @@ function WelcomeWizard({ onClose }: { onClose: () => void }) {
           <ol className="login-guide big">
             <li>자소서를 열고 오른쪽 AI 도우미에서 [초안 쓰기].</li>
             <li>모델은 홈 위쪽 AI 바에서 바꿉니다. 사용량을 아끼려면 "한도 절약".</li>
-            <li>이 안내는 F1 도움말과 백업 · 데이터에서 다시 볼 수 있습니다.</li>
+            <li>이 안내는 F1 도움말과 설정에서 다시 볼 수 있습니다.</li>
           </ol>
         </div>
       )}

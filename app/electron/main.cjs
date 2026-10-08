@@ -943,7 +943,7 @@ function runAi(sender, { prompt, model, web, provider }) {
           return resolve({
             ok: false,
             code: 'gemini_web_permission',
-            error: 'Gemini(Antigravity CLI)가 웹 페이지를 읽을 권한이 없어요. 백업 · 데이터 → AI 설정에서 [웹 읽기 권한 허용]을 눌러 주세요.',
+            error: 'Gemini(Antigravity CLI)가 웹 페이지를 읽을 권한이 없어요. 설정 → AI 설정에서 [웹 읽기 권한 허용]을 눌러 주세요.',
           })
         const used = initModel || model || 'gemini'
         return resolve({ ok: true, text, seconds: Math.round(d.duration_seconds || seconds), model: used, models: [used] })
@@ -1241,7 +1241,7 @@ function createWindow() {
   return win
 }
 
-// 메뉴 표시줄은 숨기고 단축키만 쓴다 (Ctrl+N 새 자소서, Ctrl+1~5 화면 이동, Ctrl+, 백업·데이터, F11 전체 화면)
+// 메뉴 표시줄은 숨기고 단축키만 쓴다 (Ctrl+N 새 자소서, Ctrl+1~7 화면 이동, Ctrl+, 설정, F11 전체 화면)
 function buildMenu() {
   const send = (channel, payload) => () => sendWhenReady(focusWindow(), channel, payload)
   const template = [
@@ -1255,7 +1255,9 @@ function buildMenu() {
         { label: '맞춤 공고', accelerator: 'CmdOrCtrl+3', click: send('app:navigate', '/jobs') },
         { label: '경험 관리', accelerator: 'CmdOrCtrl+4', click: send('app:navigate', '/experiences') },
         { label: '스펙 관리', accelerator: 'CmdOrCtrl+5', click: send('app:navigate', '/specs') },
-        { label: '백업 · 데이터', accelerator: 'CmdOrCtrl+,', click: send('app:navigate', '/settings') },
+        { label: '백업', accelerator: 'CmdOrCtrl+6', click: send('app:navigate', '/backup') },
+        { label: '데이터', accelerator: 'CmdOrCtrl+7', click: send('app:navigate', '/data') },
+        { label: '설정', accelerator: 'CmdOrCtrl+,', click: send('app:navigate', '/settings') },
         { type: 'separator' },
         { label: '데이터 폴더 열기', click: () => shell.openPath(DATA_DIR) },
         { type: 'separator' },

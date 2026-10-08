@@ -1012,18 +1012,73 @@ textarea:focus-visible {
   line-height: 1.4;
 }
 
-.np-ai-row {
-  flex-direction: row;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px 10px;
-  padding: 10px 12px;
-  border: 1px dashed var(--border-strong);
-  border-radius: 10px;
+.np-ai {
+  gap: 10px;
+  padding: 12px 14px 14px;
+  border: 1px solid var(--border-strong);
+  border-radius: 12px;
+  background: var(--surface-2);
 }
 
-.np-ai-row > .full {
-  flex-basis: 100%;
+.np-ai-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+}
+
+.np-ai-head .field-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+}
+
+.np-ai-desc {
+  margin: 0;
+  line-height: 1.55;
+}
+
+.np-ai .url-row input {
+  flex: 1;
+  min-width: 0;
+  background: var(--surface);
+}
+
+.np-ai .url-row .btn {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.np-search-target {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.np-search-target b {
+  color: var(--text);
+}
+
+.np-ai-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+}
+
+.np-ai .import-ok,
+.np-ai .ai-error {
+  margin: 0;
+}
+
+.segmented.small button {
+  height: 28px;
+  padding: 0 10px;
+  font-size: 12.5px;
 }
 
 .ai-method {
@@ -2873,6 +2928,54 @@ textarea:focus-visible {
 }
 
 .mini-job-text span {
+  color: var(--text-3);
+}
+
+.mini-jobs.two-col {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 16px;
+}
+
+.mini-jobs.two-col a {
+  min-width: 0;
+}
+
+.mini-jobs.two-col .mini-job-text {
+  min-width: 0;
+}
+
+.mini-jobs.two-col .mini-job-text span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.data-stats {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.data-stats div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 12px 6px;
+  border-radius: 10px;
+  background: var(--surface-2);
+}
+
+.data-stats b {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.data-stats span {
+  font-size: 12px;
   color: var(--text-3);
 }
 

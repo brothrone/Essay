@@ -64,7 +64,7 @@ export function Home() {
   const topJobs = data.jobs
     .filter((j) => j.status === 'new' && (daysUntil(j.deadline) ?? 0) >= 0)
     .sort((a, b) => b.matchScore - a.matchScore)
-    .slice(0, 4)
+    .slice(0, 6)
 
   const totalQ = data.projects.reduce((n, p) => n + p.questions.length, 0)
   const doneQ = data.projects.reduce((n, p) => n + p.questions.filter((q) => q.done).length, 0)
@@ -91,7 +91,7 @@ export function Home() {
             <FileUp size={14} /> 예전 자소서로 한 번에 채우기
           </button>
           {isEmptyData(data) && (
-            <Link to="/settings" className="chip-btn">
+            <Link to="/data" className="chip-btn">
               <Sparkles size={14} /> 예시 데이터로 둘러보기
             </Link>
           )}
@@ -183,7 +183,7 @@ export function Home() {
           )}
         </section>
 
-        <section className="card">
+        <section className="card span-2">
           <header className="card-head">
             <h3>
               <Radar size={18} /> 맞춤 공고
@@ -193,7 +193,7 @@ export function Home() {
             </Link>
           </header>
           {topJobs.length ? (
-            <ul className="mini-jobs">
+            <ul className="mini-jobs two-col">
               {topJobs.map((j) => (
                 <li key={j.id}>
                   <Link to="/jobs">
@@ -237,11 +237,11 @@ export function Home() {
           </div>
         </section>
 
-        {data.projects.some((p) => p.status !== 'writing') && (
-          <section className="card span-2">
-            <header className="card-head">
-              <h3>최근 결과</h3>
-            </header>
+        <section className="card">
+          <header className="card-head">
+            <h3>최근 결과</h3>
+          </header>
+          {data.projects.some((p) => p.status !== 'writing') ? (
             <ul className="result-list">
               {data.projects
                 .filter((p) => p.status !== 'writing')
@@ -257,8 +257,10 @@ export function Home() {
                   </li>
                 ))}
             </ul>
-          </section>
-        )}
+          ) : (
+            <p className="muted small">제출한 자소서의 결과(서류 · 면접 · 최종)를 자소서 프로젝트에서 바꾸면 여기에 모여요.</p>
+          )}
+        </section>
       </div>
     </div>
   )

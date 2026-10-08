@@ -199,7 +199,7 @@ export function AiPanel({
           </div>
           {available === false ? (
             <p className="ai-hint">
-              이 PC에서 {providerInfo.cli} 명령어를 찾지 못했어요. 백업 · 데이터 → AI 설정에서 설치 방법을 확인하거나, 아래
+              이 PC에서 {providerInfo.cli} 명령어를 찾지 못했어요. 설정 → AI 설정에서 설치 방법을 확인하거나, 아래
               &lsquo;요청문 복사&rsquo;로 AI 채팅에 붙여넣어 쓰세요.
             </p>
           ) : (
