@@ -1,4 +1,4 @@
-# Essay 새 버전 배포: 빌드 → GitHub Releases(brothrone/Essay)에 올리기 → 설치된 앱들이 자동 업데이트.
+﻿# Essay 새 버전 배포: 빌드 → GitHub Releases(brothrone/Essay)에 올리기 → 설치된 앱들이 자동 업데이트.
 #
 # 쓰는 법 (app 폴더에서, PowerShell):
 #   1) package.json 의 "version" 을 올린다 (예: 1.2.0 → 1.2.1). 올리지 않으면 같은 버전은 업데이트로 안 잡힌다.
@@ -16,7 +16,7 @@ param([switch]$NoPublish)
 $ErrorActionPreference = 'Stop'
 Set-Location (Join-Path $PSScriptRoot '..')
 
-$version = (Get-Content package.json -Raw | ConvertFrom-Json).version
+$version = (Get-Content package.json -Raw -Encoding UTF8 | ConvertFrom-Json).version
 Write-Host "Essay $version 빌드" -ForegroundColor Cyan
 
 if (-not (Get-Command node -ErrorAction SilentlyContinue)) { throw 'node 를 찾을 수 없어요. Node.js 를 설치하거나 PATH 에 넣어 주세요.' }
@@ -44,8 +44,8 @@ if ($LASTEXITCODE -ne 0) { throw 'vite 빌드 실패' }
 $publish = if ($NoPublish) { 'never' } else { 'always' }
 if (-not $NoPublish) {
   # GitHub 는 "published" 릴리스에 실제 태그가 있어야 받아 준다 → 태그를 먼저 만들어 올린다 (이미 있으면 그대로)
-  git tag "v$version" 2>$null
-  git push origin "v$version" 2>&1 | Out-Null
+  cmd /c "git tag v$version >nul 2>&1"
+  cmd /c "git push origin v$version >nul 2>&1"
   # electron-builder 가 자산을 병렬로 올리며 릴리스를 두 번 만드는 경쟁을 막기 위해 릴리스를 먼저 만들어 둔다
   $h = @{ Authorization = "Bearer $env:GH_TOKEN"; Accept = 'application/vnd.github+json'; 'User-Agent' = 'essay-release' }
   try { Invoke-RestMethod -Headers $h "https://api.github.com/repos/brothrone/Essay/releases/tags/v$version" | Out-Null }
