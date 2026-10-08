@@ -120,7 +120,7 @@ const GROUPS: Group[] = [
         q: '원인을 더 자세히 알고 싶어요',
         a: (
           <>
-            <b>데이터 → [로그 폴더 열기]</b>의 <code>ai-last-run.json</code> 파일을 Essay를 만든 사람에게 보내 주세요. 여러분이 쓴 글은 들어
+            <b>데이터 → [로그 폴더 열기]</b>의 <code>ai-last-run.json</code> 파일을 문제를 알릴 때 함께 보내 주세요. 여러분이 쓴 글은 들어
             있지 않아요.{' '}
             <button type="button" className="link-btn" onClick={() => desktop.openLogsFolder()}>
               <FileText size={12} /> 로그 폴더 열기

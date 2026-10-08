@@ -358,7 +358,7 @@ export function AiPanel({
         <h4 className="panel-title">다른 AI 채팅에 붙여넣기</h4>
         <ol className="ai-steps">
           <li>아래 버튼으로 요청문을 복사해요</li>
-          <li>쓰고 있는 AI 채팅(Claude · ChatGPT 등)에 붙여넣어요</li>
+          <li>쓰고 있는 AI 채팅(Claude · Gemini)에 붙여넣어요</li>
           <li>나온 글을 답변 칸에 붙여넣고 내 말투로 다듬어요</li>
         </ol>
         <div className="ai-actions">
@@ -383,8 +383,8 @@ export function AiPanel({
           <a className="btn small ghost" href="https://claude.ai/new" target="_blank" rel="noreferrer">
             <ExternalLink size={14} /> Claude 열기
           </a>
-          <a className="btn small ghost" href="https://chatgpt.com/" target="_blank" rel="noreferrer">
-            <ExternalLink size={14} /> ChatGPT 열기
+          <a className="btn small ghost" href="https://gemini.google.com/" target="_blank" rel="noreferrer">
+            <ExternalLink size={14} /> Gemini 열기
           </a>
         </div>
         <p className="muted small">

@@ -11,7 +11,7 @@ import { toast } from '../toast'
 import { AI_PROVIDERS, saveAiProvider, savedAiProvider } from '../useAiTask'
 import { useTheme } from '../useTheme'
 
-/** 설정: 화면 테마 · AI · 업데이트 · 만든 사람 */
+/** 설정: 화면 테마 · AI · 업데이트 · Essay 정보 */
 export function Settings() {
   return (
     <div className="page narrow">
@@ -31,7 +31,7 @@ export function Settings() {
       <section className="card">
         <header className="card-head">
           <h3>
-            <Info size={18} /> 만든 사람
+            <Info size={18} /> Essay 정보
           </h3>
         </header>
         <AboutContent />

@@ -17,7 +17,7 @@ export function TitleBar() {
         <i />
         {SAVE_LABEL[saveState]}
       </span>
-      <button type="button" className="icon-btn titlebar-info" onClick={openAboutDialog} title="Essay 정보 · 만든 사람" aria-label="Essay 정보">
+      <button type="button" className="icon-btn titlebar-info" onClick={openAboutDialog} title="Essay 정보" aria-label="Essay 정보">
         <Info size={15} />
       </button>
     </header>

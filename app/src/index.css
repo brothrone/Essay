@@ -2175,6 +2175,19 @@ textarea:focus-visible {
   font-weight: 600;
 }
 
+.posting-banner {
+  flex-shrink: 0;
+  margin: 10px 20px 0;
+}
+
+.posting-banner > span {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .ai-running .btn {
   margin-left: auto;
 }
@@ -3552,7 +3565,7 @@ textarea:focus-visible {
   cursor: pointer;
 }
 
-/* ---------- 만든 사람 ---------- */
+/* ---------- Essay 정보 ---------- */
 
 .titlebar-info {
   width: 26px;

@@ -1,13 +1,14 @@
 import { Check, Link2, LoaderCircle, Search, Sparkles } from 'lucide-react'
-import { useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { QUESTION_PRESETS } from '../constants'
 import { isHttpUrl } from '../format'
-import { companyLookupPrompt, parsePosting, postingPrompt } from '../prompts'
+import { isActive, useElapsed, usePostingReader } from '../postingReader'
+import { companyLookupPrompt, postingPrompt } from '../prompts'
 import { newProject, newQuestion, useStore } from '../store'
 import type { Question } from '../types'
-import { useAiTask } from '../useAiTask'
-import { toDateInput } from '../utils'
+import { toast } from '../toast'
+import { toDateInput, uid } from '../utils'
 import { Modal } from './ui'
 
 /** "saramin.co.kr/..." 처럼 프로토콜만 빠진 주소는 https:// 를 붙여 준다 */
@@ -26,7 +27,14 @@ export function NewProjectModal({ onClose }: { onClose: () => void }) {
   const [presets, setPresets] = useState<number[]>([])
   const [imported, setImported] = useState<{ notes: string; questions: Question[]; source: string } | null>(null)
   const [importError, setImportError] = useState('')
-  const task = useAiTask()
+  // 공고 읽기는 앱 전체에서 관리한다 → [시작하기]를 먼저 눌러도 AI가 뒤에서 마저 읽고 새 자소서에 채운다
+  const reader = usePostingReader()
+  const [draftKey] = useState(() => `draft:${uid()}`)
+  const task = reader.tasks[draftKey]
+  const busy = isActive(task)
+  const elapsed = useElapsed(task)
+  const consumed = useRef(false)
+  const attached = useRef(false)
 
   // 공고 정보를 어떻게 가져올지: 링크를 읽거나, 회사명·직무로 웹에서 찾거나
   const [source, setSourceState] = useState<'link' | 'search'>('link')
@@ -34,22 +42,23 @@ export function NewProjectModal({ onClose }: { onClose: () => void }) {
     setSourceState(s)
     setImportError('')
   }
-  const [mode, setMode] = useState<'link' | 'company' | null>(null)
-  const importWith = async (prompt: string, kind: 'link' | 'company') => {
+  const importWith = (prompt: string, kind: 'link' | 'company') => {
     setImportError('')
     setImported(null)
-    setMode(kind)
-    const r = await task.run(prompt, { web: true })
-    setMode(null)
-    if (!r.ok) {
-      if (!r.cancelled) setImportError(r.error)
-      return
+    consumed.current = false
+    reader.start(draftKey, { prompt, kind, mode: 'new', projectId: null, label: form.company.trim() })
+  }
+
+  // 다 읽으면 아래 칸을 채운다 (한 번만)
+  useEffect(() => {
+    if (!task || attached.current || consumed.current) return
+    if (task.status === 'error') {
+      consumed.current = true
+      setImportError(task.error)
     }
-    const info = parsePosting(r.text)
-    if (!info) {
-      setImportError('공고 내용을 읽지 못했어요. 아래 칸에 직접 적어 주세요.')
-      return
-    }
+    if (task.status !== 'done' || !task.info) return
+    consumed.current = true
+    const info = task.info
     setForm((f) => ({
       ...f,
       company: info.company || f.company,
@@ -60,8 +69,19 @@ export function NewProjectModal({ onClose }: { onClose: () => void }) {
     }))
     setImported({ notes: info.notes, questions: info.questions.map((q) => newQuestion(q)), source: info.questionsSource })
     if (info.isOpen === false) setImportError('이 공고는 마감된 것으로 보여요. 마감일을 확인해 주세요.')
-    else if (info.isOpen === null && kind === 'company') setImportError('지금 접수 중인 공고는 찾지 못했어요. 찾은 내용은 참고용이에요.')
-  }
+    else if (info.isOpen === null && task.kind === 'company') setImportError('지금 접수 중인 공고는 찾지 못했어요. 찾은 내용은 참고용이에요.')
+  }, [task])
+
+  // 시작하지 않고 창을 닫으면 읽던 것을 멈추고 정리한다
+  useEffect(
+    () => () => {
+      if (attached.current) return
+      reader.cancel(draftKey)
+      reader.dismiss(draftKey)
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  )
 
   const importFromLink = () => {
     const url = normalizeUrl(form.jobUrl)
@@ -91,15 +111,32 @@ export function NewProjectModal({ onClose }: { onClose: () => void }) {
     const presetQs = [...presets].sort((a, b) => a - b).map((i) => newQuestion(QUESTION_PRESETS[i]))
     const fromPosting = imported?.questions ?? []
     const questions = fromPosting.length || presetQs.length ? [...fromPosting, ...presetQs] : [newQuestion()]
+    const url = normalizeUrl(form.jobUrl)
     const project = newProject({
       ...form,
       notes: imported?.notes ?? '',
       company: form.company.trim(),
       position: form.position.trim(),
-      jobUrl: normalizeUrl(form.jobUrl),
+      jobUrl: url,
       questions,
     })
     addProject(project)
+    if (busy) {
+      // 아직 읽는 중: 이 자소서에 연결해 두면 끝나는 대로 문항 · 공고 메모 · 마감일을 채운다
+      attached.current = true
+      reader.attach(draftKey, project.id)
+      toast('AI가 공고를 마저 읽고 이 자소서에 문항을 채워요. 다른 화면으로 가도 계속돼요')
+    } else if (!imported && isHttpUrl(url)) {
+      // 링크만 넣고 바로 시작: 뒤에서 읽어 채운다
+      reader.start(project.id, {
+        prompt: postingPrompt(url, toDateInput(new Date())),
+        kind: 'link',
+        mode: 'new',
+        projectId: project.id,
+        label: project.company,
+      })
+      toast('AI가 공고를 읽어 자소서 문항을 채우는 중이에요. 다른 화면으로 가도 계속돼요')
+    }
     onClose()
     navigate(`/projects/${project.id}`)
   }
@@ -107,7 +144,6 @@ export function NewProjectModal({ onClose }: { onClose: () => void }) {
   const togglePreset = (i: number) =>
     setPresets((ps) => (ps.includes(i) ? ps.filter((x) => x !== i) : [...ps, i]))
 
-  const busy = task.running
 
   return (
     <Modal
@@ -118,7 +154,7 @@ export function NewProjectModal({ onClose }: { onClose: () => void }) {
           <button type="button" className="btn ghost" onClick={onClose}>
             취소
           </button>
-          <button type="submit" form="new-project" className="btn primary" disabled={busy}>
+          <button type="submit" form="new-project" className="btn primary">
             시작하기
           </button>
         </>
@@ -187,7 +223,7 @@ export function NewProjectModal({ onClose }: { onClose: () => void }) {
                   aria-label="공고 링크"
                 />
                 <button type="button" className="btn primary small" disabled={busy} onClick={importFromLink}>
-                  {busy && mode === 'link' ? <LoaderCircle size={14} className="spin" /> : <Sparkles size={14} />} AI로 불러오기
+                  {busy && task?.kind === 'link' ? <LoaderCircle size={14} className="spin" /> : <Sparkles size={14} />} AI로 불러오기
                 </button>
               </div>
             </>
@@ -208,7 +244,7 @@ export function NewProjectModal({ onClose }: { onClose: () => void }) {
                   )}
                 </span>
                 <button type="button" className="btn primary small" disabled={busy} onClick={importFromCompany}>
-                  {busy && mode === 'company' ? <LoaderCircle size={14} className="spin" /> : <Search size={14} />} AI로 공고 찾기
+                  {busy && task?.kind === 'company' ? <LoaderCircle size={14} className="spin" /> : <Search size={14} />} AI로 공고 찾기
                 </button>
               </div>
             </>
@@ -216,11 +252,18 @@ export function NewProjectModal({ onClose }: { onClose: () => void }) {
 
           {busy && (
             <p className="muted small np-ai-status">
-              <LoaderCircle size={14} className="spin" /> AI가 {mode === 'company' ? '공고를 찾는' : '공고 페이지를 읽는'} 중… {task.elapsed}초
-              {task.steps.at(-1) && ` · ${task.steps.at(-1)}`}{' '}
-              <button type="button" className="link-btn" onClick={task.cancel}>
-                취소
-              </button>
+              <LoaderCircle size={14} className="spin" />
+              <span>
+                {task!.status === 'waiting'
+                  ? '다른 AI 작업이 끝나면 시작해요…'
+                  : `AI가 ${task!.kind === 'company' ? '공고를 찾는' : '공고 페이지를 읽는'} 중… ${elapsed}초`}
+                {task!.status === 'running' && task!.steps.at(-1) && ` · ${task!.steps.at(-1)}`}{' '}
+                <button type="button" className="link-btn" onClick={() => reader.cancel(draftKey)}>
+                  취소
+                </button>
+                <br />
+                기다리지 않고 [시작하기]를 눌러도 돼요. AI가 뒤에서 마저 읽고 새 자소서에 문항을 채워요.
+              </span>
             </p>
           )}
           {imported && !busy && (

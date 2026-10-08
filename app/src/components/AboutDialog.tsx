@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react'
-import { APP_NAME, AUTHOR, AUTHOR_BLOG } from '../constants'
+import { APP_NAME, AUTHOR } from '../constants'
 import { desktop } from '../desktop'
 import { Logo } from './Logo'
 import { Modal } from './ui'
 
 type Listener = () => void
 const listeners = new Set<Listener>()
-/** 어디서든 '만든 사람' 창을 연다 */
+/** 어디서든 'Essay 정보' 창을 연다 */
 export function openAboutDialog() {
   listeners.forEach((l) => l())
 }
@@ -45,13 +45,9 @@ export function AboutContent() {
         </div>
       </div>
       <dl className="about-list">
-        <dt>만든 사람</dt>
+        <dt>개발자</dt>
         <dd>
           <strong>{AUTHOR}</strong>
-          {' '}
-          <a href={AUTHOR_BLOG} target="_blank" rel="noreferrer">
-            {AUTHOR_BLOG.replace('https://', '')}
-          </a>
         </dd>
         <dt>무엇을 하나요</dt>
         <dd>지원할 공고별로 자소서 문항과 답변을 쓰고, 내 경험을 STAR로 정리해 꺼내 쓰고, 스펙을 한곳에 모아 두는 개인용 도구예요.</dd>

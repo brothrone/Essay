@@ -1,61 +1,63 @@
-import { LoaderCircle, RefreshCw } from 'lucide-react'
-import { useState } from 'react'
+import { Check, LoaderCircle, RefreshCw } from 'lucide-react'
+import { postingRequest } from '../aiRun'
 import { isHttpUrl } from '../format'
-import { parsePosting, postingPrompt, type PostingInfo } from '../prompts'
+import { isActive, taskFor, useElapsed, usePostingReader } from '../postingReader'
+import { postingConflicts } from '../PostingReaderProvider'
 import type { Project } from '../types'
-import { useAiTask } from '../useAiTask'
-import { fmtDate, toDateInput } from '../utils'
+import { fmtDate } from '../utils'
 
-/** 저장해 둔 공고 링크를 다시 읽어 마감 여부 · 마감일 변경 · 공고 내용 · 문항을 확인한다 */
-export function PostingCheck({
-  project,
-  onPatch,
-  onAddQuestions,
-}: {
-  project: Project
-  onPatch: (p: Partial<Project>) => void
-  onAddQuestions: (qs: { prompt: string; limit: number | null }[]) => void
-}) {
-  const task = useAiTask()
-  const [info, setInfo] = useState<PostingInfo | null>(null)
-  const [error, setError] = useState('')
+/**
+ * 공고 링크를 AI가 읽어 자소서 문항 · 공고 메모 · 마감일을 채운다.
+ * 새 문항과 비어 있던 칸은 바로 넣고, 이미 적어 둔 마감일 · 메모와 다를 때만 사용자가 고른다.
+ * 읽는 동안 다른 화면으로 옮겨도 계속된다 (맞춤 공고 · 새 자소서 창에서 시작한 읽기도 여기 보인다).
+ */
+export function PostingCheck({ project, onPatch }: { project: Project; onPatch: (p: Partial<Project>) => void }) {
+  const reader = usePostingReader()
+  const task = taskFor(reader.tasks, project.id)
+  const running = isActive(task)
+  const elapsed = useElapsed(task)
+  // 공고 한 건 주소가 있으면 그 페이지를, 없거나 사이트 첫 화면이면 회사명 · 직무로 찾아 읽는다
+  const canRead = isHttpUrl(project.jobUrl) || project.company.trim().length >= 2
 
-  if (!isHttpUrl(project.jobUrl)) return null
+  if (!canRead && !task) return null
 
   const check = async () => {
-    setError('')
-    setInfo(null)
-    const r = await task.run(postingPrompt(project.jobUrl.trim(), toDateInput(new Date())), { web: true })
-    if (!r.ok) {
-      if (!r.cancelled) setError(r.error)
-      return
-    }
-    const parsed = parsePosting(r.text)
-    if (!parsed) {
-      setError('공고 내용을 읽지 못했어요. 잠시 뒤 다시 시도해 주세요.')
-      return
-    }
-    setInfo(parsed)
+    const req = await postingRequest(project.jobUrl, project.company.trim(), project.position.trim())
+    if (req.url && req.url !== project.jobUrl.trim()) onPatch({ jobUrl: req.url })
+    reader.start(project.id, { prompt: req.prompt, kind: req.kind, mode: 'recheck', projectId: project.id, label: project.company })
   }
 
-  const deadlineChanged = !!info?.deadline && info.deadline !== project.deadline
-  const newQuestions =
-    info?.questions.filter((q) => !project.questions.some((x) => x.prompt.trim() === q.prompt)) ?? []
+  const info = task?.status === 'done' ? task.info : null
+  const applied = task?.applied
+  const conflicts = info && task?.mode === 'recheck' ? postingConflicts(project, info) : null
 
   return (
     <div className="posting-check">
-      <button type="button" className="btn small" disabled={task.running} onClick={check}>
-        {task.running ? <LoaderCircle size={14} className="spin" /> : <RefreshCw size={14} />} 공고 다시 확인
-      </button>
-      {task.running && (
+      {canRead && (
+        <button type="button" className="btn small" disabled={running} onClick={check}>
+          {running ? <LoaderCircle size={14} className="spin" /> : <RefreshCw size={14} />}{' '}
+          {project.questions.some((q) => q.prompt.trim()) ? '공고 다시 확인' : 'AI로 공고 읽고 문항 채우기'}
+        </button>
+      )}
+      {running && (
         <p className="muted small">
-          AI가 공고를 읽는 중… {task.elapsed}초 {task.steps.at(-1) && `· ${task.steps.at(-1)}`}{' '}
-          <button type="button" className="link-btn" onClick={task.cancel}>
+          {task!.status === 'waiting' ? '다른 AI 작업이 끝나면 공고를 읽어요…' : 'AI가 공고를 읽어 문항을 채우는 중…'} {elapsed}초
+          {task!.status === 'running' && task!.steps.at(-1) && ` · ${task!.steps.at(-1)}`}{' '}
+          <button type="button" className="link-btn" onClick={() => reader.cancel(task!.key)}>
             취소
+          </button>
+          <br />
+          다른 화면으로 가도 계속 읽고, 끝나면 이 자소서에 바로 넣어요.
+        </p>
+      )}
+      {task?.status === 'error' && (
+        <p className="ai-error">
+          {task.error}{' '}
+          <button type="button" className="link-btn" onClick={() => reader.dismiss(task.key)}>
+            닫기
           </button>
         </p>
       )}
-      {error && <p className="ai-error">{error}</p>}
       {info && (
         <div className="ai-result">
           <div className="ai-result-meta">
@@ -66,21 +68,28 @@ export function PostingCheck({
           </div>
           <ul className="check-list">
             <li>
-              마감일: {info.deadline ? `${fmtDate(info.deadline)} ${info.deadlineTime}` : '공고에서 확인하지 못했어요'}
-              {deadlineChanged && <span className="badge tone-amber">저장된 마감일과 달라요</span>}
+              {applied?.questions ? (
+                <>
+                  <Check size={13} /> 자소서 문항 {applied.questions}개를 넣었어요
+                </>
+              ) : info.questions.length ? (
+                '자소서 문항은 이미 모두 들어 있어요'
+              ) : (
+                '지정된 자소서 문항은 찾지 못했어요 (자유 양식일 수 있어요). 왼쪽 [자주 나오는 문항으로 추가]에서 골라 넣을 수 있어요'
+              )}
+              {info.questions.length > 0 && info.questionsSource && info.questionsSource !== '공고 페이지' && (
+                <span className="muted"> · 출처: {info.questionsSource} (이번 공고 문항과 같은지 확인하세요)</span>
+              )}
             </li>
-            {info.notes && <li>공고 내용을 정리했어요 ({info.notes.length.toLocaleString()}자)</li>}
-            {info.questions.length > 0 && (
-              <li>
-                자소서 문항 {info.questions.length}개
-                {info.questionsSource && info.questionsSource !== '공고 페이지' && (
-                  <span className="muted"> · 출처: {info.questionsSource}</span>
-                )}
-              </li>
-            )}
+            <li>
+              마감일: {info.deadline ? `${fmtDate(info.deadline)} ${info.deadlineTime}` : '공고에서 확인하지 못했어요'}
+              {applied?.deadline && <span className="muted"> · 넣었어요</span>}
+              {conflicts?.deadline && <span className="badge tone-amber">저장된 마감일과 달라요</span>}
+            </li>
+            {info.notes && <li>공고 내용 정리 {applied?.notes ? '· 공고 메모에 넣었어요' : ''}</li>}
           </ul>
           <div className="ai-result-actions">
-            {deadlineChanged && (
+            {conflicts?.deadline && (
               <button
                 type="button"
                 className="btn primary small"
@@ -89,27 +98,12 @@ export function PostingCheck({
                 마감일 바꾸기
               </button>
             )}
-            {info.notes && (
-              <button
-                type="button"
-                className="btn small"
-                onClick={() =>
-                  onPatch({
-                    notes: project.notes.trim()
-                      ? `${project.notes.trimEnd()}\n\n[공고 다시 확인 ${fmtDate(toDateInput(new Date()))}]\n${info.notes}`
-                      : info.notes,
-                  })
-                }
-              >
-                {project.notes.trim() ? '공고 메모에 덧붙이기' : '공고 메모 채우기'}
+            {conflicts?.notes && !applied?.notes && (
+              <button type="button" className="btn small" onClick={() => onPatch({ notes: conflicts.appendNotes() })}>
+                공고 메모에 덧붙이기
               </button>
             )}
-            {newQuestions.length > 0 && (
-              <button type="button" className="btn small" onClick={() => onAddQuestions(newQuestions)}>
-                문항 {newQuestions.length}개 추가
-              </button>
-            )}
-            <button type="button" className="btn ghost small" onClick={() => setInfo(null)}>
+            <button type="button" className="btn ghost small" onClick={() => reader.dismiss(task!.key)}>
               닫기
             </button>
           </div>

@@ -242,14 +242,15 @@ ${candidateSummary(data)}
 ${known || '- (없음)'}
 
 [찾는 방법]
-- WebSearch로 사람인, 잡코리아, 원티드, 잡알리오(공공기관), 기업 채용 홈페이지 등을 검색하세요.
-- 마감일이나 자격 요건을 확인해야 하면 WebFetch로 공고 페이지를 열어 확인하세요.
-- 검색은 최대 10번, 페이지 읽기는 최대 6번 안에서 끝내세요. 완벽보다 빠른 답이 낫습니다.
+- WebSearch로 사람인, 잡코리아, 원티드, 잡알리오(공공기관), 기업 채용 홈페이지 등을 검색하세요. 검색어 하나에 키워드 · 경력 구분 · 지역을 함께 넣어 한 번에 여러 공고가 나오게 하세요.
+- 검색 결과에 보이는 제목 · 회사 · 마감일 · 요약으로 충분하면 페이지를 열지 마세요. 마감일을 꼭 확인해야 할 때만 WebFetch로 여세요.
+- 검색은 최대 4번, 페이지 읽기는 최대 2번입니다. 그 안에 찾은 것만으로 바로 답하세요. 완벽보다 빠른 답이 낫습니다.
 - 마감일이 오늘보다 이전이거나 마감된 공고는 넣지 마세요.
 - 여러 회사를 고르게 담고, 한 회사의 공고는 최대 2개까지만 넣으세요.
 - 마감일을 확인한 공고를 우선하고, 상시 채용이면 deadline을 빈 문자열로 두세요.
 - 지원자와 잘 맞는 순서로 최대 ${query.count}개를 고르세요. matchReason에는 지원자의 어떤 경험·스펙이 공고의 어떤 요건과 맞는지 구체적으로 쓰세요.
-- 확인하지 못한 값은 빈 문자열로 두고, 지어내지 마세요. url은 실제로 찾은 공고 주소만 쓰세요.
+- 확인하지 못한 값은 빈 문자열로 두고, 지어내지 마세요.
+- url은 공고 한 건의 상세 페이지 주소만 쓰세요(예: 사람인 rec_idx=… , 원티드 /wd/… , 잡코리아 GI_Read/…). 사이트 첫 화면이나 채용 메인 주소(https://www.saramin.co.kr 등)는 쓰지 말고, 상세 주소를 모르면 빈 문자열로 두세요.
 
 [출력 형식]
 <json>
@@ -309,11 +310,11 @@ export function parsePosting(text: string): PostingInfo | null {
 }
 
 const POSTING_OUTPUT = `[시간 제한]
-- 검색(WebSearch)은 최대 8번, 페이지 읽기(WebFetch)는 최대 4번 안에서 끝내세요. 그 안에 못 찾은 값은 빈 값으로 두고 결과를 내세요. 완벽보다 빠른 답이 낫습니다.
+- 검색(WebSearch)은 최대 3번, 페이지 읽기(WebFetch)는 최대 3번입니다. 그 안에 못 찾은 값은 빈 값으로 두고 바로 결과를 내세요. 완벽보다 빠른 답이 낫습니다.
 
-[자기소개서 문항]
-- 공고 페이지에 자기소개서 문항이 있으면 그대로 옮기고 questionsSource는 "공고 페이지"로 적으세요.
-- 페이지에 문항이 없으면 WebSearch로 "{회사명} {직무/전형} 자기소개서 문항", "{회사명} 자소서 항목 {연도}" 등을 검색해 같은 회사·같은 전형의 문항을 찾아 넣으세요. 자소설닷컴, 링커리어, 캐치, 잡코리아 합격자소서 페이지에 자주 있습니다.
+[자기소개서 문항 — 가장 중요]
+- 공고 페이지에 자기소개서 문항이 있으면 한 글자도 바꾸지 말고 그대로 옮기고 questionsSource는 "공고 페이지"로 적으세요. 글자수 제한이 함께 있으면 limit에 숫자로 넣으세요.
+- 페이지에 문항이 없으면 WebSearch 1~2번으로 "{회사명} {직무/전형} 자기소개서 문항 {연도}"를 검색하세요. 검색 결과 요약에 문항이 보이면 페이지를 열지 말고 그대로 쓰세요. 자소설닷컴, 링커리어, 캐치, 잡코리아 합격자소서에 자주 있습니다.
 - 찾은 문항이 이번 공고 것인지 확실하지 않으면(지난 기수 등) questionsSource에 "사이트명 · 연도/기수 (이번 공고와 다를 수 있음)"처럼 적으세요.
 - 끝내 못 찾으면 questions는 빈 배열, questionsSource는 빈 문자열입니다. 문항을 지어내지 마세요.
 
@@ -324,15 +325,15 @@ const POSTING_OUTPUT = `[시간 제한]
 
 [출력 형식]
 <json>
-{"company":"회사명","position":"지원 직무","url":"공고 원문 주소","deadline":"YYYY-MM-DD 또는 빈 문자열","deadlineTime":"HH:mm 또는 빈 문자열","isOpen":true,"notes":"주요 업무, 자격 요건, 우대 사항, 전형 절차, 근무 조건을 항목별로 정리한 글(줄바꿈 포함)","questions":[{"prompt":"자기소개서 문항","limit":700}],"questionsSource":"공고 페이지","analysis":{"competencies":["..."],"keywords":["..."],"idealTalent":"..."}}
+{"company":"회사명","position":"지원 직무","url":"공고 원문 주소","deadline":"YYYY-MM-DD 또는 빈 문자열","deadlineTime":"HH:mm 또는 빈 문자열","isOpen":true,"notes":"주요 업무, 자격 요건, 우대 사항, 전형 절차, 근무 조건을 항목별로 짧게 정리한 글(줄바꿈 포함, 1000자 이내)","questions":[{"prompt":"자기소개서 문항","limit":700}],"questionsSource":"공고 페이지","analysis":{"competencies":["..."],"keywords":["..."],"idealTalent":"..."}}
 </json>
 - isOpen: 지금 접수 중이면 true, 마감됐으면 false, 알 수 없으면 null
 - 페이지에서 확인되지 않은 값은 빈 값 또는 null로 두고 지어내지 마세요. limit은 글자수 제한(숫자), 없으면 null.
 <json> 밖에는 아무것도 쓰지 마세요.`
 
 export function postingPrompt(url: string, today: string) {
-  return `오늘은 ${today}입니다. 아래 채용 공고 페이지를 WebFetch로 열어 내용을 정리해 주세요.
-페이지가 열리지 않거나 내용이 부족하면 WebSearch로 같은 공고를 찾아 확인해도 됩니다.
+  return `오늘은 ${today}입니다. 아래 채용 공고 페이지를 WebFetch로 한 번 열어 내용을 정리해 주세요.
+페이지가 열리지 않거나(로그인 · 빈 화면) 내용이 부족할 때만 WebSearch로 같은 공고를 찾으세요.
 
 URL: ${url}
 
@@ -344,7 +345,7 @@ export function companyLookupPrompt(company: string, position: string, today: st
   return `오늘은 ${today}입니다. "${company}" ${position ? `${position} 직무` : ''} 채용 정보를 웹에서 찾아 정리해 주세요.
 
 [찾는 순서]
-1. WebSearch로 "${company} 채용", "${company} ${position || ''} 채용 공고 ${today.slice(0, 4)}" 등을 검색해 지금 접수 중인 공고(회사 채용 홈페이지, 사람인, 잡코리아, 원티드, 잡알리오)를 찾고, 찾으면 WebFetch로 열어 마감일·자격 요건·전형 절차를 확인하세요. url에 그 주소를 적으세요.
+1. WebSearch 한 번으로 "${company} ${position || ''} 채용 공고 ${today.slice(0, 4)}"를 검색해 지금 접수 중인 공고(회사 채용 홈페이지, 사람인, 잡코리아, 원티드, 잡알리오)를 찾고, 찾으면 WebFetch로 열어 마감일·자격 요건·전형 절차를 확인하세요. url에 그 주소를 적으세요.
 2. 접수 중인 공고가 없으면 가장 최근 공고를 기준으로 정리하고 isOpen은 false, 아예 못 찾으면 null로 두세요.
 3. 자기소개서 문항은 아래 규칙대로 찾으세요.
 

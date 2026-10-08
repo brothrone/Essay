@@ -5,6 +5,7 @@ import { createRoot } from 'react-dom/client'
 import { HashRouter } from 'react-router-dom'
 import App from './App'
 import { JobSearchProvider } from './JobSearchProvider'
+import { PostingReaderProvider } from './PostingReaderProvider'
 import { StoreProvider } from './StoreProvider'
 
 const root = createRoot(document.getElementById('root')!)
@@ -26,7 +27,9 @@ if (!window.desktop) {
       <HashRouter>
         <StoreProvider>
           <JobSearchProvider>
-            <App />
+            <PostingReaderProvider>
+              <App />
+            </PostingReaderProvider>
           </JobSearchProvider>
         </StoreProvider>
       </HashRouter>

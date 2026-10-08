@@ -3,12 +3,12 @@ import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Dday, Empty } from '../components/ui'
 import { useJobSearch } from '../jobSearch'
-import { parsePosting, postingPrompt, type PostingInfo } from '../prompts'
+import { isActive, taskFor, useElapsed, usePostingReader, type PostingTask } from '../postingReader'
+import { postingRequest } from '../aiRun'
 import { newProject, newQuestion, useStore } from '../store'
 import { toast } from '../toast'
 import type { JobPosting, JobQuery, JobStatus } from '../types'
-import { useAiTask } from '../useAiTask'
-import { daysUntil, fmtDate, fmtRelative, todayStr } from '../utils'
+import { daysUntil, fmtDate, fmtRelative } from '../utils'
 
 type Tab = 'new' | 'saved' | 'started' | 'hidden'
 const TABS: { key: Tab; label: string }[] = [
@@ -24,8 +24,7 @@ export function Jobs() {
   const search = useJobSearch()
   const [tab, setTab] = useState<Tab>('new')
   const [elapsed, setElapsed] = useState(0)
-  const reader = useAiTask()
-  const [readingId, setReadingId] = useState<string | null>(null)
+  const reader = usePostingReader()
 
   // 다른 화면에 다녀와도 시작 시각 기준으로 경과 시간을 이어서 보여 준다
   useEffect(() => {
@@ -65,50 +64,28 @@ export function Jobs() {
     search.start(query)
   }
 
-  // 공고 링크가 있으면 AI가 공고를 읽어 문항 · 공고 내용 · 마감일까지 채운 뒤 자소서를 만든다
+  // 자소서는 바로 만들고, AI가 뒤에서 공고를 읽어 문항 · 공고 내용 · 마감일을 채운다.
+  // 공고 한 건을 가리키는 주소면 그 페이지를, 사이트 첫 화면뿐이면 회사명 · 공고 제목으로 찾아 읽는다.
+  // 읽는 동안 다른 화면으로 옮겨도 끊기지 않는다 (앱 전체에서 관리)
   const start = async (job: JobPosting) => {
-    if (reader.running) return
-    let info: PostingInfo | null = null
-    if (job.url) {
-      setReadingId(job.id)
-      const r = await reader.run(postingPrompt(job.url, todayStr()), { web: true })
-      setReadingId(null)
-      if (!r.ok) {
-        if (r.cancelled) return
-        toast(`공고 내용은 못 불러왔어요 (${r.error.slice(0, 60)}). 자소서의 [공고 정보]에서 '공고 다시 확인'을 눌러 보세요`)
-      } else {
-        info = parsePosting(r.text)
-        if (!info) toast('공고 내용을 읽지 못했어요. [공고 정보]에서 다시 확인할 수 있어요')
-      }
-    }
-    const fromElsewhere = !!info?.questions.length && !!info.questionsSource && info.questionsSource !== '공고 페이지'
-    const notes = [
-      info?.notes || job.summary,
-      fromElsewhere && `자소서 문항 출처: ${info?.questionsSource} — 이번 공고 문항과 같은지 확인하세요`,
-      job.matchReason && `내게 맞는 이유: ${job.matchReason}`,
-      job.source && `출처: ${job.source}`,
-    ]
+    const req = await postingRequest(job.url, job.company, job.title)
+    const notes = [job.summary, job.matchReason && `내게 맞는 이유: ${job.matchReason}`, job.source && `출처: ${job.source}`]
       .filter(Boolean)
       .join('\n\n')
-    const questions = info?.questions.length ? info.questions.map((q) => newQuestion(q)) : [newQuestion()]
     const p = newProject({
-      company: job.company || info?.company || '',
-      position: job.title || info?.position || '',
-      deadline: info?.deadline || job.deadline,
-      deadlineTime: info?.deadlineTime || '',
-      jobUrl: job.url,
+      company: job.company,
+      position: job.title,
+      deadline: job.deadline,
+      jobUrl: req.url,
       notes,
-      questions,
+      questions: [newQuestion()],
     })
     addProject(p)
-    updateJob(job.id, { status: 'started', projectId: p.id, deadline: p.deadline })
-    if (info?.isOpen === false) toast('마감된 공고로 보여요. 마감일을 확인해 주세요')
-    else if (info)
-      toast(
-        info.questions.length
-          ? `공고 내용과 자소서 문항 ${info.questions.length}개를 불러왔어요${fromElsewhere ? ` (문항 출처: ${info.questionsSource})` : ''}`
-          : '공고 내용을 불러왔어요. 자소서 문항은 찾지 못해서 직접 넣어 주세요',
-      )
+    updateJob(job.id, { status: 'started', projectId: p.id, deadline: p.deadline, ...(req.url ? { url: req.url } : {}) })
+    if (job.company || req.url) {
+      reader.start(p.id, { prompt: req.prompt, kind: req.kind, mode: 'new', projectId: p.id, label: job.company })
+      toast('AI가 공고를 읽어 자소서 문항을 채우는 중이에요. 다른 화면으로 가도 계속돼요')
+    }
     navigate(`/projects/${p.id}`)
   }
 
@@ -218,10 +195,9 @@ export function Jobs() {
             <JobCard
               key={job.id}
               job={job}
-              busy={reader.running || search.running}
-              reading={readingId === job.id ? { elapsed: reader.elapsed, step: reader.steps.at(-1) ?? '' } : null}
+              reading={job.projectId ? taskFor(reader.tasks, job.projectId) : undefined}
               onStart={() => start(job)}
-              onCancel={reader.cancel}
+              onCancel={(key) => reader.cancel(key)}
               onStatus={(status) => updateJob(job.id, { status })}
             />
           ))}
@@ -239,19 +215,18 @@ export function Jobs() {
 
 function JobCard({
   job,
-  busy,
   reading,
   onStart,
   onCancel,
   onStatus,
 }: {
   job: JobPosting
-  busy: boolean
-  reading: { elapsed: number; step: string } | null
+  reading: PostingTask | undefined
   onStart: () => void
-  onCancel: () => void
+  onCancel: (key: string) => void
   onStatus: (s: JobStatus) => void
 }) {
+  const elapsed = useElapsed(reading)
   const tone = job.matchScore >= 80 ? 'green' : job.matchScore >= 60 ? 'blue' : 'gray'
   return (
     <article className="job-card">
@@ -277,13 +252,14 @@ function JobCard({
           <Search size={13} /> {job.matchReason}
         </p>
       )}
-      {reading && (
+      {isActive(reading) && (
         <div className="ai-running">
           <LoaderCircle size={16} className="spin" />
           <span>
-            공고를 읽어 문항을 채우는 중… {reading.elapsed}초{reading.step && ` · ${reading.step}`}
+            {reading!.status === 'waiting' ? '다른 AI 작업이 끝나면 공고를 읽어요' : '공고를 읽어 문항을 채우는 중…'} {elapsed}초
+            {reading!.status === 'running' && reading!.steps.at(-1) && ` · ${reading!.steps.at(-1)}`}
           </span>
-          <button type="button" className="btn ghost small" onClick={onCancel}>
+          <button type="button" className="btn ghost small" onClick={() => onCancel(reading!.key)}>
             취소
           </button>
         </div>
@@ -297,8 +273,7 @@ function JobCard({
           <button
             type="button"
             className="btn primary small"
-            disabled={busy}
-            title={job.url ? '공고를 읽어 문항과 내용을 채운 뒤 시작해요' : undefined}
+            title={job.url ? '바로 자소서를 만들고, AI가 뒤에서 공고를 읽어 문항을 채워요' : undefined}
             onClick={onStart}
           >
             <PenLine size={14} /> 자소서 시작

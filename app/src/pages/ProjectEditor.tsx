@@ -8,6 +8,7 @@ import {
   Copy,
   ExternalLink,
   Lightbulb,
+  LoaderCircle,
   PanelRight,
   Pencil,
   Plus,
@@ -19,6 +20,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { AiPanel } from '../components/AiPanel'
 import { PostingCheck } from '../components/PostingCheck'
+import { isActive, taskFor, useElapsed, usePostingReader } from '../postingReader'
 import { answerWarnings } from '../checks'
 import { AutoTextarea, Dday, Empty, StatusSelect } from '../components/ui'
 import { COUNT_MODE_LABEL, QUESTION_PRESETS, STAR_FIELDS } from '../constants'
@@ -161,6 +163,14 @@ export function ProjectEditor() {
         </div>
       </header>
 
+      <PostingBanner
+        projectId={project.id}
+        onOpen={() => {
+          setPanel('info')
+          setPanelOpen(true)
+        }}
+      />
+
       <div className="editor-body">
         <aside className="q-list">
           <div className="q-list-head">
@@ -249,19 +259,7 @@ export function ProjectEditor() {
           {/* 탭을 옮겨도 진행 중인 AI 작업 · 입력이 끊기지 않게 패널은 숨기기만 한다 */}
           <div className="panel-body">
             <div hidden={panel !== 'info'}>
-              <InfoPanel
-                project={project}
-                onPatch={patch}
-                onAddQuestions={(qs) =>
-                  update((x) => ({
-                    ...x,
-                    questions: [
-                      ...x.questions.filter((q) => q.prompt.trim() || q.answer.trim()),
-                      ...qs.map((q) => newQuestion(q)),
-                    ],
-                  }))
-                }
-              />
+              <InfoPanel project={project} onPatch={patch} />
             </div>
             {active ? (
               <>
@@ -438,17 +436,34 @@ function QuestionEditor({
   )
 }
 
+/** 맞춤 공고 · 새 자소서 창 · 공고 다시 확인에서 시작한 공고 읽기가 이 자소서에 진행 중일 때 위에 띄운다 */
+function PostingBanner({ projectId, onOpen }: { projectId: string; onOpen: () => void }) {
+  const reader = usePostingReader()
+  const task = taskFor(reader.tasks, projectId)
+  const elapsed = useElapsed(task)
+  if (!isActive(task)) return null
+  return (
+    <div className="posting-banner ai-running" role="status">
+      <LoaderCircle size={16} className="spin" />
+      <span>
+        {task!.status === 'waiting'
+          ? '다른 AI 작업이 끝나면 공고를 읽어 자소서 문항을 채워요'
+          : 'AI가 공고를 읽어 자소서 문항을 채우는 중이에요. 다른 화면으로 가도 계속돼요'}{' '}
+        · {elapsed}초{task!.status === 'running' && task!.steps.at(-1) && ` · ${task!.steps.at(-1)}`}
+      </span>
+      <button type="button" className="btn ghost small" onClick={onOpen}>
+        공고 정보
+      </button>
+      <button type="button" className="btn ghost small" onClick={() => reader.cancel(task!.key)}>
+        취소
+      </button>
+    </div>
+  )
+}
+
 /* ---------- 오른쪽 패널 ---------- */
 
-function InfoPanel({
-  project,
-  onPatch,
-  onAddQuestions,
-}: {
-  project: Project
-  onPatch: (p: Partial<Project>) => void
-  onAddQuestions: (qs: { prompt: string; limit: number | null }[]) => void
-}) {
+function InfoPanel({ project, onPatch }: { project: Project; onPatch: (p: Partial<Project>) => void }) {
   return (
     <div className="panel-stack">
       <div className="field">
@@ -470,7 +485,7 @@ function InfoPanel({
           )}
         </div>
       </div>
-      <PostingCheck project={project} onPatch={onPatch} onAddQuestions={onAddQuestions} />
+      <PostingCheck project={project} onPatch={onPatch} />
       <div className="field-row">
         <div className="field">
           <label className="field-label" htmlFor="pi-deadline">

@@ -19,3 +19,18 @@ export function projectToText(p: Project) {
 }
 
 export const isHttpUrl = (url: string) => /^https?:\/\/\S+$/i.test(url.trim())
+
+/** Gemini 검색 결과에 붙는 구글 중간 주소 (며칠 뒤 사라진다) */
+export const isGroundingUrl = (url: string) =>
+  /^https:\/\/vertexaisearch\.cloud\.google\.com\/grounding-api-redirect\//i.test(url.trim())
+
+/** 사이트 첫 화면(https://saramin.co.kr 등)이 아니라 공고 한 건을 가리키는 주소인지 */
+export function isPostingUrl(url: string) {
+  if (!isHttpUrl(url) || isGroundingUrl(url)) return false
+  try {
+    const u = new URL(url.trim())
+    return u.pathname.replace(/\/+$/, '').length > 0 || u.search.length > 1
+  } catch {
+    return false
+  }
+}

@@ -12,7 +12,8 @@ const APP_NAME = 'Essay'
 const ICON_ICO = path.join(__dirname, 'icon.ico')
 const ICON_PNG = path.join(__dirname, 'icon.png')
 const TITLEBAR_HEIGHT = 38
-const DATA_DIR = path.join(app.getPath('documents'), 'Essay')
+// 개발 검증용: ESSAY_DATA_DIR 로 데이터 폴더를 바꿔 실제 데이터를 건드리지 않고 시험한다
+const DATA_DIR = process.env.ESSAY_DATA_DIR || path.join(app.getPath('documents'), 'Essay')
 const DATA_FILE = path.join(DATA_DIR, 'Essay-데이터.json')
 const BACKUP_DIR = path.join(DATA_DIR, '자동백업')
 const KEEP_BACKUPS = 30
@@ -699,6 +700,21 @@ ipcMain.handle('ai:gemini-allow-web', () => {
   return { ok: true, path: GEMINI_SETTINGS() }
 })
 
+// Gemini 검색 결과의 링크는 구글 중간 주소(grounding-api-redirect)라 며칠 뒤 사라진다 → 실제 공고 주소로 바꿔 둔다.
+// 구글의 그 주소만 열고(리디렉션 대상만 읽고 본문은 받지 않음), 다른 주소는 건드리지 않는다
+const GROUNDING_RE = /^https:\/\/vertexaisearch\.cloud\.google\.com\/grounding-api-redirect\//i
+async function resolveGrounding(url) {
+  if (typeof url !== 'string' || !GROUNDING_RE.test(url)) return typeof url === 'string' ? url : ''
+  try {
+    const r = await fetch(url, { redirect: 'manual', signal: AbortSignal.timeout(8000) })
+    const loc = r.headers.get('location') || ''
+    return /^https?:\/\//i.test(loc) && !GROUNDING_RE.test(loc) ? loc : ''
+  } catch {
+    return ''
+  }
+}
+ipcMain.handle('net:resolve-urls', (_e, urls) => Promise.all((Array.isArray(urls) ? urls : []).slice(0, 60).map(resolveGrounding)))
+
 ipcMain.handle('ai:cancel', () => {
   if (!aiChild) return false
   aiCancelled = true
@@ -739,7 +755,7 @@ function runAi(sender, { prompt, model, web, provider }) {
   return new Promise((resolve) => {
     const p = provider === 'gemini' ? 'gemini' : 'claude'
     if (aiChild && aiChild.exitCode === null && !aiChild.killed)
-      return resolve({ ok: false, error: `다른 AI 작업(${aiChildKind})이 진행 중이에요. 끝나거나 취소한 뒤 다시 눌러 주세요.` })
+      return resolve({ ok: false, code: 'busy', error: `다른 AI 작업(${aiChildKind})이 진행 중이에요. 끝나거나 취소한 뒤 다시 눌러 주세요.` })
     const found = findCli(p)
     if (!found) return resolve({ ok: false, code: 'not_installed', error: `${PROVIDER_LABEL[p]}를 찾지 못했어요. 설정 → AI 설정에서 설치 방법을 확인하세요.` })
     const { bin, cli } = found
