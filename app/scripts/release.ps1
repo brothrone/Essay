@@ -24,7 +24,8 @@ if (-not (Get-Command node -ErrorAction SilentlyContinue)) { throw 'node 를 찾
 if (-not $NoPublish -and -not $env:GH_TOKEN) {
   # 1) GitHub CLI 로 로그인돼 있으면 그 토큰, 2) 아니면 Git Credential Manager 에 저장된 github.com 로그인. 둘 다 이 프로세스 안에서만 쓰고 화면에 찍지 않는다
   if (Get-Command gh -ErrorAction SilentlyContinue) {
-    $t = (gh auth token 2>$null | Select-Object -First 1)
+    # 로그인 안 된 gh 는 오류를 찍으므로 cmd 로 감싸 조용히 넘긴다
+    $t = (cmd /c "gh auth token 2>nul" | Select-Object -First 1)
     if ($t) { $env:GH_TOKEN = $t.Trim() }
   }
   if (-not $env:GH_TOKEN) {
