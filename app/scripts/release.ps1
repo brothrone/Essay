@@ -41,6 +41,11 @@ node node_modules/vite/bin/vite.js build
 if ($LASTEXITCODE -ne 0) { throw 'vite 빌드 실패' }
 
 $publish = if ($NoPublish) { 'never' } else { 'always' }
+if (-not $NoPublish) {
+  # GitHub 는 "published" 릴리스에 실제 태그가 있어야 받아 준다 → 태그를 먼저 만들어 올린다 (이미 있으면 그대로)
+  git tag "v$version" 2>$null
+  git push origin "v$version" 2>&1 | Out-Null
+}
 node node_modules/electron-builder/cli.js --win --x64 --publish $publish
 if ($LASTEXITCODE -ne 0) { throw 'electron-builder 실패' }
 

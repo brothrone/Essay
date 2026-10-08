@@ -31,6 +31,11 @@ fi
 
 npx tsc -b
 npx vite build
+if [[ "$PUBLISH" == "always" ]]; then
+  # GitHub 는 "published" 릴리스에 실제 태그가 있어야 받아 준다 → 태그를 먼저 만들어 올린다 (이미 있으면 그대로)
+  git tag "v$VERSION" 2>/dev/null || true
+  git push origin "v$VERSION" >/dev/null 2>&1 || true
+fi
 npx electron-builder --win --x64 --publish "$PUBLISH"
 
 EXE="release/Essay-Setup-$VERSION.exe"
