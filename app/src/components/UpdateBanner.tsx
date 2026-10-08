@@ -1,0 +1,90 @@
+import { Download, LoaderCircle, RefreshCw, RotateCcw, X } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { desktop, type UpdateStatus } from '../desktop'
+
+/** 자동 업데이트 상태. 앱이 켜지면 메인 프로세스가 GitHub Releases 를 확인하고 새 버전을 조용히 내려받는다 */
+export function useUpdateStatus() {
+  const [status, setStatus] = useState<UpdateStatus>({ state: 'idle' })
+  useEffect(() => {
+    desktop.update.status().then(setStatus)
+    return desktop.update.onStatus(setStatus)
+  }, [])
+  return status
+}
+
+/** 새 버전을 다 받았을 때 화면 아래에 조용히 뜨는 띠. [지금 다시 시작] 또는 닫기(다음에 끌 때 적용) */
+export function UpdateBanner() {
+  const status = useUpdateStatus()
+  const [hidden, setHidden] = useState('')
+  if (status.state !== 'ready' || hidden === status.version) return null
+  return (
+    <div className="update-banner" role="status">
+      <Download size={16} />
+      <span>
+        <b>Essay {status.version}</b> 새 버전이 준비됐어요. 다시 시작하면 적용돼요. 지금 안 해도 다음에 끌 때 저절로 설치돼요.
+      </span>
+      <button type="button" className="btn small primary" onClick={() => desktop.update.install()}>
+        <RotateCcw size={14} /> 지금 다시 시작
+      </button>
+      <button type="button" className="icon-btn" aria-label="나중에" onClick={() => setHidden(status.version || '')}>
+        <X size={16} />
+      </button>
+    </div>
+  )
+}
+
+/** 백업 · 데이터 화면의 업데이트 카드 */
+export function UpdateCard() {
+  const status = useUpdateStatus()
+  const [checking, setChecking] = useState(false)
+  const [note, setNote] = useState('')
+  const check = async () => {
+    setChecking(true)
+    setNote('')
+    const r = await desktop.update.check()
+    setChecking(false)
+    if (!r.ok) setNote(r.error || '확인하지 못했어요')
+  }
+  const text = (() => {
+    switch (status.state) {
+      case 'checking':
+        return '새 버전이 있는지 확인하는 중…'
+      case 'available':
+        return `${status.version} 새 버전을 찾았어요. 내려받기 시작…`
+      case 'downloading':
+        return `${status.version} 내려받는 중 · ${status.percent ?? 0}%`
+      case 'ready':
+        return `${status.version} 준비됐어요. 다시 시작하면 적용돼요.`
+      case 'none':
+        return '지금이 최신 버전이에요.'
+      case 'error':
+        return `확인하지 못했어요 (${status.message})`
+      default:
+        return '앱을 켤 때와 6시간마다 GitHub에서 새 버전을 확인해요.'
+    }
+  })()
+  return (
+    <section className="card setting-actions">
+      <div className="setting-row">
+        <div>
+          <strong>업데이트 · 지금 {desktop.info.version}</strong>
+          <p className={'muted small' + (status.state === 'error' ? ' warn' : '')}>{note || text}</p>
+          {status.state === 'downloading' && (
+            <div className="update-bar">
+              <i style={{ width: `${status.percent ?? 0}%` }} />
+            </div>
+          )}
+        </div>
+        {status.state === 'ready' ? (
+          <button type="button" className="btn primary" onClick={() => desktop.update.install()}>
+            <RotateCcw size={16} /> 다시 시작하고 적용
+          </button>
+        ) : (
+          <button type="button" className="btn" onClick={check} disabled={checking || status.state === 'downloading' || status.state === 'checking'}>
+            {checking ? <LoaderCircle size={16} className="spin" /> : <RefreshCw size={16} />} 업데이트 확인
+          </button>
+        )}
+      </div>
+    </section>
+  )
+}

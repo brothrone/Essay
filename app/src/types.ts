@@ -1,0 +1,115 @@
+export type ID = string
+
+export interface Profile {
+  name: string
+  email: string
+  phone: string
+  birth: string
+  address: string
+  targetJob: string
+  links: string
+  skills: string
+}
+
+export type SpecCategory =
+  | 'education'
+  | 'language'
+  | 'certificate'
+  | 'award'
+  | 'career'
+  | 'activity'
+  | 'training'
+
+export interface SpecItem {
+  id: ID
+  category: SpecCategory
+  data: Record<string, string>
+  createdAt: number
+  updatedAt: number
+}
+
+export interface Experience {
+  id: ID
+  title: string
+  type: string
+  org: string
+  role: string
+  start: string // YYYY-MM
+  end: string // YYYY-MM, 비어 있으면 진행 중
+  summary: string
+  situation: string
+  task: string
+  action: string
+  result: string
+  learned: string
+  tags: string[]
+  createdAt: number
+  updatedAt: number
+}
+
+export type CountMode = 'with' | 'without' | 'byte'
+
+export interface Question {
+  id: ID
+  prompt: string
+  limit: number | null
+  countMode: CountMode
+  answer: string
+  memo: string
+  experienceIds: ID[]
+  done: boolean
+}
+
+export type ProjectStatus = 'writing' | 'submitted' | 'docPass' | 'interview' | 'finalPass' | 'failed'
+
+export interface Project {
+  id: ID
+  company: string
+  position: string
+  jobUrl: string
+  deadline: string // YYYY-MM-DD
+  deadlineTime: string // HH:mm
+  status: ProjectStatus
+  notes: string
+  questions: Question[]
+  createdAt: number
+  updatedAt: number
+  openedAt: number
+}
+
+export type JobStatus = 'new' | 'saved' | 'hidden' | 'started'
+
+/** AI가 웹에서 찾아온 공고 */
+export interface JobPosting {
+  id: ID
+  company: string
+  title: string
+  kind: string // 신입 · 인턴 · 경력 · 기타
+  location: string
+  deadline: string // YYYY-MM-DD, 모르면 빈 값
+  url: string
+  source: string
+  summary: string
+  matchScore: number // 0~100
+  matchReason: string
+  foundAt: number
+  status: JobStatus
+  projectId: ID
+}
+
+export interface JobQuery {
+  keywords: string
+  career: string // 신입 · 인턴 · 경력 무관
+  region: string
+  count: number
+}
+
+export interface AppData {
+  version: 1
+  profile: Profile
+  specs: SpecItem[]
+  experiences: Experience[]
+  projects: Project[]
+  jobs: JobPosting[]
+  jobQuery: JobQuery
+}

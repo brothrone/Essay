@@ -1,0 +1,15 @@
+# 빌드 산출물 · 의존성
+node_modules/
+app/node_modules/
+app/dist/
+app/release/
+
+# 설치 파일 · 예전 압축본은 GitHub Releases 로 배포한다
+*.exe
+*.zip
+*.blockmap
+
+# 로그 · 임시
+*.log
+.DS_Store
+Thumbs.db
