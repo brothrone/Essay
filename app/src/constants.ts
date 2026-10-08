@@ -2,6 +2,8 @@ import type { CountMode, ProjectStatus } from './types'
 
 export const APP_NAME = 'Essay'
 export const AUTHOR = '김형일'
+/** 만든 사람의 개인 블로그 */
+export const AUTHOR_BLOG = 'https://brothrone.org'
 
 export const STATUS: Record<ProjectStatus, { label: string; tone: string }> = {
   writing: { label: '작성중', tone: 'blue' },

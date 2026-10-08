@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { APP_NAME, AUTHOR } from '../constants'
+import { APP_NAME, AUTHOR, AUTHOR_BLOG } from '../constants'
 import { desktop } from '../desktop'
 import { Logo } from './Logo'
 import { Modal } from './ui'
@@ -48,6 +48,10 @@ export function AboutContent() {
         <dt>만든 사람</dt>
         <dd>
           <strong>{AUTHOR}</strong>
+          {' '}
+          <a href={AUTHOR_BLOG} target="_blank" rel="noreferrer">
+            {AUTHOR_BLOG.replace('https://', '')}
+          </a>
         </dd>
         <dt>무엇을 하나요</dt>
         <dd>지원할 공고별로 자소서 문항과 답변을 쓰고, 내 경험을 STAR로 정리해 꺼내 쓰고, 스펙을 한곳에 모아 두는 개인용 도구예요.</dd>
@@ -57,7 +61,7 @@ export function AboutContent() {
         <dd>API 키 없이 이 PC에 로그인된 Claude Code 또는 Gemini(Antigravity CLI)를 실행해요. 요청문에는 이름·연락처를 넣지 않아요.</dd>
         <dt>만든 재료</dt>
         <dd>
-          Electron {info.electron} · Chromium {info.chrome} · React · Vite · Pretendard 글꼴 · Lucide 아이콘. 화면 구성은 티오(TIO)를 참고했어요.
+          Electron {info.electron} · Chromium {info.chrome} · React · Vite · Pretendard 글꼴 · Lucide 아이콘.
         </dd>
       </dl>
     </div>
