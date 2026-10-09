@@ -35,7 +35,7 @@ export function DataPage() {
       <header className="page-head">
         <div>
           <h1>데이터</h1>
-          <p className="muted">모든 데이터는 이 PC의 문서 폴더에 파일로 저장돼요. 인터넷으로 보내지 않아요.</p>
+          <p className="muted">모든 데이터는 이 컴퓨터의 문서 폴더에 파일로 저장돼요. 인터넷으로 보내지 않아요.</p>
         </div>
       </header>
 

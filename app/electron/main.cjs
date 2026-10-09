@@ -448,7 +448,15 @@ function writeAiLog(info) {
 }
 
 // 로그인됐는지 짐작한다: true/false 를 확신할 때만, 모르면 null
+let claudeLoginCache = { bin: '', at: 0, value: null }
 function claudeLoggedIn(bin) {
+  // 창이 활성화될 때마다 묻는데 명령 실행에 0.5초쯤 걸려 화면이 멈칫하므로 30초 동안은 지난 결과를 쓴다
+  if (claudeLoginCache.bin === bin && Date.now() - claudeLoginCache.at < 30000) return claudeLoginCache.value
+  const value = claudeLoggedInUncached(bin)
+  claudeLoginCache = { bin, at: Date.now(), value }
+  return value
+}
+function claudeLoggedInUncached(bin) {
   try {
     const viaCmd = /\.(cmd|bat)$/i.test(bin)
     const out = viaCmd
@@ -1586,6 +1594,12 @@ function createWindow() {
       shell.openExternal(url)
     }
   })
+
+  // 맥 전체 화면에서는 신호등 버튼이 숨으므로 화면에 알려 제목 표시줄 왼쪽 여백을 없앤다
+  if (IS_MAC) {
+    win.on('enter-full-screen', () => win.webContents.send('app:fullscreen', true))
+    win.on('leave-full-screen', () => win.webContents.send('app:fullscreen', false))
+  }
 
   // 새로고침·재로드하면 화면이 다시 준비 신호를 보낼 때까지 기다린다
   win.webContents.on('did-start-loading', () => readyContents.delete(win.webContents))

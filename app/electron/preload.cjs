@@ -28,6 +28,7 @@ contextBridge.exposeInMainWorld('desktop', {
   ready: () => ipcRenderer.send('app:ready'),
   relaunch: () => ipcRenderer.invoke('app:relaunch'),
   onNavigate: on('app:navigate'),
+  onFullscreen: on('app:fullscreen'),
   onNewProject: on('app:new-project'),
   update: {
     status: () => ipcRenderer.invoke('update:status'),

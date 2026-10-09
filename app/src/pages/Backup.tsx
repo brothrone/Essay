@@ -39,7 +39,7 @@ export function Backup() {
       <header className="page-head">
         <div>
           <h1>백업</h1>
-          <p className="muted">전체 데이터를 파일 하나로 저장해 두면 다른 PC로 옮기거나 실수했을 때 되돌릴 수 있어요.</p>
+          <p className="muted">전체 데이터를 파일 하나로 저장해 두면 다른 컴퓨터로 옮기거나 실수했을 때 되돌릴 수 있어요.</p>
         </div>
       </header>
 

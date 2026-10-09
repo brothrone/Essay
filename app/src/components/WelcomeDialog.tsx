@@ -136,7 +136,7 @@ function WelcomeWizard({ onClose }: { onClose: () => void }) {
               <p>Claude, Gemini 최신 모델을 직접 고릅니다.</p>
             </li>
             <li>
-              <strong>데이터는 이 PC에만</strong>
+              <strong>데이터는 이 컴퓨터에만</strong>
               <p>자소서와 스펙은 문서 폴더의 파일로 남습니다.</p>
             </li>
             <li>

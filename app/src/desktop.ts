@@ -28,6 +28,8 @@ export interface DesktopBridge {
   /** 앱을 껐다가 다시 켠다 (Node.js 설치 뒤 새 PATH 를 읽을 때) */
   relaunch: () => Promise<void>
   onNavigate: (fn: (route: string) => void) => () => void
+  /** 맥 전체 화면 들어가기 · 나오기 (제목 표시줄 여백 조정용) */
+  onFullscreen: (fn: (on: boolean) => void) => () => void
   onNewProject: (fn: () => void) => () => void
   theme: {
     get: () => Promise<ThemeInfo>

@@ -399,6 +399,11 @@ textarea:focus-visible {
   padding-right: 14px;
 }
 
+/* 맥 전체 화면에서는 신호등이 숨어 왼쪽 여백이 필요 없다 */
+:root[data-fullscreen='1'] .titlebar.mac {
+  padding-left: 14px;
+}
+
 .titlebar-name {
   font-weight: 800;
   letter-spacing: -0.01em;

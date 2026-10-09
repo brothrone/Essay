@@ -118,7 +118,7 @@ function AiSettings() {
           <BookOpen size={14} /> 처음 설정 안내
         </button>
         <button type="button" className="btn small ghost" onClick={openHelpDialog}>
-          <CircleHelp size={14} /> 도움말 (F1)
+          <CircleHelp size={14} /> 도움말 ({IS_MAC ? '⌘/' : 'F1'})
         </button>
       </div>
       <p className="muted small">

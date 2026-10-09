@@ -25,11 +25,15 @@ export function Layout() {
     const offNav = desktop.onNavigate((route) => navigate(route))
     const offNew = desktop.onNewProject(() => setNewOpen(true))
     const offImport = desktop.onImport(() => openImportDialog())
+    const offFull = desktop.onFullscreen((on) => {
+      document.documentElement.dataset.fullscreen = on ? '1' : ''
+    })
     desktop.ready()
     return () => {
       offNav()
       offNew()
       offImport()
+      offFull()
     }
   }, [navigate])
 

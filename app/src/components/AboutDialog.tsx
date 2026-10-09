@@ -55,7 +55,7 @@ export function AboutContent() {
         <dt>데이터</dt>
         <dd>모두 이 컴퓨터의 {DATA_FOLDER} 폴더에만 저장돼요. 인터넷 서버로 보내지 않아요.</dd>
         <dt>AI</dt>
-        <dd>API 키 없이 이 PC에 로그인된 Claude Code 또는 Gemini(Antigravity CLI)를 실행해요. 요청문에는 이름·연락처를 넣지 않아요.</dd>
+        <dd>API 키 없이 이 컴퓨터에 로그인된 Claude Code 또는 Gemini(Antigravity CLI)를 실행해요. 요청문에는 이름·연락처를 넣지 않아요.</dd>
         <dt>만든 재료</dt>
         <dd>
           Electron {info.electron} · Chromium {info.chrome} · React · Vite · Pretendard 글꼴 · Lucide 아이콘.
