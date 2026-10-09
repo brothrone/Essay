@@ -1,0 +1,26 @@
+# Essay 백엔드 (Cloudflare Workers + D1). 배포 방법은 guides/서버-안내.md
+name = "essay-api"
+main = "src/index.ts"
+compatibility_date = "2026-09-01"
+# 도메인을 사면 아래 주석을 풀고 "api.<도메인>" 으로 바꾼다 (그 도메인이 이 Cloudflare 계정에 있어야 함)
+# routes = [{ pattern = "api.example.com", custom_domain = true }]
+
+[observability]
+enabled = true
+
+[[d1_databases]]
+binding = "DB"
+database_name = "essay"
+# `npx wrangler d1 create essay` 가 알려 주는 id 로 바꾼다. 로컬 개발은 이 값이 아니어도 된다
+database_id = "00000000-0000-0000-0000-000000000000"
+migrations_dir = "migrations"
+
+[vars]
+# 한 연결(IP)에서 받을 의견 수 한도
+FEEDBACK_PER_HOUR = "5"
+FEEDBACK_PER_DAY = "20"
+
+# 비밀 값은 여기 쓰지 않는다. 배포 전에 한 번:
+#   npx wrangler secret put ADMIN_TOKEN   (관리용 주소 열쇠, 긴 무작위 문자열)
+#   npx wrangler secret put IP_SALT       (IP 를 그대로 저장하지 않고 섞어서 저장할 때 쓰는 값, 긴 무작위 문자열)
+# 로컬 개발은 .dev.vars 파일에 같은 이름으로 (저장소에 올리지 않음)
