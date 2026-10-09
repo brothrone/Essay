@@ -11,8 +11,8 @@ enabled = true
 [[d1_databases]]
 binding = "DB"
 database_name = "essay"
-# `npx wrangler d1 create essay` 가 알려 주는 id 로 바꾼다. 로컬 개발은 이 값이 아니어도 된다
-database_id = "00000000-0000-0000-0000-000000000000"
+# `npx wrangler d1 create essay` 로 만든 실제 데이터베이스 (2026-10-10, APAC)
+database_id = "255f660f-2789-4125-bba7-289da5c91099"
 migrations_dir = "migrations"
 
 [vars]
