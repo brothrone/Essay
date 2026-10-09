@@ -18,7 +18,7 @@ AI 기능은 유료 API 없이 사용자 PC에 로그인된 CLI(Claude Code `cla
 - `app/src/store.ts` · `StoreProvider.tsx` 데이터 모양 · 저장 · 예전 데이터 변환(`normalize`)
 - `app/src/JobSearchProvider.tsx` 맞춤 공고 찾기 (AI 후보 → 구글 중간 주소 풀기 → 공고 페이지 직접 확인 → 뺀 공고와 이유)
 - `app/src/PostingReaderProvider.tsx` 공고 읽기 (화면을 옮겨도 계속, 끝나면 자소서에 문항 · 메모 · 마감일 반영)
-- `docs/` 소개 사이트 (GitHub Pages: https://brothrone.github.io/Essay/). `docs/windows.html` · `docs/mac.html` 은 다운로드 버튼이 여는 안내 페이지(자동 다운로드 + SmartScreen / Gatekeeper 넘기는 법, 맥 `?arch=x64` 는 Intel)
+- `docs/` 소개 사이트 (GitHub Pages, 주소 https://essay.win — 2026-10-10 에 Cloudflare 에서 산 도메인. 예전 brothrone.github.io/Essay 는 GitHub 가 새 주소로 넘겨줌. `docs/CNAME` 을 지우지 말 것). `docs/windows.html` · `docs/mac.html` 은 다운로드 버튼이 여는 안내 페이지(자동 다운로드 + SmartScreen / Gatekeeper 넘기는 법, 맥 `?arch=x64` 는 Intel)
 - `guides/` 개발 노트 · 사용자 설치 안내 · **맥 작업 안내**
 - `server/` 백엔드 (Cloudflare Workers + D1, 무료 요금제): 의견 받기 · 익명 사용 통계 · 오류 보고 · 회사별 자소서 문항 모음 · 개발자용 관리 주소. 나중에 결제 확인 · 라이선스 키. 앱 쪽은 `app/electron/community.cjs` · `app/src/community.ts` — 서버 주소는 `docs/app-config.json` 의 `api.baseUrl`(비면 아무것도 안 보냄), 통계 · 오류 · 문항은 사용자가 [개선 돕기]에서 고른 것만. 배포 · 도메인 · 결제 설계는 `guides/서버-안내.md`. 비밀 값은 `wrangler secret` 과 `server/.dev.vars`(저장소 밖)에만
 

@@ -4,7 +4,7 @@ AI와 함께 자소서를 쓰는 데스크톱 앱이에요 (Windows 10/11 · mac
 
 ## 설치
 
-**[최신 설치 파일 받기](https://brothrone.github.io/Essay/)** — Windows 는 `Essay-Setup-x.y.z.exe`, Mac 은 `Essay-x.y.z-mac-arm64.dmg`(Apple Silicon 전용, Intel 맥 미지원) (GitHub Releases 에도 같은 파일이 있어요)
+**[최신 설치 파일 받기](https://essay.win/)** — Windows 는 `Essay-Setup-x.y.z.exe`, Mac 은 `Essay-x.y.z-mac-arm64.dmg`(Apple Silicon 전용, Intel 맥 미지원) (GitHub Releases 에도 같은 파일이 있어요)
 
 **Windows**
 1. 받은 `Essay-Setup-x.y.z.exe` 를 더블클릭하세요.
@@ -14,7 +14,7 @@ AI와 함께 자소서를 쓰는 데스크톱 앱이에요 (Windows 10/11 · mac
 
 **Mac**
 1. 받은 `.dmg` 를 열고 Essay 를 **응용 프로그램** 폴더로 끌어다 놓으세요.
-2. 처음 열 때 **"Apple이 확인할 수 없음"** 창이 뜨면 **완료**를 누르고 **시스템 설정 → 개인정보 보호 및 보안 → [그래도 열기]**. (아직 애플 서명이 없어서 뜨는 안내예요. 한 번만 하면 돼요. 그림 안내: https://brothrone.github.io/Essay/mac.html)
+2. 처음 열 때 **"Apple이 확인할 수 없음"** 창이 뜨면 **완료**를 누르고 **시스템 설정 → 개인정보 보호 및 보안 → [그래도 열기]**. (아직 애플 서명이 없어서 뜨는 안내예요. 한 번만 하면 돼요. 그림 안내: https://essay.win/mac.html)
 3. 기능은 윈도우와 같아요. 단축키는 Ctrl 대신 ⌘ 예요. 새 버전은 앱이 스스로 받아 두었다가 다시 켤 때 적용해요(1.7.0부터).
 
 AI 계정은 셋 중 하나만 있으면 돼요: **Google AI Pro·Ultra 구독**(Antigravity CLI), **Claude Pro·Max 구독**(Claude Code), 또는 **무료 Google 계정**(Antigravity CLI, 작은 무료 한도).
@@ -41,7 +41,7 @@ Essay/
 │  ├─ build/            설치 파일용 아이콘(윈도우 icon.ico · 맥 icon.icns) · 설치 화면 그림
 │  ├─ scripts/          배포(release.ps1 · release.sh) · 아이콘 만들기 · 개발 실행
 │  └─ package.json      버전 · 빌드 설정(electron-builder)
-├─ docs/                소개 사이트 (GitHub Pages → https://brothrone.github.io/Essay/)
+├─ docs/                소개 사이트 (GitHub Pages → https://essay.win/)
 ├─ guides/
 │  ├─ 맥-작업-안내.md      맥북에서 이어서 작업하는 방법 · 맥 버전 만들 때 고칠 곳
 │  ├─ 개발-노트.md         구조 · 기능 · 검증 기록 (윈도우)

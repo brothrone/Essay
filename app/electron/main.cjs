@@ -1237,7 +1237,7 @@ ipcMain.handle('ai:usage', () => {
   return { today: sum(daysAgo(0)), week: sum(daysAgo(6)), month: sum(daysAgo(29)), recent }
 })
 // 요금제 안내 · 공지 · 의견 보내기 주소: 사이트의 app-config.json 을 하루 한 번 받아 두고, 안 되면 앱에 든 기본값
-const CONFIG_URL = 'https://brothrone.github.io/Essay/app-config.json'
+const CONFIG_URL = 'https://essay.win/app-config.json'
 const CONFIG_CACHE = () => path.join(app.getPath('userData'), 'app-config.json')
 const CONFIG_DEFAULT = () => JSON.parse(fs.readFileSync(path.join(__dirname, 'app-config-default.json'), 'utf8'))
 const validConfig = (c) => c && typeof c === 'object' && c.plans && typeof c.plans === 'object' && c.feedback && typeof c.feedback === 'object'
@@ -1959,7 +1959,7 @@ function setUpdateStatus(s) {
 // 다시 시작할 때(또는 끌 때) 작은 셸 스크립트가 Essay 가 꺼지기를 기다렸다가 응용 프로그램 폴더의 Essay.app 을 새 것으로 바꾼다.
 // 앱이 직접 받은 파일에는 '인터넷에서 받음' 표시가 붙지 않아서 바꾼 뒤에 Gatekeeper 창이 다시 뜨지 않는다.
 const RELEASES_LIST = process.env.ESSAY_UPDATE_FEED || 'https://api.github.com/repos/brothrone/Essay/releases?per_page=15'
-const RELEASES_PAGE = 'https://brothrone.github.io/Essay/mac.html'
+const RELEASES_PAGE = 'https://essay.win/mac.html'
 const UPDATE_DIR = () => path.join(app.getPath('userData'), 'update')
 const newerThan = (a, b) => {
   const pa = String(a).split('.').map(Number)
