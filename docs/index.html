@@ -150,6 +150,7 @@
   @media (max-width:900px){.stats{grid-template-columns:repeat(2,1fr)}}
 
   .demo{padding-top:0}
+  .demo .vid{margin-top:0}
   .demo .vid{position:relative;max-width:1120px;margin:0 auto;border-radius:18px;overflow:hidden;border:1px solid var(--line);box-shadow:var(--shadow-lg);background:#0f1440;aspect-ratio:16/9}
   .demo video{display:block;width:100%;height:100%;object-fit:cover;background:#0f1440}
   .demo .vid-note{margin:14px 0 0;text-align:center;font-size:.9rem;color:var(--fg-muted)}
@@ -306,19 +307,6 @@
   </div>
 </header>
 
-<section id="demo" class="demo">
-  <div class="wrap">
-    <h2 class="rv d1" style="text-align:center">43초로 보는 Essay</h2>
-    <p class="sub rv d2" style="text-align:center;margin-left:auto;margin-right:auto">공고 링크를 붙여넣는 것부터 경험 연결, AI 초안, 마감 챙기기까지. 실제 앱 화면을 예시 데이터로 찍었습니다.</p>
-    <div class="vid rv d2">
-      <video id="demo-video" controls muted loop playsinline preload="metadata" poster="img/demo-poster.webp" aria-label="Essay 소개 영상 (43초, 소리 없음)">
-        <source src="video/essay-demo.mp4" type="video/mp4">
-      </video>
-    </div>
-    <p class="vid-note rv d3">소리 없는 영상입니다. 화면에 나오는 회사와 공고는 모두 예시입니다.</p>
-  </div>
-</section>
-
 <section id="features">
   <div class="wrap">
     <h2 class="rv d1">공고를 찾는 일부터 제출 전 검사까지</h2>
@@ -459,6 +447,16 @@
       <details><summary>예전 자소서는 어떤 파일을 넣을 수 있나요?</summary><p>txt · md · docx 파일을 여러 개 고르거나 내용을 붙여넣으면 됩니다. 한글(hwp)과 PDF는 내용을 복사해 붙여넣어 주세요. 같은 경험이 여러 편에 나오면 하나로 합쳐 줍니다.</p></details>
       <details><summary>글자수 '바이트(한글 2)'는 뭔가요?</summary><p>일부 지원 사이트는 글자수 대신 바이트로 제한합니다. 한글 2byte · 영문/공백 1byte · 줄바꿈 2byte 기준으로 계산합니다. 사이트마다 기준이 다를 수 있으니 제출 전 확인하세요.</p></details>
       <details><summary>맥에서도 되나요?</summary><p>네. Windows 10 / 11 (64비트) 와 Apple Silicon(M1 이후) 맥 · macOS 12 이상을 지원하고(Intel 맥은 지원하지 않아요) 기능은 같습니다. Mac은 처음 열 때 "Apple이 확인할 수 없음" 안내가 뜨는데, 시스템 설정 → 개인정보 보호 및 보안에서 [그래도 열기]를 한 번 누르면 됩니다 (<a href="mac.html">그림 안내</a>). 단축키는 Ctrl 대신 ⌘ 입니다.</p></details>
+    </div>
+  </div>
+</section>
+
+<section id="demo" class="demo">
+  <div class="wrap">
+    <div class="vid rv">
+      <video id="demo-video" controls muted loop playsinline preload="metadata" poster="img/demo-poster.webp" aria-label="Essay 소개 영상 (소리 없음)">
+        <source src="video/essay-demo.mp4" type="video/mp4">
+      </video>
     </div>
   </div>
 </section>
