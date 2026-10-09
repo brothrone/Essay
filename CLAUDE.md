@@ -17,7 +17,7 @@ AI 기능은 유료 API 없이 사용자 PC에 로그인된 CLI(Claude Code `cla
 - `app/src/store.ts` · `StoreProvider.tsx` 데이터 모양 · 저장 · 예전 데이터 변환(`normalize`)
 - `app/src/JobSearchProvider.tsx` 맞춤 공고 찾기 (AI 후보 → 구글 중간 주소 풀기 → 공고 페이지 직접 확인 → 뺀 공고와 이유)
 - `app/src/PostingReaderProvider.tsx` 공고 읽기 (화면을 옮겨도 계속, 끝나면 자소서에 문항 · 메모 · 마감일 반영)
-- `docs/` 소개 사이트 (GitHub Pages: https://brothrone.github.io/Essay/)
+- `docs/` 소개 사이트 (GitHub Pages: https://brothrone.github.io/Essay/). `docs/mac.html` 은 Mac 다운로드 버튼이 여는 안내 페이지(자동 다운로드 + Gatekeeper 넘기는 법, `?arch=x64` 는 Intel)
 - `guides/` 개발 노트 · 사용자 설치 안내 · **맥 작업 안내**
 
 ## 명령 (`app/` 에서)
