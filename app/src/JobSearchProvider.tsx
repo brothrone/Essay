@@ -1,15 +1,16 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { desktop } from './desktop'
-import { isGroundingUrl, isPostingUrl } from './format'
-import { JobSearchContext, toJob, type FoundJob, type JobSearchApi, type JobSearchState } from './jobSearch'
+import { isArticleUrl, isGroundingUrl, isPostingUrl } from './format'
+import { JobSearchContext, toJob, type DroppedJob, type FoundJob, type JobSearchApi, type JobSearchState } from './jobSearch'
 import { jobSearchPrompt, parseAiJson } from './prompts'
 import { jobKey, useStore } from './store'
 import { toast } from './toast'
 import type { JobPosting, JobQuery } from './types'
 import { runWebTask } from './aiRun'
+import { savedAiProvider } from './useAiTask'
 import { toDateInput } from './utils'
 
-const IDLE: JobSearchState = { running: false, startedAt: 0, steps: [], error: '', lastAdded: null, lastDropped: 0 }
+const IDLE: JobSearchState = { running: false, startedAt: 0, steps: [], error: '', lastAdded: null, lastDropped: 0, lastDroppedList: [] }
 
 export function JobSearchProvider({ children }: { children: ReactNode }) {
   const { data, mergeJobs, setJobQuery } = useStore()
@@ -43,7 +44,7 @@ export function JobSearchProvider({ children }: { children: ReactNode }) {
       setJobQuery(query)
       setState({ ...IDLE, running: true, startedAt: Date.now() })
       // 다른 AI 작업(공고 읽기 등)이 돌고 있으면 끝난 뒤 이어서 시작한다
-      const r = await runWebTask(jobSearchPrompt(latest.current, query, toDateInput(new Date())), {
+      const r = await runWebTask(jobSearchPrompt(latest.current, query, toDateInput(new Date()), savedAiProvider()), {
         stopped: () => stopRef.current,
         onState: (s) => {
           active.current = s === 'running'
@@ -67,17 +68,28 @@ export function JobSearchProvider({ children }: { children: ReactNode }) {
         try {
           const real = await ai.resolveUrls(found.map((j) => j.url))
           found.forEach((j, i) => {
-            if (isGroundingUrl(j.url)) j.url = real[i] || ''
+            if (isGroundingUrl(j.url) && real[i]) j.url = real[i] // 못 바꾸면 중간 주소를 남겨 '직접 확인'에서 열 수 있게
           })
         } catch {
           /* 못 바꾸면 그대로 둔다: 자소서 시작 때 다시 시도하고, 안 되면 회사명으로 찾는다 */
         }
       }
-      // 확실한 공고만 남긴다: 공고 한 건을 가리키는 주소가 있고, 공고 페이지를 직접 열어 봤을 때 마감 표시 · 지난 마감일이 없는 것
+      // 확실한 공고만 남긴다: 공고 한 건을 가리키는 주소가 있고, 공고 페이지를 직접 열어 봤을 때 마감 표시 · 지난 마감일이 없는 것.
+      // 뺀 공고는 이유와 함께 남겨 화면에서 볼 수 있게 한다
       const today = toDateInput(new Date())
-      let verified = found.filter((j) => isPostingUrl(j.url) && !(j.deadline && j.deadline < today))
+      const dropped: DroppedJob[] = []
+      const drop = (j: JobPosting, reason: string, kind: DroppedJob['kind'] = 'out') =>
+        dropped.push({ company: j.company, title: j.title, url: j.url, reason, kind })
+      let verified = found.filter((j) => {
+        if (isGroundingUrl(j.url)) return drop(j, '공고 주소를 확인하지 못했어요 (링크로 직접 확인해 보세요)', 'check'), false
+        if (!isPostingUrl(j.url)) return drop(j, '공고 상세 주소를 찾지 못했어요 (회사 채용 페이지에서 확인해 보세요)', 'check'), false
+        if (isArticleUrl(j.url)) return drop(j, '채용 공고가 아니라 기사 · 블로그 글이에요'), false
+        if (!j.company || /미확인|확인\s*필요|알\s*수\s*없|비공개|unknown/i.test(j.company)) return drop(j, '회사명을 확인하지 못했어요'), false
+        if (j.deadline && j.deadline < today) return drop(j, `마감일(${j.deadline})이 지났어요`), false
+        return true
+      })
       if (verified.length) {
-        setState((s) => ({ ...s, steps: [...s.steps, `공고 ${verified.length}개를 직접 열어 접수 중인지 확인하는 중`].slice(-12) }))
+        setState((st) => ({ ...st, steps: [...st.steps, `공고 ${verified.length}개를 직접 열어 접수 중인지 확인하는 중`].slice(-12) }))
         try {
           const checks = await ai.checkPostings(
             verified.map((j) => j.url),
@@ -87,32 +99,34 @@ export function JobSearchProvider({ children }: { children: ReactNode }) {
           verified = verified.filter((j, i) => {
             const c = checks[i]
             if (c?.deadline) j.deadline = c.deadline // 페이지의 마감일이 AI 가 적은 것보다 정확하다
-            if (!c || c.status === 'closed') return false
-            if (j.deadline && j.deadline < today) return false
-            return c.status === 'open' || !!j.deadline
+            if (!c) return drop(j, '공고 페이지를 열지 못했어요', 'check'), false
+            if (c.status === 'closed') return drop(j, c.deadline && c.deadline < today ? `마감일(${c.deadline})이 지났어요` : '공고 페이지에 마감 표시가 있어요'), false
+            if (j.deadline && j.deadline < today) return drop(j, `마감일(${j.deadline})이 지났어요`), false
+            if (c.status === 'open' || j.deadline) return true
+            return drop(j, '공고 페이지에서 접수 중인지 · 마감일을 확인하지 못했어요', 'check'), false
           })
         } catch {
           // 확인을 못 하면 마감일이 오늘 이후로 적힌 것만 남긴다
-          verified = verified.filter((j) => !!j.deadline && j.deadline >= today)
+          verified = verified.filter((j) => (j.deadline && j.deadline >= today) || (drop(j, '공고 페이지를 확인하지 못했어요', 'check'), false))
         }
       }
       // 같은 공고가 여러 번 나오면(한 공고의 여러 직무 등) 점수가 높은 하나만 남긴다
       const seen = new Set<string>()
       verified = verified
-        .sort((a, b) => b.matchScore - a.matchScore)
+        .sort((x, y) => y.matchScore - x.matchScore)
         .filter((j) => {
           const k = jobKey(j)
-          if (seen.has(k)) return false
+          if (seen.has(k)) return drop(j, '같은 공고가 겹쳐 하나만 남겼어요'), false
           seen.add(k)
           return true
         })
-        .slice(0, query.count)
-      const dropped = found.length - verified.length
+      verified.slice(query.count).forEach((j) => drop(j, `최대 ${query.count}개를 넘어 점수가 낮은 것을 뺐어요`))
+      verified = verified.slice(0, query.count)
       const known = new Set(latest.current.jobs.map(jobKey))
       const added = verified.filter((j) => !known.has(jobKey(j))).length
       mergeJobs(verified, query)
-      setState((s) => ({ ...s, running: false, lastAdded: added, lastDropped: dropped }))
-      const droppedNote = dropped ? ` · 마감됐거나 공고를 확인할 수 없는 ${dropped}개는 뺐어요` : ''
+      setState((st) => ({ ...st, running: false, lastAdded: added, lastDropped: dropped.length, lastDroppedList: dropped }))
+      const droppedNote = dropped.length ? ` · 마감됐거나 확인할 수 없는 ${dropped.length}개는 뺐어요` : ''
       toast(added ? `확인된 맞춤 공고 ${added}개를 새로 찾았어요${droppedNote}` : `새로 찾은 확실한 공고가 없어요${droppedNote}. 키워드나 지역을 넓혀 보세요`)
     },
     [ai, mergeJobs, setJobQuery],

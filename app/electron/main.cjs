@@ -713,7 +713,28 @@ async function resolveGrounding(url) {
     return ''
   }
 }
-ipcMain.handle('net:resolve-urls', (_e, urls) => Promise.all((Array.isArray(urls) ? urls : []).slice(0, 60).map(resolveGrounding)))
+// 한꺼번에 많이 열면 구글이 거절할 수 있어 4개씩 나눠 열고, 실패하면 한 번 더 시도한다
+async function mapLimited(items, limit, fn) {
+  const out = new Array(items.length)
+  let next = 0
+  await Promise.all(
+    Array.from({ length: Math.min(limit, items.length) }, async () => {
+      while (next < items.length) {
+        const i = next++
+        out[i] = await fn(items[i])
+      }
+    }),
+  )
+  return out
+}
+ipcMain.handle('net:resolve-urls', (_e, urls) =>
+  mapLimited((Array.isArray(urls) ? urls : []).slice(0, 60), 4, async (u) => {
+    const first = await resolveGrounding(u)
+    if (first || !GROUNDING_RE.test(String(u))) return first
+    await new Promise((r) => setTimeout(r, 600))
+    return resolveGrounding(u)
+  }),
+)
 
 // AI 가 찾은 공고가 정말 접수 중인지 공고 페이지를 직접 열어 확인한다 (AI 를 더 쓰지 않고 몇 초 안에 끝남)
 // - 마감 표시(제목의 '(마감)', "마감된 공고입니다" 등)나 지난 마감일(validThrough · '마감일:YYYY-MM-DD')이면 closed
@@ -722,6 +743,29 @@ ipcMain.handle('net:resolve-urls', (_e, urls) => Promise.all((Array.isArray(urls
 const PRIVATE_HOST = /^(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|169\.254\.|\[?::1\]?$|0\.)/i
 const pad2 = (n) => String(n).padStart(2, '0')
 const ymd = (y, m, d) => `${y}-${pad2(m)}-${pad2(d)}`
+
+// 회사 · 공공기관 채용 페이지처럼 '마감일:' 칸이 없는 곳: 본문의 "접수기간 2026.10.01 ~ 10.20" · "2026년 10월 20일까지"에서 마감일을 찾는다
+const DATE = String.raw`(\d{4})\s*[.\-/년]\s*(\d{1,2})\s*[.\-/월]\s*(\d{1,2})`
+const PERIOD_RE = new RegExp(
+  String.raw`(?:(?:접수|모집|지원|채용)\s*(?:기간|일정|마감|일시)|서류\s*접수|원서\s*접수|지원서\s*접수)[^0-9]{0,30}` +
+    DATE +
+    String.raw`[^~～∼\-–]{0,40}[~～∼\-–]\s*(?:(\d{4})\s*[.\-/년]\s*)?(\d{1,2})\s*[.\-/월]\s*(\d{1,2})`,
+)
+const UNTIL_RE = new RegExp(DATE + String.raw`\s*일?\s*(?:\([^)]{1,4}\))?\s*(?:\d{1,2}\s*[:시]\s*\d{0,2}\s*분?)?\s*까지`)
+function periodEnd(html) {
+  const text = html
+    .replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;|&#160;/g, ' ')
+    .replace(/\s+/g, ' ')
+  const p = text.match(PERIOD_RE)
+  if (p) {
+    const year = p[4] || p[1]
+    return ymd(year, p[5], p[6])
+  }
+  const u = text.match(UNTIL_RE)
+  return u ? ymd(u[1], u[2], u[3]) : ''
+}
 async function checkPosting(url, today) {
   try {
     const u = new URL(String(url))
@@ -738,26 +782,37 @@ async function checkPosting(url, today) {
     if (!r.ok) return { status: 'unknown', deadline: '' }
     const html = (await r.text()).slice(0, 800000)
     const title = (html.match(/<title[^>]*>([^<]*)<\/title>/i) || [])[1] || ''
+    // 화면에 적힌 '마감일: …'을 먼저 믿는다. validThrough 는 상시 채용이면 1년 뒤로 적어 두는 사이트(잡코리아)가 있어
+    // 반년 넘게 남은 값은 마감일로 쓰지 않는다
     let deadline = ''
-    const vt = html.match(/"validThrough"\s*:\s*"(\d{4})-(\d{2})-(\d{2})/)
-    if (vt) deadline = ymd(vt[1], vt[2], vt[3])
+    let alwaysOpen = false // 반년 넘게 남은 validThrough = 상시 채용
+    const m = html.match(/(?:마감일|접수\s*마감|지원\s*마감|모집\s*마감)\s*[:：]?\s*(\d{4})[-./년]\s*(\d{1,2})[-./월]\s*(\d{1,2})/)
+    if (m) deadline = ymd(m[1], m[2], m[3])
+    // 캐치 등: 화면 데이터 안의 지원 마감 시각 (O.ApplyEndDatetime="2026-10-05T09:00:00.000Z")
     if (!deadline) {
-      const m = html.match(/(?:마감일|접수\s*마감|지원\s*마감|모집\s*마감)\s*[:：]?\s*(\d{4})[-./년]\s*(\d{1,2})[-./월]\s*(\d{1,2})/)
-      if (m) deadline = ymd(m[1], m[2], m[3])
+      const a = html.match(/\.ApplyEndDate(?:time)?="(\d{4})-(\d{2})-(\d{2})/) || html.match(/"applyEndDate(?:time)?"\s*:\s*"(\d{4})-(\d{2})-(\d{2})/i)
+      if (a) deadline = ymd(a[1], a[2], a[3])
+    }
+    if (!deadline) deadline = periodEnd(html)
+    if (!deadline) {
+      const vt = html.match(/"validThrough"\s*:\s*"(\d{4})-(\d{2})-(\d{2})/)
+      const far = new Date(Date.parse(today) + 200 * 86400000).toISOString().slice(0, 10)
+      if (vt && ymd(vt[1], vt[2], vt[3]) <= far) deadline = ymd(vt[1], vt[2], vt[3])
+      else if (vt) alwaysOpen = true
     }
     if (deadline && deadline < today) return { status: 'closed', deadline }
     if (/[([]\s*(마감|접수\s*마감|채용\s*마감)\s*[)\]]/.test(title)) return { status: 'closed', deadline }
     const closedText = /마감된\s*(공고|포지션|채용)입니다|(채용|모집|접수|지원)이\s*마감(되었|됐)습니다|이미\s*마감된\s*(공고|채용)/.test(html)
     if (closedText && !(deadline && deadline >= today)) return { status: 'closed', deadline }
     // 제목에 남은 날짜(D-6) · 상시 채용 표시가 있으면 접수 중 (사람인 등)
-    if (deadline || /\(D-\d+\)|\(D-day\)|상시\s*채용|채용\s*시\s*마감/i.test(title)) return { status: 'open', deadline }
+    if (deadline || alwaysOpen || /\(D-\d+\)|\(D-day\)|상시\s*채용|채용\s*시\s*마감/i.test(title)) return { status: 'open', deadline }
     return { status: 'unknown', deadline }
   } catch {
     return { status: 'unknown', deadline: '' }
   }
 }
 ipcMain.handle('net:check-postings', (_e, urls, today) =>
-  Promise.all((Array.isArray(urls) ? urls : []).slice(0, 30).map((u) => checkPosting(u, String(today || '')))),
+  mapLimited((Array.isArray(urls) ? urls : []).slice(0, 30), 6, (u) => checkPosting(u, String(today || ''))),
 )
 
 ipcMain.handle('ai:cancel', () => {
@@ -1316,6 +1371,7 @@ function buildMenu() {
         { label: '맞춤 공고', accelerator: 'CmdOrCtrl+3', click: send('app:navigate', '/jobs') },
         { label: '경험 관리', accelerator: 'CmdOrCtrl+4', click: send('app:navigate', '/experiences') },
         { label: '스펙 관리', accelerator: 'CmdOrCtrl+5', click: send('app:navigate', '/specs') },
+        { label: '마감 달력', accelerator: 'CmdOrCtrl+8', click: send('app:navigate', '/calendar') },
         { label: '백업', accelerator: 'CmdOrCtrl+6', click: send('app:navigate', '/backup') },
         { label: '데이터', accelerator: 'CmdOrCtrl+7', click: send('app:navigate', '/data') },
         { label: '설정', accelerator: 'CmdOrCtrl+,', click: send('app:navigate', '/settings') },

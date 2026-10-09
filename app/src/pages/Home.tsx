@@ -106,9 +106,14 @@ export function Home() {
             <h3>
               <CalendarClock size={18} /> 다가오는 마감
             </h3>
-            <Link to="/projects" className="link-more">
-              전체 보기 <ArrowRight size={14} />
-            </Link>
+            <span className="link-group">
+              <Link to="/calendar" className="link-more">
+                달력 <ArrowRight size={14} />
+              </Link>
+              <Link to="/projects" className="link-more">
+                전체 보기 <ArrowRight size={14} />
+              </Link>
+            </span>
           </header>
           {upcoming.length ? (
             <ul className="deadline-list">

@@ -2,7 +2,7 @@ import { Bookmark, EyeOff, ExternalLink, LoaderCircle, PenLine, Radar, Search, S
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Dday, Empty } from '../components/ui'
-import { useJobSearch } from '../jobSearch'
+import { useJobSearch, type DroppedJob } from '../jobSearch'
 import { isActive, taskFor, useElapsed, usePostingReader, type PostingTask } from '../postingReader'
 import { postingRequest } from '../aiRun'
 import { newProject, newQuestion, useStore } from '../store'
@@ -258,9 +258,9 @@ function JobSearchForm({ onSearched }: { onSearched: () => void }) {
       {!search.running && search.lastAdded !== null && (
         <p className="import-ok">
           확인된 공고 {search.lastAdded}개를 새로 더했어요
-          {search.lastDropped > 0 && <span className="muted"> · 마감됐거나 공고를 확인할 수 없는 {search.lastDropped}개는 뺐어요</span>}
         </p>
       )}
+      {!search.running && <DroppedList list={search.lastDroppedList} added={search.lastAdded ?? 0} />}
       {search.running && (
         <div className="job-progress">
           <div className="ai-running">
@@ -277,6 +277,41 @@ function JobSearchForm({ onSearched }: { onSearched: () => void }) {
       )}
       {search.error && !search.running && <p className="ai-error">{search.error}</p>}
     </form>
+  )
+}
+
+/** 맞춤 공고 찾기에서 목록에 넣지 않은 공고: 직접 확인해 볼 만한 것과 뺀 이유가 분명한 것을 나눠 보여 준다 */
+function DroppedList({ list, added }: { list: DroppedJob[]; added: number }) {
+  const check = list.filter((d) => d.kind === 'check')
+  const out = list.filter((d) => d.kind !== 'check')
+  const row = (d: DroppedJob, i: number) => (
+    <li key={i}>
+      <span className="dropped-name">
+        <b>{d.company || '회사 미확인'}</b> {d.title}
+      </span>
+      <span className="muted small">{d.reason}</span>
+      {d.url && (
+        <a className="link-btn" href={d.url} target="_blank" rel="noreferrer">
+          공고 열기
+        </a>
+      )}
+    </li>
+  )
+  return (
+    <>
+      {check.length > 0 && (
+        <details className="dropped-list" open={added === 0}>
+          <summary>마감 여부를 확인하지 못한 공고 {check.length}개 · 직접 확인해 보세요</summary>
+          <ul>{check.map(row)}</ul>
+        </details>
+      )}
+      {out.length > 0 && (
+        <details className="dropped-list">
+          <summary>마감 · 중복 등으로 뺀 공고 {out.length}개</summary>
+          <ul>{out.map(row)}</ul>
+        </details>
+      )}
+    </>
   )
 }
 

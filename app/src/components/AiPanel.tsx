@@ -2,6 +2,7 @@ import {
   Check,
   Copy,
   ExternalLink,
+  ListChecks,
   LoaderCircle,
   MessageSquareText,
   MessagesSquare,
@@ -13,7 +14,7 @@ import {
 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { desktop, type AiProvider, type AiStatus } from '../desktop'
-import { draftPrompt, feedbackPrompt, fitPrompt, interviewPrompt, parseAiAnswer, revisePrompt } from '../prompts'
+import { draftPrompt, feedbackPrompt, fitPrompt, interviewPrompt, parseAiAnswer, revisePrompt, specGapPrompt } from '../prompts'
 import { useStore } from '../store'
 import { toast } from '../toast'
 import type { Experience, Project, Question } from '../types'
@@ -21,7 +22,7 @@ import { noteAiResult } from '../useAiStatus'
 import { AI_MODELS, AI_PROVIDERS, saveAiModel, saveAiProvider, savedAiModel, savedAiProvider } from '../useAiTask'
 import { copyText, countChars } from '../utils'
 
-type Kind = 'draft' | 'feedback' | 'fit' | 'revise' | 'interview'
+type Kind = 'draft' | 'feedback' | 'fit' | 'revise' | 'interview' | 'gap'
 type Result = { kind: Kind; answer: string; note: string; seconds: number; model: string }
 
 const RUNNING_LABEL: Record<Kind, string> = {
@@ -30,6 +31,7 @@ const RUNNING_LABEL: Record<Kind, string> = {
   fit: '글자수를 맞추는',
   revise: '피드백을 반영해 고쳐 쓰는',
   interview: '면접 꼬리질문을 뽑는',
+  gap: '공고 요건과 내 스펙을 견주는',
 }
 
 export function AiPanel({
@@ -104,7 +106,7 @@ export function AiPanel({
       if (!r.cancelled) setError(r.error)
       return
     }
-    const parsed = kind === 'feedback' || kind === 'interview' ? { answer: r.text.trim(), note: '' } : parseAiAnswer(r.text)
+    const parsed = kind === 'feedback' || kind === 'interview' || kind === 'gap' ? { answer: r.text.trim(), note: '' } : parseAiAnswer(r.text)
     setResult({ kind, ...parsed, seconds: r.seconds, model: r.model })
   }
 
@@ -149,6 +151,14 @@ export function AiPanel({
       desc: '이 답변에서 면접관이 파고들 질문 5개와 답변 방향을 물어봐요',
       disabled: !hasAnswer,
       make: () => interviewPrompt(data, project, q, exps),
+    },
+    {
+      key: 'gap',
+      icon: <ListChecks size={18} />,
+      title: '스펙 비교',
+      desc: '공고 요건과 내 스펙 · 경험을 견줘 부족한 점과 강조할 강점을 물어봐요',
+      disabled: false,
+      make: () => specGapPrompt(data, project),
     },
   ]
 
@@ -247,6 +257,15 @@ export function AiPanel({
                 >
                   <MessagesSquare size={14} /> 면접 질문
                 </button>
+                <button
+                  type="button"
+                  className="btn small"
+                  disabled={!!running}
+                  title="공고의 자격 요건 · 우대 사항과 내 스펙 · 경험을 견줘 부족한 점과 강조할 강점을 짚어요"
+                  onClick={() => run('gap', specGapPrompt(data, project))}
+                >
+                  <ListChecks size={14} /> 스펙 비교
+                </button>
               </div>
               <p className="muted small ai-method">
                 초안은 문항 의도 → 핵심 메시지 → 두괄식 구성으로, 피드백은 100점 채점 · 고칠 문장 · 첫 문장 대안 3개로 돌려줘요. 상투어와 번역투는
@@ -273,6 +292,33 @@ export function AiPanel({
 
               {error && <p className="ai-error">{error}</p>}
 
+              {result && result.kind === 'gap' && (
+                <div className="ai-result">
+                  <div className="ai-result-meta">
+                    <strong>스펙 비교</strong>
+                    <span className="muted small">{result.seconds}초</span>
+                  </div>
+                  <div className="ai-result-text">{result.answer}</div>
+                  <div className="ai-result-actions">
+                    <button
+                      type="button"
+                      className="btn small"
+                      onClick={() => {
+                        onPatch({ memo: q.memo.trim() ? `${q.memo.trimEnd()}\n\n[스펙 비교]\n${result.answer}` : `[스펙 비교]\n${result.answer}` })
+                        toast('이 문항의 작성 메모에 저장했어요')
+                      }}
+                    >
+                      <Check size={14} /> 작성 메모에 저장
+                    </button>
+                    <button type="button" className="btn ghost small" onClick={() => copyText(result.answer)}>
+                      <Copy size={14} /> 복사
+                    </button>
+                    <button type="button" className="btn ghost small" onClick={() => setResult(null)}>
+                      <X size={14} /> 닫기
+                    </button>
+                  </div>
+                </div>
+              )}
               {result && result.kind === 'interview' && (
                 <div className="ai-result">
                   <div className="ai-result-meta">

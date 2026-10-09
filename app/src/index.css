@@ -724,6 +724,245 @@ textarea:focus-visible {
   line-height: 1.6;
 }
 
+.posting-paste {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.posting-paste p {
+  margin: 0;
+}
+
+.posting-paste .btn {
+  align-self: flex-end;
+}
+
+.np-paste-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.np-ai textarea {
+  background: var(--surface);
+}
+
+/* ---------- 마감 달력 ---------- */
+
+.cal-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 20px;
+  margin-bottom: 14px;
+}
+
+.cal-nav {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cal-nav strong {
+  min-width: 120px;
+  text-align: center;
+  font-size: 18px;
+}
+
+.cal-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+}
+
+.cal-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cal-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 3px;
+}
+
+.cal-dot.writing,
+.cal-entry.writing {
+  --cal: var(--primary);
+}
+
+.cal-dot.done,
+.cal-entry.done {
+  --cal: #8b95a1;
+}
+
+.cal-dot.job,
+.cal-entry.job {
+  --cal: #d97706;
+}
+
+.cal-dot {
+  background: var(--cal);
+}
+
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  padding: 0;
+  overflow: hidden;
+}
+
+.cal-weekday {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+  text-align: center;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--text-3);
+}
+
+.cal-weekday.sun {
+  color: var(--danger);
+}
+
+.cal-weekday.sat {
+  color: var(--primary-text);
+}
+
+.cal-day {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 104px;
+  padding: 6px;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.cal-day:nth-child(7n + 7) {
+  border-right: 0;
+}
+
+.cal-day.other {
+  background: var(--surface-2);
+}
+
+.cal-day.other .cal-date {
+  opacity: 0.45;
+}
+
+.cal-day.past .cal-entries {
+  opacity: 0.55;
+}
+
+.cal-date {
+  align-self: flex-start;
+  min-width: 24px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--text-2);
+  text-align: center;
+}
+
+.cal-day.sun .cal-date {
+  color: var(--danger);
+}
+
+.cal-day.today .cal-date {
+  background: var(--primary);
+  color: #fff;
+}
+
+.cal-entries {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.cal-entry {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  padding: 3px 6px;
+  border-left: 3px solid var(--cal);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--cal) 10%, var(--surface));
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.cal-entry svg {
+  flex-shrink: 0;
+  color: var(--cal);
+}
+
+.cal-entry span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cal-entry:hover {
+  background: color-mix(in srgb, var(--cal) 18%, var(--surface));
+}
+
+.cal-more {
+  padding-left: 6px;
+  font-size: 11.5px;
+  color: var(--text-3);
+}
+
+.link-group {
+  display: inline-flex;
+  gap: 12px;
+}
+
+/* 맞춤 공고 찾기에서 뺀 공고 */
+.dropped-list {
+  font-size: 13px;
+}
+
+.dropped-list summary {
+  cursor: pointer;
+  color: var(--text-3);
+  font-weight: 600;
+}
+
+.dropped-list ul {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dropped-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--surface-2);
+}
+
+.dropped-name {
+  min-width: 0;
+  flex: 1 1 260px;
+}
+
 /* 사이드바 하위 메뉴 (맞춤 공고 > 저장된 공고) */
 .nav a.nav-sub {
   padding: 7px 12px 7px 40px;

@@ -1,10 +1,13 @@
-import { Check, LoaderCircle, RefreshCw } from 'lucide-react'
+import { Check, ClipboardPaste, LoaderCircle, RefreshCw } from 'lucide-react'
+import { useState } from 'react'
 import { postingRequest } from '../aiRun'
 import { isHttpUrl } from '../format'
 import { isActive, taskFor, useElapsed, usePostingReader } from '../postingReader'
 import { postingConflicts } from '../PostingReaderProvider'
 import type { Project } from '../types'
-import { fmtDate } from '../utils'
+import { postingTextPrompt } from '../prompts'
+import { fmtDate, toDateInput } from '../utils'
+import { AutoTextarea } from './ui'
 
 /**
  * 공고 링크를 AI가 읽어 자소서 문항 · 공고 메모 · 마감일을 채운다.
@@ -18,8 +21,21 @@ export function PostingCheck({ project, onPatch }: { project: Project; onPatch: 
   const elapsed = useElapsed(task)
   // 공고 한 건 주소가 있으면 그 페이지를, 없거나 사이트 첫 화면이면 회사명 · 직무로 찾아 읽는다
   const canRead = isHttpUrl(project.jobUrl) || project.company.trim().length >= 2
-
-  if (!canRead && !task) return null
+  // 링크로 못 읽는 공고(로그인 필요 등): 본문을 붙여넣어 정리
+  const [pasteOpen, setPasteOpen] = useState(false)
+  const [pasted, setPasted] = useState('')
+  const readPasted = () => {
+    if (pasted.trim().length < 40) return
+    reader.start(project.id, {
+      prompt: postingTextPrompt(pasted, toDateInput(new Date())),
+      kind: 'text',
+      mode: 'recheck',
+      projectId: project.id,
+      label: project.company,
+    })
+    setPasteOpen(false)
+    setPasted('')
+  }
 
   const check = async () => {
     const req = await postingRequest(project.jobUrl, project.company.trim(), project.position.trim())
@@ -38,6 +54,27 @@ export function PostingCheck({ project, onPatch }: { project: Project; onPatch: 
           {running ? <LoaderCircle size={14} className="spin" /> : <RefreshCw size={14} />}{' '}
           {project.questions.some((q) => q.prompt.trim()) ? '공고 다시 확인' : 'AI로 공고 읽고 문항 채우기'}
         </button>
+      )}
+      {!running && (
+        <button type="button" className="btn ghost small" aria-expanded={pasteOpen} onClick={() => setPasteOpen((v) => !v)}>
+          <ClipboardPaste size={14} /> 공고 내용 붙여넣기
+        </button>
+      )}
+      {pasteOpen && !running && (
+        <div className="posting-paste">
+          <p className="muted small">로그인해야 보이는 공고처럼 링크로 못 읽을 때, 채용 페이지 본문을 복사해 붙여넣으면 문항 · 마감일 · 공고 메모를 채워요.</p>
+          <AutoTextarea
+            minRows={4}
+            maxLength={15000}
+            value={pasted}
+            onChange={(e) => setPasted(e.target.value)}
+            placeholder="채용 페이지에서 Ctrl+A → Ctrl+C 로 복사한 내용을 그대로 붙여넣으세요"
+            aria-label="공고 본문"
+          />
+          <button type="button" className="btn primary small" disabled={pasted.trim().length < 40} onClick={readPasted}>
+            AI로 정리해 채우기
+          </button>
+        </div>
       )}
       {running && (
         <p className="muted small">

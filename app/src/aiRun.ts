@@ -46,13 +46,18 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
  */
 export async function runWebTask(
   prompt: string,
-  { onState, stopped }: { onState?: (s: 'waiting' | 'running') => void; stopped?: () => boolean } = {},
+  {
+    onState,
+    stopped,
+    web = true,
+  }: { onState?: (s: 'waiting' | 'running') => void; stopped?: () => boolean; web?: boolean } = {},
 ): Promise<AiResult> {
   const provider = savedAiProvider()
   for (;;) {
     if (stopped?.()) return { ok: false, error: '취소했어요', cancelled: true }
     onState?.('running')
-    const r = await desktop.ai.run(prompt, webModel(provider) || undefined, { web: true, provider })
+    // 웹을 안 쓰는 정리 작업(붙여넣은 공고)도 빠른 모델로 충분하다
+    const r = await desktop.ai.run(prompt, webModel(provider) || undefined, { web, provider })
     if (!r.ok && r.code === 'busy') {
       onState?.('waiting')
       await sleep(2500)

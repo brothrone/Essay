@@ -522,6 +522,19 @@ function InfoPanel({ project, onPatch }: { project: Project; onPatch: (p: Partia
           onChange={(e) => onPatch({ notes: e.target.value })}
         />
       </div>
+      <div className="field">
+        <label className="field-label" htmlFor="pi-personal">
+          나만의 상황 · 지원 동기 <span className="muted">(선택)</span>
+        </label>
+        <AutoTextarea
+          id="pi-personal"
+          minRows={4}
+          maxLength={1500}
+          value={project.personal}
+          placeholder={'AI가 초안 · 피드백을 쓸 때 참고해요. 예)\n- 전공을 바꾼 이유, 공백기 사정, 근무 지역 사정\n- 이 회사 · 제품과의 인연, 꼭 넣고 싶은 강점'}
+          onChange={(e) => onPatch({ personal: e.target.value })}
+        />
+      </div>
       <p className="muted small">
         만든 날 {new Date(project.createdAt).toLocaleDateString('ko-KR')} · 마지막 수정 {fmtRelative(project.updatedAt)}
       </p>

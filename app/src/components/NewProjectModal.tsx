@@ -1,15 +1,15 @@
-import { Check, Link2, LoaderCircle, Search, Sparkles } from 'lucide-react'
+import { Check, ClipboardPaste, Link2, LoaderCircle, Search, Sparkles } from 'lucide-react'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { QUESTION_PRESETS } from '../constants'
 import { isHttpUrl } from '../format'
 import { isActive, useElapsed, usePostingReader } from '../postingReader'
-import { companyLookupPrompt, postingPrompt } from '../prompts'
+import { companyLookupPrompt, postingPrompt, postingTextPrompt } from '../prompts'
 import { newProject, newQuestion, useStore } from '../store'
 import type { Question } from '../types'
 import { toast } from '../toast'
 import { toDateInput, uid } from '../utils'
-import { Modal } from './ui'
+import { AutoTextarea, Modal } from './ui'
 
 /** "saramin.co.kr/..." 처럼 프로토콜만 빠진 주소는 https:// 를 붙여 준다 */
 function normalizeUrl(raw: string) {
@@ -37,12 +37,13 @@ export function NewProjectModal({ onClose }: { onClose: () => void }) {
   const attached = useRef(false)
 
   // 공고 정보를 어떻게 가져올지: 링크를 읽거나, 회사명·직무로 웹에서 찾거나
-  const [source, setSourceState] = useState<'link' | 'search'>('link')
-  const setSource = (s: 'link' | 'search') => {
+  const [source, setSourceState] = useState<'link' | 'search' | 'paste'>('link')
+  const [pasted, setPasted] = useState('')
+  const setSource = (s: 'link' | 'search' | 'paste') => {
     setSourceState(s)
     setImportError('')
   }
-  const importWith = (prompt: string, kind: 'link' | 'company') => {
+  const importWith = (prompt: string, kind: 'link' | 'company' | 'text') => {
     setImportError('')
     setImported(null)
     consumed.current = false
@@ -96,6 +97,14 @@ export function NewProjectModal({ onClose }: { onClose: () => void }) {
     setForm((f) => ({ ...f, jobUrl: url }))
     importWith(postingPrompt(url, toDateInput(new Date())), 'link')
   }
+  // 로그인해야 보이는 공고 등: 복사한 공고 본문을 정리한다
+  const importFromText = () => {
+    if (pasted.trim().length < 40) {
+      setImportError('공고 본문을 조금 더 붙여넣어 주세요. 채용 페이지에서 Ctrl+A → Ctrl+C 로 통째로 복사해도 돼요.')
+      return
+    }
+    importWith(postingTextPrompt(pasted, toDateInput(new Date())), 'text')
+  }
   const importFromCompany = () => {
     if (form.company.trim().length < 2) {
       setImportError('회사명을 먼저 적어 주세요. 직무까지 적으면 더 정확해요.')
@@ -126,6 +135,16 @@ export function NewProjectModal({ onClose }: { onClose: () => void }) {
       attached.current = true
       reader.attach(draftKey, project.id)
       toast('AI가 공고를 마저 읽고 이 자소서에 문항을 채워요. 다른 화면으로 가도 계속돼요')
+    } else if (!imported && source === 'paste' && pasted.trim().length >= 40) {
+      // 붙여넣고 바로 시작: 뒤에서 정리해 채운다
+      reader.start(project.id, {
+        prompt: postingTextPrompt(pasted, toDateInput(new Date())),
+        kind: 'text',
+        mode: 'new',
+        projectId: project.id,
+        label: project.company,
+      })
+      toast('AI가 붙여넣은 공고를 정리해 자소서 문항을 채우는 중이에요. 다른 화면으로 가도 계속돼요')
     } else if (!imported && isHttpUrl(url)) {
       // 링크만 넣고 바로 시작: 뒤에서 읽어 채운다
       reader.start(project.id, {
@@ -195,10 +214,36 @@ export function NewProjectModal({ onClose }: { onClose: () => void }) {
               <button type="button" role="tab" aria-selected={source === 'search'} className={source === 'search' ? 'on' : ''} onClick={() => setSource('search')} disabled={busy}>
                 <Search size={13} /> 회사명으로 찾기
               </button>
+              <button type="button" role="tab" aria-selected={source === 'paste'} className={source === 'paste' ? 'on' : ''} onClick={() => setSource('paste')} disabled={busy}>
+                <ClipboardPaste size={13} /> 공고 내용 붙여넣기
+              </button>
             </div>
           </header>
 
-          {source === 'link' ? (
+          {source === 'paste' ? (
+            <>
+              <p className="muted small np-ai-desc">
+                로그인해야 보이는 공고처럼 링크로 못 읽을 때 써요. 채용 페이지 본문을 복사해 붙여넣으면 회사 · 직무 · 마감일 · 자소서 문항 · 공고 분석을 정리해요.
+              </p>
+              <AutoTextarea
+                minRows={4}
+                maxLength={15000}
+                value={pasted}
+                onChange={(e) => {
+                  setPasted(e.target.value)
+                  if (importError) setImportError('')
+                }}
+                placeholder="채용 페이지에서 Ctrl+A → Ctrl+C 로 복사한 내용을 그대로 붙여넣으세요"
+                aria-label="공고 본문"
+              />
+              <div className="np-paste-foot">
+                <span className="muted small">{pasted.length.toLocaleString()}자</span>
+                <button type="button" className="btn primary small" disabled={busy} onClick={importFromText}>
+                  {busy && task?.kind === 'text' ? <LoaderCircle size={14} className="spin" /> : <Sparkles size={14} />} AI로 정리하기
+                </button>
+              </div>
+            </>
+          ) : source === 'link' ? (
             <>
               <p className="muted small np-ai-desc">
                 사람인 · 잡코리아 · 원티드 · 회사 채용 페이지 주소를 넣으면 AI가 그 페이지를 읽어 회사 · 직무 · 마감일 · 자소서 문항 · 공고 분석을 채워요.
@@ -256,7 +301,7 @@ export function NewProjectModal({ onClose }: { onClose: () => void }) {
               <span>
                 {task!.status === 'waiting'
                   ? '다른 AI 작업이 끝나면 시작해요…'
-                  : `AI가 ${task!.kind === 'company' ? '공고를 찾는' : '공고 페이지를 읽는'} 중… ${elapsed}초`}
+                  : `AI가 ${task!.kind === 'company' ? '공고를 찾는' : task!.kind === 'text' ? '공고 내용을 정리하는' : '공고 페이지를 읽는'} 중… ${elapsed}초`}
                 {task!.status === 'running' && task!.steps.at(-1) && ` · ${task!.steps.at(-1)}`}{' '}
                 <button type="button" className="link-btn" onClick={() => reader.cancel(draftKey)}>
                   취소

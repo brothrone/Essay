@@ -15,7 +15,7 @@ export interface PostingTask {
   key: string
   projectId: string | null
   label: string
-  kind: 'link' | 'company'
+  kind: 'link' | 'company' | 'text'
   mode: PostingMode
   status: 'waiting' | 'running' | 'done' | 'error' | 'cancelled'
   startedAt: number
@@ -28,7 +28,7 @@ export interface PostingTask {
 
 export interface PostingReaderApi {
   tasks: Record<string, PostingTask>
-  start: (key: string, opts: { prompt: string; kind: 'link' | 'company'; mode: PostingMode; projectId: string | null; label: string }) => void
+  start: (key: string, opts: { prompt: string; kind: 'link' | 'company' | 'text'; mode: PostingMode; projectId: string | null; label: string }) => void
   /** 새 자소서 창에서 읽던 작업을 방금 만든 자소서에 연결한다 (끝나면 그 자소서에 채움) */
   attach: (key: string, projectId: string) => void
   cancel: (key: string) => void

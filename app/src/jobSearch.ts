@@ -3,6 +3,16 @@ import { isHttpUrl } from './format'
 import type { JobPosting, JobQuery } from './types'
 import { uid } from './utils'
 
+/** 맞춤 공고 찾기에서 뺀 공고와 그 이유 (화면의 [뺀 공고 보기]) */
+export interface DroppedJob {
+  company: string
+  title: string
+  url: string
+  reason: string
+  /** check: 확인만 못 했을 뿐 직접 볼 만한 공고 · out: 마감 · 중복 · 기사 등 뺀 이유가 분명한 것 */
+  kind: 'check' | 'out'
+}
+
 /** 맞춤 공고 찾기는 화면을 옮겨도 계속되도록 앱 전체에서 상태를 들고 있다 */
 export interface JobSearchState {
   running: boolean
@@ -12,6 +22,7 @@ export interface JobSearchState {
   lastAdded: number | null
   /** 마지막 찾기에서 마감 · 확인 불가로 뺀 공고 수 */
   lastDropped: number
+  lastDroppedList: DroppedJob[]
 }
 
 export interface JobSearchApi extends JobSearchState {

@@ -7,6 +7,7 @@ import { Home } from './pages/Home'
 const Projects = lazy(() => import('./pages/Projects').then((m) => ({ default: m.Projects })))
 const ProjectEditor = lazy(() => import('./pages/ProjectEditor').then((m) => ({ default: m.ProjectEditor })))
 const Jobs = lazy(() => import('./pages/Jobs').then((m) => ({ default: m.Jobs })))
+const CalendarPage = lazy(() => import('./pages/Calendar').then((m) => ({ default: m.Calendar })))
 const SavedJobs = lazy(() => import('./pages/Jobs').then((m) => ({ default: m.SavedJobs })))
 const Experiences = lazy(() => import('./pages/Experiences').then((m) => ({ default: m.Experiences })))
 const Specs = lazy(() => import('./pages/Specs').then((m) => ({ default: m.Specs })))
@@ -23,6 +24,7 @@ export default function App() {
         <Route index element={<Home />} />
         <Route path="projects" element={page(<Projects />)} />
         <Route path="projects/:id" element={page(<ProjectEditor />)} />
+        <Route path="calendar" element={page(<CalendarPage />)} />
         <Route path="jobs" element={page(<Jobs />)} />
         <Route path="jobs/saved" element={page(<SavedJobs />)} />
         <Route path="experiences" element={page(<Experiences />)} />

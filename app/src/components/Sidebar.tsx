@@ -1,4 +1,4 @@
-import { Archive, Bookmark, Database, FileText, GraduationCap, House, Lightbulb, LoaderCircle, Plus, Radar, Settings } from 'lucide-react'
+import { Archive, Bookmark, CalendarDays, Database, FileText, GraduationCap, House, Lightbulb, LoaderCircle, Plus, Radar, Settings } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
 import { useJobSearch } from '../jobSearch'
 import { useStore } from '../store'
@@ -30,6 +30,9 @@ export function Sidebar({ onNew }: { onNew: () => void }) {
         <NavLink to="/projects" title="자소서 프로젝트 (Ctrl+2)">
           <FileText size={18} /> 자소서 프로젝트
           {data.projects.length > 0 && <span className="nav-count">{data.projects.length}</span>}
+        </NavLink>
+        <NavLink to="/calendar" title="마감 달력 (Ctrl+8)">
+          <CalendarDays size={18} /> 마감 달력
         </NavLink>
         <NavLink to="/jobs" end title="맞춤 공고 (Ctrl+3)">
           <Radar size={18} /> 맞춤 공고

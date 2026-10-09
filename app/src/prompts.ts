@@ -68,7 +68,7 @@ function context(data: AppData, project: Project, q: Question, exps: Experience[
   return `[지원 정보]
 회사: ${project.company || '(미정)'}
 직무: ${project.position || '(미정)'}
-${project.notes.trim() ? `공고 메모(인재상·자격요건·우대사항·공고 분석):\n${project.notes.trim()}\n` : ''}${keywords.length ? `공고에서 뽑은 반영 키워드: ${keywords.join(', ')}\n` : ''}
+${project.notes.trim() ? `공고 메모(인재상·자격요건·우대사항·공고 분석):\n${project.notes.trim()}\n` : ''}${keywords.length ? `공고에서 뽑은 반영 키워드: ${keywords.join(', ')}\n` : ''}${project.personal?.trim() ? `\n[지원자가 직접 적은 상황 · 지원 동기 — 사실로 보고 자연스럽게 반영하되 그대로 옮겨 적지 말 것]\n${project.personal.trim()}\n` : ''}
 [문항]
 ${q.prompt || '(문항 미입력)'}
 글자수 제한: ${limit}
@@ -189,6 +189,33 @@ ${q.answer || '(아직 비어 있음)'}
 ${NO_FAKE}`
 }
 
+/** 스펙 비교: 공고 요건과 내 스펙 · 경험을 견줘 충족 · 부족과 보완 방법, 자소서에서 강조할 강점을 짚는다 */
+export function specGapPrompt(data: AppData, project: Project) {
+  const exps = data.experiences
+    .slice(0, 20)
+    .map((e) => `- ${e.title}${e.tags.length ? ` [${e.tags.join(', ')}]` : ''}${e.summary ? `: ${e.summary}` : ''}`)
+    .join('\n')
+  return `당신은 ${project.company || '지원 회사'} ${project.position || ''} 직무 채용 담당자입니다. 아래 공고 요건과 지원자의 스펙 · 경험을 견줘 주세요.
+
+[지원 정보]
+회사: ${project.company || '(미정)'}
+직무: ${project.position || '(미정)'}
+${project.notes.trim() ? `공고 메모(자격 요건 · 우대 사항 · 공고 분석):\n${project.notes.trim()}` : '공고 메모: (없음 — 이 회사 · 직무의 일반적인 요건으로 판단하고, 그렇다고 밝혀 주세요)'}
+${project.personal?.trim() ? `\n[지원자가 직접 적은 상황]\n${project.personal.trim()}\n` : ''}
+[내 스펙]
+${specSummary(data)}
+
+[내 경험 목록]
+${exps || '- (없음)'}
+
+[출력 — 번호 목록, 마크다운 표 금지, 짧게]
+1. 요건별 비교: 공고의 자격 요건 · 우대 사항을 하나씩 "요건 → 내가 가진 것 → 충족 / 일부 / 부족"으로.
+2. 부족한 점 보완 방법: 지원 전 · 면접 전에 할 수 있는 것 2~3개 (자격증 시험 일정처럼 구체적으로).
+3. 자소서에서 강조할 강점 3개: 어떤 경험을 어느 문항에 쓰면 좋은지까지.
+4. 서류에서 걸릴 수 있는 위험 1~2개와 대응 문장 방향.
+${NO_FAKE}`
+}
+
 /* ---------- 웹: 맞춤 공고 찾기 · 공고 읽기 · 회사로 찾기 ---------- */
 
 /** 응답의 <json>…</json>(또는 코드 블록)에서 JSON을 꺼낸다 */
@@ -223,7 +250,31 @@ export function jobSearchPrompt(
   data: AppData,
   query: { keywords: string; career: string; region: string; count: number },
   today: string,
+  provider: 'claude' | 'gemini' = 'claude',
 ) {
+  // Gemini(agy)의 검색 결과에는 공고 주소가 보이지 않아, 공고 페이지를 열어 봐야 실제 주소를 알 수 있다.
+  // Claude 의 검색 결과에는 주소가 함께 나오므로 페이지를 열 필요가 없다 (앱이 따로 열어 확인한다)
+  const career = query.career || '신입'
+  const region = query.region ? ` ${query.region}` : ''
+  // 검색어 모양도 엔진마다 다르게: Gemini 는 공고 주소 안 검색(site:)이 잘 되고, Claude 는 사이트 이름을 넣은 평범한 검색이 잘 된다
+  const searchRule =
+    provider === 'gemini'
+      ? [
+          '- 공고 한 건의 페이지가 바로 나오도록 채용 사이트의 공고 주소 안에서 검색하세요. 키워드는 한 번에 하나씩, 중요한 것부터:',
+          `  · site:saramin.co.kr/zf_user/jobs/relay/view {키워드 하나} ${career}${region}`,
+          `  · site:jobkorea.co.kr/Recruit/GI_Read {키워드 하나} ${career}${region}`,
+          '  키워드 여러 개를 OR 로 묶거나 따옴표를 여러 개 섞은 긴 검색어는 결과가 거의 안 나오니 쓰지 마세요. 사람인과 잡코리아를 번갈아 검색하세요.',
+        ].join('\n')
+      : [
+          `- 검색어는 "{키워드 하나} ${career} 채용 사람인", "{키워드 하나} ${career} 채용 잡코리아"처럼 키워드 하나와 채용 사이트 이름을 넣어 짧게 쓰세요${region ? ` (지역 "${query.region}"도 넣기)` : ''}. 키워드마다 한 번씩, 4~5번 검색하세요.`,
+          '- site: · OR · 따옴표를 섞은 검색어는 결과가 거의 안 나오니 쓰지 마세요.',
+        ].join('\n')
+  const pageRule =
+    provider === 'gemini'
+      ? `- 공고 페이지는 꼭 필요할 때만 WebFetch로 여세요(최대 2번). 앱이 후보 공고 페이지를 하나씩 직접 열어 접수 중인지 · 마감일을 확인합니다.
+- 검색은 최대 5번입니다. 끝나면 바로 답하세요.`
+      : `- 공고 페이지는 열지 마세요(WebFetch 쓰지 않기). 앱이 후보 공고 페이지를 하나씩 직접 열어 접수 중인지 · 마감일을 확인합니다. 검색 결과에 보이는 정보만으로 후보를 고르세요.
+- 검색은 최대 5번입니다. 끝나면 바로 답하세요.`
   const known = data.jobs
     .slice(0, 40)
     .map((j) => `- ${j.company} / ${j.title}`)
@@ -242,14 +293,16 @@ ${candidateSummary(data)}
 ${known || '- (없음)'}
 
 [찾는 방법]
-- WebSearch로 사람인, 잡코리아, 원티드, 잡알리오(공공기관), 기업 채용 홈페이지를 검색하세요. 검색어에 키워드 · 경력 구분 · 지역과 "채용 ${today.slice(0, 4)}"을 함께 넣어 지금 공고가 나오게 하세요.
-- 검색 결과에 제목 · 회사 · 마감일이 보이면 페이지를 열지 마세요. 마감일이나 접수 상태가 안 보일 때만 WebFetch로 여세요.
-- 검색은 최대 4번, 페이지 읽기는 최대 2번입니다. 그 안에 확인한 것만으로 바로 답하세요.
+${searchRule}
+- 검색 한 번에 나온 공고 중 조건에 맞는 것은 여러 개를 함께 후보로 담으세요. 공고 주소(url)는 검색 결과에 나온 주소를 그대로 쓰세요.
+${pageRule}
+- 뉴스 기사 · 블로그 · 카페 · 커뮤니티 글은 공고가 아닙니다. 그런 글에서 알게 된 공고는 사람인 · 잡코리아 · 원티드 · 기업 채용 페이지의 공고 주소를 찾았을 때만 넣으세요.
 
 [넣는 기준]
 - 지금 접수 중으로 보이는 공고만 후보로 넣으세요: 마감일이 오늘(${today}) 이후이거나, ${today.slice(0, 4)}년에 올라온 상시 채용 공고.
 - 마감일이 지났거나, '마감' · '접수 마감' · '채용 종료' 표시가 보이거나, 작년 이전 공고로 보이면 넣지 마세요.
 - 경력 구분 · 지역 · 직무가 조건과 맞지 않으면 넣지 마세요.
+- 회사명을 확인하지 못한 공고(회사명을 가린 목록 · 헤드헌팅 익명 공고 등)는 넣지 마세요.
 - url에는 그 공고로 가는 검색 결과 링크를 그대로 넣으세요. vertexaisearch.cloud.google.com/grounding-api-redirect/… 같은 중간 주소도 괜찮습니다. 사이트 첫 화면이나 채용 메인 주소(https://www.saramin.co.kr 등)밖에 없는 공고는 넣지 마세요.
 - 후보는 최대 ${query.count + 4}개까지 넣으세요. 앱이 공고 페이지를 하나씩 직접 열어 마감 여부를 다시 확인하고, 확실한 것만 ${query.count}개 이하로 추립니다. 조건에 맞는 후보가 적으면 적은 대로 넣고, 개수를 채우려고 조건에 안 맞는 공고를 넣지 마세요.
 - 여러 회사를 고르게 담고, 한 회사의 공고는 최대 2개까지만 넣으세요. 마감일을 모르면 deadline을 빈 문자열로 두세요.
@@ -334,6 +387,23 @@ const POSTING_OUTPUT = `[시간 제한]
 - isOpen: 지금 접수 중이면 true, 마감됐으면 false, 알 수 없으면 null
 - 페이지에서 확인되지 않은 값은 빈 값 또는 null로 두고 지어내지 마세요. limit은 글자수 제한(숫자), 없으면 null.
 <json> 밖에는 아무것도 쓰지 마세요.`
+
+/** 공고 내용 붙여넣기: 로그인해야 보이는 공고처럼 링크로 읽을 수 없을 때, 복사한 본문을 정리한다 */
+export function postingTextPrompt(text: string, today: string) {
+  // 웹을 쓰지 않는 작업이라 검색 · 페이지 읽기 규칙은 빼고, 분석 · 출력 형식만 그대로 쓴다
+  const output = POSTING_OUTPUT.slice(POSTING_OUTPUT.indexOf('[공고 분석 — analysis]'))
+  return `오늘은 ${today}입니다. 아래는 지원자가 채용 사이트에서 복사해 붙여넣은 공고 본문입니다. 이 본문만 보고 정리해 주세요. 웹 검색이나 페이지 열기는 하지 마세요.
+
+[붙여넣은 공고 본문]
+${text.slice(0, 15000)}
+
+[자기소개서 문항 — 가장 중요]
+- 본문에 자기소개서 문항이 있으면 한 글자도 바꾸지 말고 그대로 옮기고 questionsSource는 "공고 페이지"로 적으세요. 글자수 제한이 함께 있으면 limit에 숫자로 넣으세요.
+- 본문에 문항이 없으면 questions는 빈 배열, questionsSource는 빈 문자열입니다. 문항을 지어내지 마세요.
+- url은 본문에 공고 주소가 있을 때만 적고, 없으면 빈 문자열로 두세요.
+
+${output}`
+}
 
 export function postingPrompt(url: string, today: string) {
   return `오늘은 ${today}입니다. 아래 채용 공고 페이지를 WebFetch로 한 번 열어 내용을 정리해 주세요.

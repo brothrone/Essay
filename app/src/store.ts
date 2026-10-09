@@ -153,6 +153,7 @@ export function newProject(init: Partial<Project> = {}): Project {
     deadlineTime: '',
     status: 'writing',
     notes: '',
+    personal: '',
     questions: [newQuestion()],
     createdAt: now,
     updatedAt: now,
@@ -224,6 +225,7 @@ export function normalize(raw: unknown): AppData {
     deadlineTime: str(p.deadlineTime),
     status: STATUS_ORDER.includes(p.status as ProjectStatus) ? (p.status as ProjectStatus) : 'writing',
     notes: str(p.notes),
+    personal: str(p.personal),
     questions: objs(p.questions).map((q) => ({
       id: str(q.id) || uid(),
       prompt: str(q.prompt),

@@ -118,6 +118,7 @@ export function PostingReaderProvider({ children }: { children: ReactNode }) {
       setTasks(tasksRef.current)
 
       const r = await runWebTask(prompt, {
+        web: kind !== 'text', // 붙여넣은 공고는 본문만 정리하면 돼서 웹을 쓰지 않는다 (빠르고 엉뚱한 검색이 없음)
         stopped: () => stopped.current.has(key),
         onState: (s) => {
           if (s === 'running') runningKey.current = key

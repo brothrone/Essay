@@ -71,6 +71,8 @@ export interface Project {
   deadlineTime: string // HH:mm
   status: ProjectStatus
   notes: string
+  /** 나만의 상황 · 지원 동기 메모 (전향 이유, 공백기, 지역 사정 등) — 초안 · 피드백 요청문에 들어간다 */
+  personal: string
   questions: Question[]
   createdAt: number
   updatedAt: number

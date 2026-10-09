@@ -34,3 +34,31 @@ export function isPostingUrl(url: string) {
     return false
   }
 }
+
+/** 채용 공고가 아니라 기사 · 블로그 · 커뮤니티 글로 보이는 주소 (맞춤 공고에서 뺀다) */
+const ARTICLE_HOST_PREFIXES = ['news.', 'm.news.', 'n.news.', 'blog.', 'm.blog.', 'cafe.', 'm.cafe.', 'post.']
+const ARTICLE_DOMAINS = [
+  // 블로그 · 커뮤니티 · SNS
+  'tistory.com', 'brunch.co.kr', 'velog.io', 'medium.com', 'youtube.com', 'instagram.com', 'facebook.com',
+  'dcinside.com', 'fmkorea.com', 'clien.net', 'theqoo.net',
+  // 언론사
+  'mk.co.kr', 'hankyung.com', 'chosun.com', 'joongang.co.kr', 'donga.com', 'yna.co.kr', 'newsis.com', 'edaily.co.kr',
+  'mt.co.kr', 'etnews.com', 'zdnet.co.kr', 'sedaily.com', 'fnnews.com', 'asiae.co.kr', 'heraldcorp.com', 'hani.co.kr',
+  'khan.co.kr', 'seoul.co.kr', 'kmib.co.kr', 'nocutnews.co.kr', 'news1.kr', 'newspim.com', 'dt.co.kr', 'ajunews.com',
+  'inews24.com',
+]
+const ARTICLE_PATH_PARTS = ['news', 'article', 'articles', 'articleview', 'articleview.html', 'blog']
+
+export function isArticleUrl(url: string) {
+  try {
+    const u = new URL(url.trim())
+    const host = u.hostname.toLowerCase().replace(/^www\./, '')
+    if (ARTICLE_HOST_PREFIXES.some((p) => host.startsWith(p))) return true
+    if (ARTICLE_DOMAINS.some((d) => host === d || host.endsWith(`.${d}`))) return true
+    // 기사 주소 모양: /news/… · /article/… · articleView.html 등
+    const parts = u.pathname.toLowerCase().split('/').filter(Boolean)
+    return parts.some((part) => ARTICLE_PATH_PARTS.includes(part))
+  } catch {
+    return false
+  }
+}
