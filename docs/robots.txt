@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /app-config.json
+
+Sitemap: https://essay.win/sitemap.xml
