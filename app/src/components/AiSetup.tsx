@@ -7,7 +7,7 @@ import { aiReady, loggedInFor, setLoginConfirmed, useAiStatus } from '../useAiSt
 import { openGeminiLoginDialog } from './AuthCodeDialog'
 import { openHelpDialog } from './HelpDialog'
 import { InstallPanel, isInstallAction, useInstaller } from './InstallProgress'
-import { AI_MODELS, AI_PREFS_EVENT, AI_PROVIDERS, saveAiModel, saveAiProvider, savedAiModel, savedAiProvider } from '../useAiTask'
+import { AI_MODELS, AI_PREFS_EVENT, AI_PROVIDERS, AI_TABS, saveAiModel, saveAiProvider, savedAiModel, savedAiProvider } from '../useAiTask'
 
 type Step = { title: string; done: boolean; unknown?: boolean; body: ReactNode }
 
@@ -171,6 +171,42 @@ export function AiSetup({
           </>
         ),
       })
+  } else if (provider === 'gpt') {
+    const o = status?.gpt
+    const oLogged = !!status && loggedInFor(status, 'gpt')
+    steps.push({
+      title: o?.available ? '설치됨 · Codex CLI' : 'Codex CLI 설치',
+      done: !!o?.available,
+      body: o?.available ? (
+        <span className="muted small">{o.path}</span>
+      ) : (
+        <>
+          <p className="muted small">OpenAI가 만든 프로그램이에요. 1~2분 걸려요.</p>
+          <div className="btn-row">{btn('install-codex', 'Codex CLI 설치', true)}</div>
+        </>
+      ),
+    })
+    steps.push({
+      title: oLogged ? 'ChatGPT 계정 로그인됨' : 'ChatGPT 계정으로 로그인',
+      done: oLogged,
+      unknown: !!o?.available && o.loggedIn === null,
+      body: oLogged ? null : (
+        <>
+          {o?.apiKey && <p className="ai-error">지금은 API 키로 로그인돼 있어서 쓰면 OpenAI API 요금이 나가요. ChatGPT 계정으로 다시 로그인해 주세요.</p>}
+          {o?.available ? (
+            loginGuide(['브라우저가 열리면 ChatGPT 계정(Plus · Pro 등)으로 로그인.', '브라우저에 로그인 완료가 뜨면 열린 창을 닫으세요.'])
+          ) : (
+            <p className="muted small">설치가 끝나면 로그인할 수 있어요.</p>
+          )}
+          {o?.available && (
+            <div className="btn-row">
+              {btn('login-codex', '로그인 창 열기', true)}
+              {o.loggedIn === null && confirmBtn('gpt')}
+            </div>
+          )}
+        </>
+      ),
+    })
   } else {
     const c = status?.claude
     const cLogged = !!status && loggedInFor(status, 'claude')
@@ -236,9 +272,9 @@ export function AiSetup({
 
       {onProvider && (
         <div className="segmented ai-setup-pick">
-          {[...AI_PROVIDERS].reverse().map((x) => (
+          {AI_TABS.map((x) => (
             <button type="button" key={x.value} className={provider === x.value ? 'on' : ''} onClick={() => onProvider(x.value)}>
-              {x.value === 'gemini' ? 'Gemini (Google 계정)' : 'Claude (Claude 구독)'}
+              {x.name} ({x.account})
               {status && aiReady(status, x.value) && <Check size={12} />}
             </button>
           ))}
@@ -266,6 +302,10 @@ export function AiSetup({
         {provider === 'gemini' ? (
           <a href="https://antigravity.google/cli" target="_blank" rel="noreferrer" className="link-btn">
             Antigravity CLI 안내 <ExternalLink size={11} />
+          </a>
+        ) : provider === 'gpt' ? (
+          <a href="https://developers.openai.com/codex/cli" target="_blank" rel="noreferrer" className="link-btn">
+            Codex CLI 안내 <ExternalLink size={11} />
           </a>
         ) : (
           <a href="https://claude.ai/download" target="_blank" rel="noreferrer" className="link-btn">
@@ -306,7 +346,8 @@ export function HomeAi() {
 
   const ready = aiReady(status, provider)
   const st = status?.[provider]
-  const cliName = provider === 'claude' ? 'Claude Code' : st && 'cli' in st && st.cli === 'gemini' ? 'Gemini CLI' : 'Antigravity CLI'
+  const cliName =
+    provider === 'claude' ? 'Claude Code' : provider === 'gpt' ? 'Codex CLI' : st && 'cli' in st && st.cli === 'gemini' ? 'Gemini CLI' : 'Antigravity CLI'
   const showSetup = manage || (!ready && !later && !!status)
 
   const pick = (p: AiProvider) => {
@@ -323,9 +364,9 @@ export function HomeAi() {
             <Sparkles size={16} /> AI
           </span>
           <div className="segmented">
-            {[...AI_PROVIDERS].reverse().map((x) => (
+            {AI_TABS.map((x) => (
               <button type="button" key={x.value} className={provider === x.value ? 'on' : ''} onClick={() => pick(x.value)}>
-                {x.value === 'gemini' ? 'Gemini' : 'Claude'}
+                {x.name}
                 {status && aiReady(status, x.value) && <Check size={12} />}
               </button>
             ))}

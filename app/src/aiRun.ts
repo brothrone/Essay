@@ -32,6 +32,7 @@ export async function postingRequest(url: string, company: string, position: str
  * 웹 작업(공고 찾기 · 공고 읽기)은 글쓰기보다 '빨리 정확하게 옮겨 적기'가 중요해서 빠른 모델로 돌린다.
  * - Claude: Sonnet (Max 요금제의 기본 Opus 는 웹 작업에서 몇 배 느리다)
  * - Gemini(agy): 기본 모델이 이미 Flash 라 따로 지정하지 않는다
+ * - GPT(Codex): 요금제마다 쓸 수 있는 모델이 달라 기본 모델 그대로, 대신 웹 작업은 생각을 짧게 한다(main.cjs)
  */
 export function webModel(provider: AiProvider) {
   return provider === 'claude' ? 'sonnet' : ''

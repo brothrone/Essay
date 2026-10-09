@@ -441,7 +441,7 @@ export function AiPanel({
         <summary>다른 AI 채팅에 붙여넣어 쓰기 (요청문 복사)</summary>
         <ol className="ai-steps">
           <li>아래 버튼으로 요청문을 복사해요</li>
-          <li>쓰고 있는 AI 채팅(Claude · Gemini)에 붙여넣어요</li>
+          <li>쓰고 있는 AI 채팅(Claude · Gemini · ChatGPT)에 붙여넣어요</li>
           <li>나온 글을 답변 칸에 붙여넣고 내 말투로 다듬어요</li>
         </ol>
         <div className="ai-actions">

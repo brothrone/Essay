@@ -1,7 +1,7 @@
 # Essay — Claude Code 작업 규칙
 
 자소서 · 스펙 관리 데스크톱 앱 (Electron 44 + React 19 + Vite 8 + TypeScript). 윈도우 · 맥 둘 다 같은 코드로 배포한다 (1.4.0 부터 맥 포함). 운영체제별 동작은 `main.cjs` 의 `IS_MAC`, 화면은 `src/platform.ts` 로 나눈다.
-AI 기능은 유료 API 없이 사용자 PC에 로그인된 CLI(Claude Code `claude`, Antigravity CLI `agy`, Gemini CLI `gemini`)를 실행한다.
+AI 기능은 유료 API 없이 사용자 PC에 로그인된 CLI(Claude Code `claude`, Antigravity CLI `agy`, Gemini CLI `gemini`, OpenAI Codex CLI `codex` — GPT 는 1.9.3 부터 윈도우만, 맥은 `src/platform.ts` 의 `HAS_GPT` 로 숨김)를 실행한다.
 
 ## 사용자와 일하는 방식
 - **답변은 한국어.**
@@ -43,6 +43,7 @@ npx vite build              # 화면 빌드
 - 유료 API 로 결제되지 않게 `ANTHROPIC_*`, `GEMINI_API_KEY` 등 키 환경 변수를 지우고 실행한다 (`aiEnv`).
 - Claude Code: 요청문은 stdin, `--output-format stream-json`. 웹 작업은 빠른 모델(Sonnet).
 - agy: 요청문은 인자(윈도우는 30,000자 제한, 맥은 200,000자), 파이프 stdin 을 읽지 않는다. 로그인 코드는 콘솔 입력으로만 받는다 (윈도우는 C# `WriteConsoleInputW`, 맥은 `/usr/bin/expect` 가상 터미널로 agy 를 띄우고 Essay 가 파이프로 넣은 줄을 터미널 입력으로 넘긴다 — `startGeminiLoginMac`. macOS 의 `script` 는 stdin 이 파이프면 실패해서 못 쓴다). 검색 결과에 공고 주소가 안 보여서 맞춤 공고는 사람인 · 잡코리아 공고 주소 안 `site:` 검색으로 찾게 한다. 링크는 `vertexaisearch…/grounding-api-redirect/…` 중간 주소라 `net:resolve-urls` 로 실제 주소로 바꾼다. 결과의 `usage` 에 토큰 수가 있다.
+- Codex CLI(GPT, 윈도우 1.9.3): 설치는 공식 `irm https://chatgpt.com/codex/install.ps1 | iex`(`CODEX_NON_INTERACTIVE=1` 이면 묻지 않음, `%LOCALAPPDATA%\Programs\OpenAI\Codex\bin\codex.exe`), 로그인은 `codex login`(브라우저 ChatGPT 로그인, 코드 입력 없음). 로그인 확인은 `codex login status` 의 종료 코드(문구는 stderr, "API key" 면 API 요금이 나가므로 로그인 안 된 것으로 보고 막음). 실행은 `codex exec --json --ephemeral --skip-git-repo-check --ignore-user-config --ignore-rules -s read-only -c web_search=disabled|live -`, 요청문(시스템 지시를 앞에 붙임)은 stdin. 답은 마지막 `item.completed` agent_message, 토큰은 `turn.completed.usage`. 401 이 오면 20초 재시도를 기다리지 않고 끊는다. 모델은 요금제 · 시기마다 바뀌어 `~/.codex/models_cache.json` 에서 읽는다. `OPENAI_*` · `CODEX_API_KEY` 는 지우고 실행. 홈 폴더가 Temp 안이면 codex 가 경고를 stderr 로 내서 설치 검사가 실패하니 설치 시험은 Temp 밖 폴더로
 - 맥에서 CLI 찾기: 앱은 터미널 PATH 를 못 받으므로 `zsh -lc` 로 로그인 셸 PATH 를 한 번 읽어(`loginShellPath`) `~/.local/bin` · `/opt/homebrew/bin` 등과 함께 쓴다. 자식 프로세스는 `detached: true` 로 띄워 `process.kill(-pid)` 로 묶음 종료한다. 설치 · 터미널 작업은 `.command` 파일을 만들어 터미널 앱으로 연다.
 - 공고 마감 확인(`checkPosting`): 화면의 '마감일:' → 캐치 `ApplyEndDatetime` → 본문 "접수기간 ~" → `validThrough`(반년 넘게 남았으면 상시로 봄) 순.
 
@@ -50,5 +51,5 @@ npx vite build              # 화면 빌드
 1. 맥 서명 · 공증 (Apple Developer Program 가입 뒤 — 그러면 Gatekeeper 안내가 사라지고 맥 자동 업데이트도 켤 수 있다) — `guides/맥-작업-안내.md`
 2. 유료 판매(개당 990원): 사업자 등록, PG(나이스체크아웃 검토: 가입비 면제 프로모션, 수수료 1.9~3.4%, 코드 NICE27 시 2.7%, 결제 후 키 자동 발송 없음), 통신판매업 신고, 환불 제한 표시 + 체험판, 사이트 하단 사업자 정보 표시(익명 유지와 충돌하니 상호로)
 3. (완료 1.6.0) AI별 토큰 사용량 표시 — `ai-usage.json`(userData), 설정의 [AI 사용량]
-4. 요금제별 CLI 사용 가능 여부 주기적 재확인 — 결과는 `docs/app-config.json`(앱이 하루 한 번 받아 설정 · 처음 안내에 표시, 기본값은 `app/electron/app-config-default.json`)만 고쳐 push 하면 앱 재배포 없이 바뀐다. 2026-10-09 기준: Claude Code 는 Pro · Max(무료 불가), Antigravity CLI 는 무료 Google 계정도 가능(한도 작음), Gemini CLI 는 2026-06-18부터 개인 계정 불가. agy 를 다른 앱에서 실행하는 것이 Antigravity 약관상 괜찮은지는 Google 공식 답이 없음
+4. 요금제별 CLI 사용 가능 여부 주기적 재확인 — 결과는 `docs/app-config.json`(앱이 하루 한 번 받아 설정 · 처음 안내에 표시, 기본값은 `app/electron/app-config-default.json`)만 고쳐 push 하면 앱 재배포 없이 바뀐다. 2026-10-09 기준: Claude Code 는 Pro · Max(무료 불가), Antigravity CLI 는 무료 Google 계정도 가능(한도 작음), Gemini CLI 는 2026-06-18부터 개인 계정 불가. agy 를 다른 앱에서 실행하는 것이 Antigravity 약관상 괜찮은지는 Google 공식 답이 없음. 2026-10-10: Codex 는 OpenAI 안내상 Free · Go 에도 들어 있지만 CLI 는 Plus 이상으로 안내됨(learn.chatgpt.com/docs/pricing). 다른 앱이 ChatGPT 로그인한 Codex CLI 를 실행하는 것에 대한 OpenAI 공식 답도 없음
 5. (완료 1.6.0) 앱 안 의견 보내기 — 도움말 메뉴 · 설정 · F1 도움말. GitHub 이슈 작성 화면을 내용이 채워진 채로 열고, `app-config.json` 의 `feedback.formUrl` 에 Google 설문지 주소를 넣으면 [설문지로 보내기]도 생긴다. 유료 판매 땐 Cloudflare Workers 로 피드백 · 결제 확인 · 라이선스 키를 함께 → `server/` 에 서버를 만들어 `https://api.essay.win` 에 배포하고(2026-10-10, workers.dev 주소는 끔, 운영 비밀 값은 맥의 `server/.prod.vars`) `docs/app-config.json` 의 `api.baseUrl` 로 1.8.x 앱에서 켬

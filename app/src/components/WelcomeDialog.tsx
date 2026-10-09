@@ -5,7 +5,8 @@ import { desktop, type AiProvider } from '../desktop'
 import { buildSample } from '../sample'
 import { isEmptyData, useStore } from '../store'
 import { aiReady, useAiStatus } from '../useAiStatus'
-import { AI_PREFS_EVENT, saveAiProvider, savedAiProvider } from '../useAiTask'
+import { HAS_GPT } from '../platform'
+import { AI_PREFS_EVENT, providerInfo, saveAiProvider, savedAiProvider } from '../useAiTask'
 import { AiSetup } from './AiSetup'
 import { openHelpDialog } from './HelpDialog'
 import { openImportDialog } from './ImportModal'
@@ -55,13 +56,16 @@ export function WelcomeDialogHost() {
   return <WelcomeWizard onClose={() => setOpen(false)} />
 }
 
-type AiChoice = 'agy' | 'claude' | 'gemini-free'
+type AiChoice = 'agy' | 'claude' | 'gpt' | 'gemini-free'
 
-const CHOICES: { value: AiChoice; provider: AiProvider; name: string; need: string }[] = [
+const ALL_CHOICES: { value: AiChoice; provider: AiProvider; name: string; need: string }[] = [
   { value: 'agy', provider: 'gemini', name: 'Gemini', need: 'Google AI Pro · Ultra 구독' },
   { value: 'claude', provider: 'claude', name: 'Claude', need: 'Claude Pro · Max 구독' },
+  { value: 'gpt', provider: 'gpt', name: 'ChatGPT', need: 'ChatGPT Plus · Pro 구독' },
   { value: 'gemini-free', provider: 'gemini', name: 'Gemini 무료', need: '무료 Google 계정 · 한도 작음' },
 ]
+const CHOICES = ALL_CHOICES.filter((c) => HAS_GPT || c.value !== 'gpt')
+const CHOICE_OF: Record<AiProvider, AiChoice> = { gemini: 'agy', claude: 'claude', gpt: 'gpt' }
 
 const STEP_LABELS = ['소개', 'AI', '연결', '내 자소서']
 
@@ -69,7 +73,7 @@ function WelcomeWizard({ onClose }: { onClose: () => void }) {
   const config = useAppConfig()
   const [step, setStep] = useState(0)
   // 여러 개 골라도 된다. 먼저 고른 것이 홈의 기본 AI
-  const [choices, setChoices] = useState<AiChoice[]>(() => [savedAiProvider() === 'claude' ? 'claude' : 'agy'])
+  const [choices, setChoices] = useState<AiChoice[]>(() => [CHOICE_OF[savedAiProvider()]])
   const { status, checking, refresh } = useAiStatus()
   const { data, replaceAll } = useStore()
   const navigate = useNavigate()
@@ -125,17 +129,17 @@ function WelcomeWizard({ onClose }: { onClose: () => void }) {
             <Logo size={44} />
             <div>
               <h3>내 AI 구독으로 자소서를 씁니다.</h3>
-              <p className="muted">Google AI나 Claude 구독에 로그인하면 끝. API 키도, 추가 요금도 없습니다.</p>
+              <p className="muted">{HAS_GPT ? 'Google AI · Claude · ChatGPT' : 'Google AI나 Claude'} 구독에 로그인하면 끝. API 키도, 추가 요금도 없습니다.</p>
             </div>
           </div>
           <ul className="welcome-points">
             <li>
               <strong>자소서 사이트 구독료 없음</strong>
-              <p>이미 쓰는 Claude · Google AI 구독(또는 무료 Google 계정) 한도 안에서 씁니다.</p>
+              <p>이미 쓰는 Claude · Google AI{HAS_GPT && ' · ChatGPT'} 구독(또는 무료 Google 계정) 한도 안에서 씁니다.</p>
             </li>
             <li>
               <strong>최신 모델</strong>
-              <p>Claude, Gemini 최신 모델을 직접 고릅니다.</p>
+              <p>Claude, Gemini{HAS_GPT && ', GPT'} 최신 모델을 직접 고릅니다.</p>
             </li>
             <li>
               <strong>데이터는 이 컴퓨터에만</strong>
@@ -193,7 +197,7 @@ function WelcomeWizard({ onClose }: { onClose: () => void }) {
             {choices.includes('gemini-free') && <> 무료 Google 계정도 Antigravity CLI 로 로그인하면 돼요.</>}
           </p>
           {providers.map((p) => (
-            <AiSetup key={p} provider={p} status={status} checking={checking} refresh={refresh} title={p === 'claude' ? 'Claude' : 'Gemini'} />
+            <AiSetup key={p} provider={p} status={status} checking={checking} refresh={refresh} title={providerInfo(p).name} />
           ))}
           <p className="muted small">
             안 되면{' '}

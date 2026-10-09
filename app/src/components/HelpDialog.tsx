@@ -1,7 +1,7 @@
 import { Copy, FileText, TerminalSquare } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { desktop } from '../desktop'
-import { IS_MAC, PASTE_HINT, TERMINAL } from '../platform'
+import { HAS_GPT, IS_MAC, PASTE_HINT, TERMINAL } from '../platform'
 import { toast } from '../toast'
 import { openFeedbackDialog } from './FeedbackDialog'
 import { Modal } from './ui'
@@ -64,7 +64,13 @@ const GROUPS: Group[] = [
         a: (
           <>
             인터넷 연결을 확인하고 다시 눌러 보세요. 회사 컴퓨터라면 보안 프로그램이나 프록시가 다운로드를 막을 수 있어요. 그땐 관리자에게{' '}
-            <code>claude.ai</code> 와 <code>antigravity.google</code> 접속 허용을 요청하세요.
+            <code>claude.ai</code> 와 <code>antigravity.google</code>
+            {HAS_GPT && (
+              <>
+                {' '}· <code>chatgpt.com</code>
+              </>
+            )}{' '}
+            접속 허용을 요청하세요.
           </>
         ),
       },
@@ -100,6 +106,19 @@ const GROUPS: Group[] = [
           </>
         ),
       },
+      ...(HAS_GPT
+        ? [
+            {
+              q: 'GPT가 "API 키로 로그인돼 있어요"라고 해요',
+              a: (
+                <>
+                  Codex CLI에 OpenAI API 키로 로그인한 상태예요. 그대로 쓰면 API 요금이 나가서 Essay가 막아 둬요. 연결 카드의 <b>[로그인 창 열기]</b>를
+                  누르면 API 키 로그인을 지우고 ChatGPT 계정 로그인을 시작해요.
+                </>
+              ),
+            },
+          ]
+        : []),
       {
         q: '잘 쓰다가 갑자기 "로그인이 필요해요"가 떠요',
         a: (
@@ -160,11 +179,23 @@ const COMMANDS: { title: string; lines: { cmd: string; note?: string }[] }[] = [
       { cmd: 'claude auth login --claudeai', note: '브라우저에서 Claude 구독 계정으로 로그인' },
     ],
   },
+  ...(HAS_GPT
+    ? [
+        {
+          title: 'GPT (Codex CLI) 설치 → 로그인',
+          lines: [
+            { cmd: 'irm https://chatgpt.com/codex/install.ps1 | iex', note: '설치' },
+            { cmd: 'codex login', note: '브라우저에서 ChatGPT 계정으로 로그인' },
+          ],
+        },
+      ]
+    : []),
   {
     title: '설치됐는지 확인',
     lines: [
       { cmd: 'agy --version', note: '버전 숫자가 나오면 설치된 거예요' },
       { cmd: 'claude --version' },
+      ...(HAS_GPT ? [{ cmd: 'codex login status', note: '"Logged in using ChatGPT" 가 나오면 돼요' }] : []),
     ],
   },
 ]

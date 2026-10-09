@@ -378,10 +378,10 @@ export function jobSearchPrompt(
   data: AppData,
   query: { keywords: string; career: string; region: string; count: number },
   today: string,
-  provider: 'claude' | 'gemini' = 'claude',
+  provider: 'claude' | 'gemini' | 'gpt' = 'claude',
 ) {
   // Gemini(agy)의 검색 결과에는 공고 주소가 보이지 않아, 공고 페이지를 열어 봐야 실제 주소를 알 수 있다.
-  // Claude 의 검색 결과에는 주소가 함께 나오므로 페이지를 열 필요가 없다 (앱이 따로 열어 확인한다)
+  // Claude · GPT 의 검색 결과에는 주소가 함께 나오므로 페이지를 열 필요가 없다 (앱이 따로 열어 확인한다)
   const career = query.career || '신입'
   const region = query.region ? ` ${query.region}` : ''
   // 검색어 모양도 엔진마다 다르게: Gemini 는 공고 주소 안 검색(site:)이 잘 되고, Claude 는 사이트 이름을 넣은 평범한 검색이 잘 된다

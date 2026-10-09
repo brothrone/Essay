@@ -4,7 +4,7 @@ import { desktop, type InstallAction } from '../desktop'
 import { TERMINAL } from '../platform'
 import { toast } from '../toast'
 
-export const INSTALL_ACTIONS: InstallAction[] = ['install-agy', 'install-claude', 'install-gemini', 'install-node']
+export const INSTALL_ACTIONS: InstallAction[] = ['install-agy', 'install-claude', 'install-gemini', 'install-node', 'install-codex']
 export const isInstallAction = (a: string): a is InstallAction => (INSTALL_ACTIONS as string[]).includes(a)
 
 const NAMES: Record<InstallAction, string> = {
@@ -12,6 +12,7 @@ const NAMES: Record<InstallAction, string> = {
   'install-claude': 'Claude Code',
   'install-gemini': 'Gemini CLI',
   'install-node': 'Node.js',
+  'install-codex': 'Codex CLI',
 }
 
 export type InstallState = {

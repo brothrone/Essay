@@ -5012,6 +5012,11 @@ textarea:focus-visible {
   background: var(--primary);
 }
 
+.usage-bar .o,
+.usage-legend .o {
+  background: #10a37f;
+}
+
 .usage-legend i {
   display: inline-block;
   width: 9px;

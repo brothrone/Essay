@@ -1,14 +1,17 @@
 import { BarChart3, RotateCcw } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { desktop, type AiProvider, type AiUsageSummary, type UsageRow } from '../desktop'
+import { HAS_GPT } from '../platform'
 import { toast } from '../toast'
 import { fmtTokens } from '../utils'
 
-const NAMES: Record<AiProvider, string> = { claude: 'Claude', gemini: 'Gemini' }
+const NAMES: Record<AiProvider, string> = { claude: 'Claude', gemini: 'Gemini', gpt: 'GPT' }
 const LIMIT_LINKS: Record<AiProvider, { label: string; url: string }> = {
   claude: { label: 'Claude 사용량 보기', url: 'https://claude.ai/settings/usage' },
   gemini: { label: 'Google AI 요금제 보기', url: 'https://one.google.com/about/ai-premium' },
+  gpt: { label: 'Codex 사용량 보기', url: 'https://chatgpt.com/codex/settings/usage' },
 }
+const tokens = (r: UsageRow | undefined) => (r ? r.input + r.output : 0)
 
 const cell = (r: UsageRow) => (r.runs ? `${r.runs}회 · ${fmtTokens(r.input + r.output)}` : '—')
 
@@ -25,8 +28,9 @@ export function AiUsageCard() {
     await load()
     toast('사용량 기록을 지웠어요')
   }
-  const providers: AiProvider[] = ['claude', 'gemini']
-  const peak = u ? Math.max(1, ...u.recent.map((d) => d.claude.input + d.claude.output + d.gemini.input + d.gemini.output)) : 1
+  // GPT 는 고를 수 있는 운영체제이거나 쓴 기록이 있을 때만 보인다
+  const providers: AiProvider[] = HAS_GPT || (u && u.month.gpt?.runs) ? ['claude', 'gemini', 'gpt'] : ['claude', 'gemini']
+  const peak = u ? Math.max(1, ...u.recent.map((d) => tokens(d.claude) + tokens(d.gemini) + tokens(d.gpt))) : 1
 
   return (
     <section className="card">
@@ -62,10 +66,16 @@ export function AiUsageCard() {
           </table>
           <div className="usage-bars" aria-label="최근 14일 토큰">
             {u.recent.map((d) => {
-              const c = d.claude.input + d.claude.output
-              const g = d.gemini.input + d.gemini.output
+              const c = tokens(d.claude)
+              const g = tokens(d.gemini)
+              const o = tokens(d.gpt)
               return (
-                <div key={d.day} className="usage-bar" title={`${d.day} · Claude ${fmtTokens(c)} · Gemini ${fmtTokens(g)}`}>
+                <div
+                  key={d.day}
+                  className="usage-bar"
+                  title={`${d.day} · Claude ${fmtTokens(c)} · Gemini ${fmtTokens(g)}${providers.includes('gpt') ? ` · GPT ${fmtTokens(o)}` : ''}`}
+                >
+                  {o > 0 && <i className="o" style={{ height: `${(o / peak) * 100}%` }} />}
                   <i className="g" style={{ height: `${(g / peak) * 100}%` }} />
                   <i className="c" style={{ height: `${(c / peak) * 100}%` }} />
                   <span>{Number(d.day.slice(8))}</span>
@@ -74,7 +84,7 @@ export function AiUsageCard() {
             })}
           </div>
           <p className="muted small usage-legend">
-            <i className="c" /> Claude <i className="g" /> Gemini · 입력(요청문 · 검색한 페이지)과 출력(생성한 글)을 합친 토큰이에요. 구독에서 남은 한도는 각 서비스가 정하고 Essay는 알 수 없어요:{' '}
+            <i className="c" /> Claude <i className="g" /> Gemini {providers.includes('gpt') && <><i className="o" /> GPT </>}· 입력(요청문 · 검색한 페이지)과 출력(생성한 글)을 합친 토큰이에요. 구독에서 남은 한도는 각 서비스가 정하고 Essay는 알 수 없어요:{' '}
             {providers.map((p) => (
               <a key={p} href={LIMIT_LINKS[p].url} target="_blank" rel="noreferrer" className="link-btn">
                 {LIMIT_LINKS[p].label}

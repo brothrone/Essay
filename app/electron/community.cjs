@@ -27,7 +27,7 @@ module.exports = function setupCommunity({ app, ipcMain, getConfig, isMac }) {
       installId: /^[0-9a-f]{32}$/.test(s.installId || '') ? s.installId : crypto.randomBytes(16).toString('hex'),
       consent: s.consent && typeof s.consent === 'object' ? s.consent : null,
       days: s.days && typeof s.days === 'object' ? s.days : {},
-      ai: s.ai === 'claude' ? 'claude' : 'gemini',
+      ai: s.ai === 'claude' || s.ai === 'gpt' ? s.ai : 'gemini',
     }
   }
   let saveTimer = null
@@ -194,7 +194,7 @@ module.exports = function setupCommunity({ app, ipcMain, getConfig, isMac }) {
   })
   ipcMain.on('community:track', (_e, name) => track(String(name)))
   ipcMain.on('community:context', (_e, ctx) => {
-    if (ctx?.ai === 'claude' || ctx?.ai === 'gemini') state.ai = ctx.ai
+    if (ctx?.ai === 'claude' || ctx?.ai === 'gemini' || ctx?.ai === 'gpt') state.ai = ctx.ai
   })
   ipcMain.on('community:error', (_e, e) => reportError({ source: 'renderer', message: e?.message, stack: e?.stack }))
   ipcMain.handle('community:feedback', async (_e, f) => {

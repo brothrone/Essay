@@ -92,6 +92,8 @@ export interface DesktopBridge {
     /** 이 컴퓨터에서 Essay 가 쓴 AI 토큰 합계 (오늘 · 7일 · 30일, 최근 14일 날짜별) */
     usage: () => Promise<AiUsageSummary>
     usageReset: () => Promise<boolean>
+    /** 그 AI CLI 가 받아 둔 고를 수 있는 모델 (지금은 GPT 만. 없으면 빈 목록) */
+    models: (provider: AiProvider) => { value: string; label: string }[]
   }
 }
 
@@ -125,7 +127,7 @@ export interface PlanInfo {
 export interface AppConfig {
   /** 요금제 조건을 마지막으로 확인한 날 (YYYY-MM-DD) */
   checkedAt: string
-  plans: Record<'agy' | 'claude' | 'gemini-free', PlanInfo>
+  plans: Record<'agy' | 'claude' | 'gemini-free', PlanInfo> & { gpt?: PlanInfo }
   /** 앱 안에 띄울 공지 (비어 있으면 안 띄움) */
   notice: string
   feedback: { formUrl: string; issuesUrl: string }
@@ -147,10 +149,12 @@ export type TerminalAction =
   | 'install-node'
   | 'install-claude'
   | 'login-claude'
+  | 'install-codex'
+  | 'login-codex'
   /** 명령 없이 안내만 적힌 PowerShell · 터미널 창 (도움말의 '직접 명령어로 하기') */
   | 'open-shell'
 
-export type InstallAction = 'install-agy' | 'install-claude' | 'install-gemini' | 'install-node'
+export type InstallAction = 'install-agy' | 'install-claude' | 'install-gemini' | 'install-node' | 'install-codex'
 
 export interface ConfirmOptions {
   /** 본문 아래 작은 글씨 */
@@ -180,13 +184,16 @@ export interface ThemeInfo {
   dark: boolean
 }
 
-export type AiProvider = 'claude' | 'gemini'
+/** gpt = OpenAI Codex CLI (ChatGPT 계정 로그인) */
+export type AiProvider = 'claude' | 'gemini' | 'gpt'
 
 /** loggedIn: true/false 는 확인된 것, null 은 모름(첫 실행 때 알 수 있음) */
 export interface AiStatus {
   claude: { available: boolean; path: string | null; cli: 'claude'; loggedIn: boolean | null }
   /** cli: 실제로 찾은 명령어. agy(Antigravity CLI) 또는 gemini(Gemini CLI) */
   gemini: { available: boolean; path: string | null; cli: 'agy' | 'gemini' | null; loggedIn: boolean | null; webAllowed: boolean }
+  /** apiKey: ChatGPT 가 아니라 API 키로 로그인돼 있음 (쓰면 API 요금이 나가서 loggedIn 은 false) */
+  gpt: { available: boolean; path: string | null; cli: 'codex'; loggedIn: boolean | null; apiKey: boolean }
   /** npm 이 있으면 Gemini CLI(npm 설치)도 고를 수 있다 */
   nodeAvailable: boolean
 }

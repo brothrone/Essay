@@ -1,6 +1,6 @@
 // Essay 데스크톱 앱(윈도우 · 맥): 창을 띄우고, 데이터를 '문서/Essay' 폴더의 JSON 파일로 저장한다.
 const { app, BrowserWindow, Menu, dialog, ipcMain, nativeTheme, shell, clipboard, Notification } = require('electron')
-const { spawn, execFileSync } = require('node:child_process')
+const { spawn, spawnSync, execFileSync } = require('node:child_process')
 const os = require('node:os')
 const path = require('node:path')
 const fs = require('node:fs')
@@ -280,8 +280,8 @@ ipcMain.handle('import:pick-files', async (e) => {
 })
 
 /* ---------- AI: 이 PC에 설치된 구독형 CLI로 글쓰기 ----------
-   claude → Claude Code (Claude 구독), gemini → Antigravity CLI `agy` (Google AI 구독)
-   둘 다 API 키 없이 로그인 세션으로 돌고, 유료 API 환경변수는 걸러서 넘긴다. */
+   claude → Claude Code (Claude 구독), gemini → Antigravity CLI `agy` (Google AI 구독), gpt → OpenAI Codex CLI `codex` (ChatGPT 구독)
+   모두 API 키 없이 로그인 세션으로 돌고, 유료 API 환경변수는 걸러서 넘긴다. */
 
 const AI_SYSTEM =
   '당신은 한국 기업 자기소개서 작성을 돕는 전문가입니다. 사용자가 요청한 형식으로만 답하세요. 도구를 쓰거나 파일을 찾지 마세요.'
@@ -290,7 +290,9 @@ const AI_SYSTEM_WEB =
 const CLAUDE_WEB_TOOLS = 'WebSearch,WebFetch'
 const GEMINI_SETTINGS = () => path.join(HOME, '.gemini', 'antigravity-cli', 'settings.json')
 const GEMINI_WEB_RULE = 'read_url(*)'
-const PROVIDER_LABEL = { claude: 'Claude Code', gemini: 'Gemini CLI(agy 또는 gemini)' }
+const PROVIDER_LABEL = { claude: 'Claude Code', gemini: 'Gemini CLI(agy 또는 gemini)', gpt: 'Codex CLI' }
+// Codex CLI 공식 설치 스크립트(install.ps1)가 실행 파일을 두는 곳
+const CODEX_BIN_DIR = () => path.join(LOCALAPPDATA, 'Programs', 'OpenAI', 'Codex', 'bin')
 // Antigravity CLI 로그인 기록 (agy 는 로그인 여부를 물어볼 명령이 없다) · 로그인 콘솔 창 제목
 const AGY_LOGIN_MARK = () => path.join(app.getPath('userData'), 'agy-login-ok')
 const AGY_LOGIN_RESULT = () => path.join(app.getPath('userData'), 'agy-login-result.txt')
@@ -371,8 +373,25 @@ function findGemini() {
   return null
 }
 
+// GPT: OpenAI Codex CLI (ChatGPT 계정 로그인). 공식 설치 스크립트 → 그 실행 파일 원본 → npm 설치 → PATH 순
+function findCodex() {
+  const found =
+    firstExisting(
+      IS_MAC
+        ? [process.env.ESSAY_CODEX_PATH]
+        : [
+            process.env.ESSAY_CODEX_PATH,
+            path.join(CODEX_BIN_DIR(), 'codex.exe'),
+            path.join(process.env.CODEX_HOME || path.join(HOME, '.codex'), 'packages', 'standalone', 'current', 'bin', 'codex.exe'),
+            path.join(APPDATA, 'npm', 'codex.cmd'),
+          ],
+    ) || whereBin('codex')
+  return found ? { bin: found, cli: 'codex' } : null
+}
+
 function findCli(provider) {
   if (provider === 'gemini') return findGemini()
+  if (provider === 'gpt') return findCodex()
   const found =
     firstExisting(
       IS_MAC
@@ -399,7 +418,9 @@ function aiEnv(provider) {
   const drop =
     provider === 'gemini'
       ? /^(GEMINI_API_KEY|GOOGLE_API_KEY|GOOGLE_GENAI_|GOOGLE_GEMINI_BASE_URL|GOOGLE_APPLICATION_CREDENTIALS|ANTIGRAVITY_API_KEY|ANTIGRAVITY_LS_ADDRESS|ELECTRON_)/i
-      : /^(ANTHROPIC_|CLAUDE_|CLAUDECODE|USE_LOCAL_OAUTH|USE_STAGING_OAUTH|ELECTRON_)/i
+      : provider === 'gpt'
+        ? /^(OPENAI_|CODEX_API_KEY|CODEX_ACCESS_TOKEN|AZURE_OPENAI_|ELECTRON_)/i
+        : /^(ANTHROPIC_|CLAUDE_|CLAUDECODE|USE_LOCAL_OAUTH|USE_STAGING_OAUTH|ELECTRON_)/i
   const env = {}
   for (const [k, v] of Object.entries(process.env)) if (!drop.test(k)) env[k] = v
   if (IS_MAC) {
@@ -409,7 +430,7 @@ function aiEnv(provider) {
   }
   // 윈도우 환경변수 이름은 대소문자를 구분하지 않으므로 기존 키 이름을 그대로 쓴다
   const key = Object.keys(env).find((k) => k.toLowerCase() === 'path') || 'Path'
-  env[key] = [path.join(HOME, '.local', 'bin'), path.join(LOCALAPPDATA, 'agy', 'bin'), path.join(APPDATA, 'npm'), env[key] || '']
+  env[key] = [path.join(HOME, '.local', 'bin'), path.join(LOCALAPPDATA, 'agy', 'bin'), CODEX_BIN_DIR(), path.join(APPDATA, 'npm'), env[key] || '']
     .filter(Boolean)
     .join(';')
   return env
@@ -464,6 +485,21 @@ function geminiErrorMessage(text) {
   return t.trim().slice(0, 400) || '알 수 없는 오류가 났어요.'
 }
 
+const CODEX_LOGIN_ERROR = 'ChatGPT 로그인이 필요해요. 홈의 [연결 관리]에서 [로그인 창 열기]를 눌러 ChatGPT 계정으로 로그인해 주세요.'
+const CODEX_API_KEY_ERROR =
+  'Codex CLI가 API 키로 로그인돼 있어서 쓰면 OpenAI API 요금이 나가요. 홈의 [연결 관리]에서 [로그인 창 열기]를 눌러 ChatGPT 계정으로 다시 로그인해 주세요.'
+function codexErrorMessage(text) {
+  const t = String(text || '')
+  if (/401|unauthori[sz]ed|not logged in|log ?in again|token (is )?(expired|invalid)|refresh token/i.test(t)) return CODEX_LOGIN_ERROR
+  if (/usage limit|rate.?limit|429|too many requests|quota|purchase more credits/i.test(t))
+    return 'ChatGPT 사용량 한도에 도달했어요. 한도가 초기화된 뒤 다시 시도하거나 모델을 바꿔 보세요.'
+  if (/model .*(not supported|does not exist|not found|unavailable)|unsupported model|invalid model/i.test(t))
+    return '선택한 GPT 모델을 쓸 수 없어요(요금제에 따라 다를 수 있어요). 모델을 "기본"으로 바꿔 주세요.'
+  if (/unexpected argument|unrecognized (option|argument)|unknown (option|argument)/i.test(t))
+    return 'Codex CLI가 오래돼서 Essay와 맞지 않아요. 홈의 [연결 관리]에서 Codex CLI를 다시 설치해 주세요(최신으로 바뀌어요).'
+  return t.trim().slice(0, 400) || '알 수 없는 오류가 났어요.'
+}
+
 function geminiReadSettings() {
   try {
     const d = JSON.parse(fs.readFileSync(GEMINI_SETTINGS(), 'utf8'))
@@ -502,7 +538,15 @@ function claudeLoggedInUncached(bin) {
   try {
     const viaCmd = /\.(cmd|bat)$/i.test(bin)
     const out = viaCmd
-      ? execFileSync('cmd.exe', ['/d', '/s', '/c', `"${bin}" auth status`], { encoding: 'utf8', timeout: 8000, windowsHide: true, env: aiEnv('claude'), stdio: ['ignore', 'pipe', 'ignore'] })
+      ? // cmd 에 넘기는 명령줄은 Node 가 따옴표를 바꾸지 않게 그대로(windowsVerbatimArguments) 넘겨야 .cmd 경로가 실행된다
+        execFileSync('cmd.exe', ['/d', '/s', '/c', `""${bin}" auth status"`], {
+          encoding: 'utf8',
+          timeout: 8000,
+          windowsHide: true,
+          windowsVerbatimArguments: true,
+          env: aiEnv('claude'),
+          stdio: ['ignore', 'pipe', 'ignore'],
+        })
       : execFileSync(bin, ['auth', 'status'], { encoding: 'utf8', timeout: 8000, windowsHide: true, env: aiEnv('claude'), stdio: ['ignore', 'pipe', 'ignore'] })
     const m = out.match(/\{[\s\S]*\}/)
     if (m) {
@@ -514,6 +558,28 @@ function claudeLoggedInUncached(bin) {
     // 로그인 안 됐으면 보통 0이 아닌 코드로 끝난다
     return e && typeof e.status === 'number' && e.status !== 0 ? false : null
   }
+}
+
+// Codex: `codex login status` 가 ChatGPT 로그인이면 0 으로 끝나며 "Logged in using ChatGPT" 를 찍는다 (안 됐으면 1).
+// API 키 로그인은 API 요금이 나가므로 따로 구분한다. 돌려주는 값: 'chatgpt' · 'apikey' · 'none' · null(모름)
+let codexLoginCache = { bin: '', at: 0, value: null }
+function codexLogin(bin) {
+  // 금방 끝나는 명령(0.1초 안팎)이라 로그인 창에서 돌아오자마자 반영되도록 5초만 기억한다
+  if (codexLoginCache.bin === bin && Date.now() - codexLoginCache.at < 5000) return codexLoginCache.value
+  let value = null
+  try {
+    // 결과 문구는 stderr 로 나온다
+    const viaCmd = /\.(cmd|bat)$/i.test(bin)
+    const opts = { encoding: 'utf8', timeout: 8000, windowsHide: true, env: aiEnv('gpt'), stdio: ['ignore', 'pipe', 'pipe'] }
+    const r = viaCmd ? spawnSync('cmd.exe', ['/d', '/s', '/c', `""${bin}" login status"`], { ...opts, windowsVerbatimArguments: true }) : spawnSync(bin, ['login', 'status'], opts)
+    const out = `${r.stdout || ''}\n${r.stderr || ''}`
+    if (r.status === 0) value = /api key/i.test(out) ? 'apikey' : 'chatgpt'
+    else if (typeof r.status === 'number') value = 'none'
+  } catch {
+    value = null
+  }
+  codexLoginCache = { bin, at: Date.now(), value }
+  return value
 }
 
 function geminiLoggedIn(cli) {
@@ -541,7 +607,17 @@ function geminiLoggedIn(cli) {
 ipcMain.handle('ai:status', () => {
   const claude = findCli('claude')
   const gemini = findCli('gemini')
+  const gpt = findCli('gpt')
+  const gptLogin = gpt ? codexLogin(gpt.bin) : null
   return {
+    // apiKey: API 키로 로그인돼 있음 (쓰면 API 요금이 나가므로 로그인 안 된 것으로 보고 다시 로그인하게 한다)
+    gpt: {
+      available: !!gpt,
+      path: gpt?.bin || null,
+      cli: 'codex',
+      loggedIn: gptLogin === 'chatgpt' ? true : gptLogin === 'none' || gptLogin === 'apikey' ? false : null,
+      apiKey: gptLogin === 'apikey',
+    },
     claude: { available: !!claude, path: claude?.bin || null, cli: 'claude', loggedIn: claude ? claudeLoggedIn(claude.bin) : null },
     gemini: {
       available: !!gemini,
@@ -659,6 +735,25 @@ const TERMINAL_ACTIONS = {
       '3) 완료 메시지가 나오면 이 창을 닫고 Essay 로 돌아오세요.',
     ],
   },
+  // OpenAI 공식 설치 스크립트. CODEX_NON_INTERACTIVE 면 아무것도 묻지 않고 설치만 한다(끝나고 Codex 를 띄우지 않음)
+  'install-codex': {
+    title: 'Codex CLI 설치',
+    cmd: "$env:CODEX_NON_INTERACTIVE = '1'; irm https://chatgpt.com/codex/install.ps1 | iex",
+    provider: 'gpt',
+    hint: ['설치가 끝나면 이 창을 닫고 Essay로 돌아가세요. 2단계 [로그인 창 열기]를 누르면 돼요.'],
+  },
+  // 브라우저에서 ChatGPT 로그인을 마치면 저절로 끝난다 (코드 붙여넣기 없음). API 키 로그인이었으면 먼저 지운다
+  'login-codex': {
+    title: 'ChatGPT 로그인 (Codex CLI)',
+    // (상태 문구는 stderr 로 나오는데 PowerShell 5 의 2>&1 은 오류 기록에 명령줄까지 섞으므로 cmd 로 합쳐 읽는다)
+    cmd: "$st = cmd /c \"codex login status 2>&1\"\r\nif (\"$st\" -match 'API key') { codex logout }\r\ncodex login\r\nif ($LASTEXITCODE -eq 0) { Write-Host ''; Write-Host '로그인 완료! 이 창을 닫고 Essay 로 돌아가세요.' -ForegroundColor Green }",
+    provider: 'gpt',
+    hint: [
+      '1) 브라우저가 열리면 ChatGPT 계정(Plus · Pro 등 유료 요금제)으로 로그인하세요.',
+      '2) 브라우저에 로그인 완료가 뜨면 이 창을 닫고 Essay 로 돌아오세요.',
+      '   (브라우저가 안 열리면 아래에 나온 https:// 주소를 복사해 브라우저에 붙여넣으세요.)',
+    ],
+  },
 }
 // 맥: 같은 일을 터미널 앱(zsh)에서 한다. 설치는 공식 설치 스크립트, 로그인은 CLI 가 띄우는 브라우저로
 const TERMINAL_ACTIONS_MAC = {
@@ -729,7 +824,7 @@ const terminalAction = (action) => (IS_MAC ? TERMINAL_ACTIONS_MAC : TERMINAL_ACT
 ipcMain.handle('ai:open-terminal', (_e, action) => openTerminal(action))
 
 // 설치는 창 없이 조용히 돌리고 진행 상황만 화면에 흘려보낸다 (실패하면 화면에서 PowerShell 창 방식으로 넘어갈 수 있다)
-const INSTALL_ACTIONS = new Set(['install-agy', 'install-claude', 'install-gemini', 'install-node'])
+const INSTALL_ACTIONS = new Set(['install-agy', 'install-claude', 'install-gemini', 'install-node', 'install-codex'])
 // 설치 스크립트가 찍는 색상 코드(ESC[…m) 제거용
 const ANSI_RE = new RegExp(String.fromCharCode(27) + '\\[[0-9;?]*[A-Za-z]', 'g')
 let installChild = null
@@ -1155,6 +1250,28 @@ ipcMain.handle('ai:gemini-login-status', () => ({
 
 ipcMain.handle('ai:run', (e, opts) => runAi(e.sender, opts))
 
+// GPT 모델은 요금제 · 시기마다 바뀌어서(2026-10 기준 GPT-6 계열) 앱에 적어 두지 않고,
+// Codex 가 실행할 때마다 받아 두는 목록(~/.codex/models_cache.json)에서 고를 수 있는 것만 보여 준다
+function codexModels() {
+  try {
+    const home = process.env.CODEX_HOME || path.join(HOME, '.codex')
+    const d = JSON.parse(fs.readFileSync(path.join(home, 'models_cache.json'), 'utf8'))
+    return (Array.isArray(d?.models) ? d.models : [])
+      .filter((m) => m && m.visibility === 'list' && typeof m.slug === 'string' && /^[\w.-]+$/.test(m.slug))
+      .sort((a, b) => (a.priority ?? 99) - (b.priority ?? 99))
+      .slice(0, 5)
+      .map((m) => ({
+        value: m.slug,
+        label: String(m.display_name || m.slug).slice(0, 40) + (/fast|small|affordable/i.test(String(m.description || '')) ? ' · 빠르고 한도 절약' : ''),
+      }))
+  } catch {
+    return []
+  }
+}
+ipcMain.on('ai:models', (e, provider) => {
+  e.returnValue = provider === 'gpt' ? codexModels() : []
+})
+
 /* ---------- AI 사용량 (토큰) 기록: 이 컴퓨터에서 Essay 가 실행한 것만 날짜 · AI 별로 더해 둔다 ---------- */
 const USAGE_FILE = () => path.join(app.getPath('userData'), 'ai-usage.json')
 const USAGE_KEEP_DAYS = 120
@@ -1172,6 +1289,13 @@ function usageFrom(cli, d) {
   if (cli === 'agy') {
     const u = d.usage || {}
     const input = num(u.input_tokens) + num(u.cache_read_tokens)
+    const output = num(u.output_tokens)
+    return input || output ? { input, output } : null
+  }
+  if (cli === 'codex') {
+    // turn.completed.usage: input_tokens(캐시로 읽은 cached_input_tokens 포함) · output_tokens(생각한 토큰 포함)
+    const u = d.usage || {}
+    const input = num(u.input_tokens)
     const output = num(u.output_tokens)
     return input || output ? { input, output } : null
   }
@@ -1220,10 +1344,10 @@ ipcMain.handle('ai:usage', () => {
   }
   const empty = () => ({ runs: 0, web: 0, input: 0, output: 0 })
   const sum = (from) => {
-    const out = { claude: empty(), gemini: empty() }
+    const out = { claude: empty(), gemini: empty(), gpt: empty() }
     for (const [day, rows] of Object.entries(d.days)) {
       if (day < from) continue
-      for (const p of ['claude', 'gemini']) {
+      for (const p of ['claude', 'gemini', 'gpt']) {
         const r = rows[p]
         if (!r) continue
         out[p].runs += r.runs || 0
@@ -1237,7 +1361,7 @@ ipcMain.handle('ai:usage', () => {
   const recent = Array.from({ length: 14 }, (_, i) => {
     const day = daysAgo(13 - i)
     const rows = d.days[day] || {}
-    return { day, claude: rows.claude || empty(), gemini: rows.gemini || empty() }
+    return { day, claude: rows.claude || empty(), gemini: rows.gemini || empty(), gpt: rows.gpt || empty() }
   })
   return { today: sum(daysAgo(0)), week: sum(daysAgo(6)), month: sum(daysAgo(29)), recent }
 })
@@ -1284,7 +1408,7 @@ const GEMINI_LOGIN_ERROR =
 
 function runAi(sender, { prompt, model, web, provider }) {
   return new Promise((resolve) => {
-    const p = provider === 'gemini' ? 'gemini' : 'claude'
+    const p = provider === 'gemini' || provider === 'gpt' ? provider : 'claude'
     if (aiChild && aiChild.exitCode === null && !aiChild.killed)
       return resolve({ ok: false, code: 'busy', error: `다른 AI 작업(${aiChildKind})이 진행 중이에요. 끝나거나 취소한 뒤 다시 눌러 주세요.` })
     const found = findCli(p)
@@ -1292,6 +1416,12 @@ function runAi(sender, { prompt, model, web, provider }) {
     const { bin, cli } = found
     // agy 는 로그인 안 된 채 돌리면 브라우저를 열고 60초 기다리다 실패하므로 미리 막는다
     if (cli === 'agy' && geminiLoggedIn('agy') === false) return resolve({ ok: false, code: 'gemini_login', error: GEMINI_LOGIN_ERROR })
+    // codex 도 로그인 안 된 채 돌리면 20초쯤 재시도하다 실패하므로 미리 막는다. API 키 로그인은 요금이 나가니 막는다
+    if (cli === 'codex') {
+      const login = codexLogin(bin)
+      if (login === 'none') return resolve({ ok: false, code: 'gpt_login', error: CODEX_LOGIN_ERROR })
+      if (login === 'apikey') return resolve({ ok: false, code: 'gpt_login', error: CODEX_API_KEY_ERROR })
+    }
 
     // 빈 폴더에서 실행해 내 파일을 읽거나 바꾸지 않게 한다
     const cwd = path.join(app.getPath('temp'), 'essay-ai')
@@ -1320,6 +1450,15 @@ function runAi(sender, { prompt, model, web, provider }) {
       if (web) args.push('--allowed-tools', 'google_web_search', 'web_fetch')
       if (model) args.push('--model', String(model))
       stdinText = String(prompt)
+    } else if (cli === 'codex') {
+      // Codex CLI: 시스템 지시를 앞에 붙인 요청문을 stdin 으로(인자 길이 제한 없음). 사용자의 Codex 설정(config.toml · MCP 서버 · 규칙)은 읽지 않고,
+      // 대화 기록을 남기지 않고, 파일은 읽기만 한다. 웹 작업일 때만 실시간 웹 검색을 켜고, 빨리 끝나도록 생각을 짧게 한다
+      stdinText = `${system}\n\n${prompt}`
+      args = ['exec', '--json', '--ephemeral', '--skip-git-repo-check', '--ignore-user-config', '--ignore-rules', '--color', 'never', '-s', 'read-only']
+      args.push('-c', `web_search=${web ? 'live' : 'disabled'}`)
+      if (web) args.push('-c', 'model_reasoning_effort=low')
+      if (model) args.push('-m', String(model))
+      args.push('-')
     } else {
       stdinText = String(prompt)
       const tools = web ? CLAUDE_WEB_TOOLS : ''
@@ -1352,6 +1491,9 @@ function runAi(sender, { prompt, model, web, provider }) {
     let initModel = ''
     let geminiText = ''
     let geminiError = ''
+    let codexText = ''
+    let codexError = ''
+    let codexFailed = false
     let timedOut = false
     let settled = false
     let authAsked = false
@@ -1420,6 +1562,37 @@ function runAi(sender, { prompt, model, web, provider }) {
         final = ev
       }
     }
+    // Codex CLI --json: thread.started / turn.started / item.started · item.completed(agent_message · reasoning · web_search …) /
+    // turn.completed(usage) / turn.failed(error.message) / error(message — 다시 연결 중 안내 포함). 글은 끝난 메시지 단위로 온다
+    const searched = new Set()
+    const onCodexEvent = (ev) => {
+      const it = ev.item || {}
+      events.push(String(ev.type || '').startsWith('item.') ? `${ev.type}:${it.type}` : String(ev.type))
+      if ((ev.type === 'item.started' || ev.type === 'item.completed') && it.type === 'web_search') {
+        const q = String(it.query || it.action?.query || it.action?.url || '').slice(0, 160)
+        if (q && !searched.has(it.id || q)) {
+          searched.add(it.id || q)
+          progress({ tool: it.action?.type === 'open_page' ? 'WebFetch' : 'WebSearch', detail: q })
+        }
+      } else if (ev.type === 'item.completed' && it.type === 'agent_message' && typeof it.text === 'string') {
+        // 중간 안내 메시지가 먼저 올 수 있어 마지막 메시지를 답으로 쓴다
+        codexText = it.text
+        partial = it.text
+        progress()
+      } else if (ev.type === 'turn.completed') {
+        final = ev
+      } else if (ev.type === 'turn.failed') {
+        codexFailed = true
+        codexError = String(ev.error?.message || codexError)
+      } else if (ev.type === 'error') {
+        codexError = String(ev.message || '')
+        // 로그인이 풀렸으면 20초 넘게 다시 연결을 시도하므로 바로 끊고 로그인으로 안내한다
+        if (!authAsked && /401|unauthori[sz]ed/i.test(codexError)) {
+          authAsked = true
+          killTree(child)
+        } else if (/Reconnecting/i.test(codexError)) progress({ retry: true })
+      }
+    }
     const onLine = (line) => {
       if (!line.trim()) return
       let ev
@@ -1431,6 +1604,7 @@ function runAi(sender, { prompt, model, web, provider }) {
       }
       if (cli === 'agy') onGeminiEvent(ev)
       else if (cli === 'gemini') onGeminiCliEvent(ev)
+      else if (cli === 'codex') onCodexEvent(ev)
       else onClaudeEvent(ev)
     }
     child.stdout.on('data', (d) => {
@@ -1465,6 +1639,18 @@ function runAi(sender, { prompt, model, web, provider }) {
       if (aiCancelled) return resolve({ ok: false, cancelled: true, error: '취소했어요.' })
       if (timedOut) return resolve({ ok: false, error: `${timeoutMs / 60000}분이 지나도 끝나지 않아 멈췄어요. 잠시 뒤 다시 시도하거나 모델을 바꿔 보세요.` })
       const seconds = Math.round((Date.now() - started) / 1000)
+      if (cli === 'codex') {
+        if (authAsked) {
+          codexLoginCache = { bin: '', at: 0, value: null }
+          return resolve({ ok: false, code: 'gpt_login', error: CODEX_LOGIN_ERROR })
+        }
+        const text = codexText.trim()
+        if (codexFailed || !text) return resolve({ ok: false, error: codexErrorMessage(codexError || err || `Codex CLI가 결과 없이 끝났어요(종료 코드 ${code}).`) })
+        const usage = usageFrom('codex', final)
+        recordUsage('gpt', usage, web)
+        const used = model || 'GPT'
+        return resolve({ ok: true, text, seconds, model: used, models: [used], usage })
+      }
       if (cli === 'gemini') {
         const text = (geminiText || plain).trim()
         const failed = (final && final.status && final.status !== 'success') || (!text && (geminiError || code))

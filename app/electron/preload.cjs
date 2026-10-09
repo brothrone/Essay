@@ -77,6 +77,7 @@ contextBridge.exposeInMainWorld('desktop', {
     cancel: () => ipcRenderer.invoke('ai:cancel'),
     usage: () => ipcRenderer.invoke('ai:usage'),
     usageReset: () => ipcRenderer.invoke('ai:usage-reset'),
+    models: (provider) => ipcRenderer.sendSync('ai:models', provider),
     onProgress: on('ai:progress'),
   },
 })

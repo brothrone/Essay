@@ -14,7 +14,7 @@ import { type AiProvider, type ThemeSource } from '../desktop'
 import { toast } from '../toast'
 import { AI_PROVIDERS, saveAiProvider, savedAiProvider } from '../useAiTask'
 import { useTheme } from '../useTheme'
-import { IS_MAC } from '../platform'
+import { HAS_GPT, IS_MAC } from '../platform'
 
 /** 설정: 화면 테마 · AI · 업데이트 · Essay 정보 */
 export function Settings() {
@@ -87,7 +87,8 @@ function AiSettings() {
     const st = status?.[p]
     if (!status) return '확인 중…'
     if (!st?.available) return `${AI_PROVIDERS.find((x) => x.value === p)!.cli} 명령어를 찾지 못했어요 — 아래에서 설치·로그인하세요`
-    const cliName = p === 'gemini' ? (st.cli === 'agy' ? 'Antigravity CLI(agy)' : 'Gemini CLI(gemini)') : 'Claude Code'
+    const cliName =
+      p === 'gemini' ? (st.cli === 'agy' ? 'Antigravity CLI(agy)' : 'Gemini CLI(gemini)') : p === 'gpt' ? 'Codex CLI(codex)' : 'Claude Code'
     const login = loggedInFor(status, p) ? ' · 로그인됨' : st.loggedIn === false ? ' · 로그인 필요' : ' · 로그인 확인 안 됨'
     return `${cliName} 설치됨${login} · ${st.path}`
   }
@@ -136,7 +137,7 @@ function AiSettings() {
       </div>
       <PlanNotes />
       <p className="muted small">
-        설치 경로가 특이하면 환경 변수 ESSAY_CLAUDE_PATH · ESSAY_AGY_PATH · ESSAY_GEMINI_PATH 에 실행 파일 전체 경로를 넣어 주세요.
+        설치 경로가 특이하면 환경 변수 ESSAY_CLAUDE_PATH · ESSAY_AGY_PATH · ESSAY_GEMINI_PATH{HAS_GPT && ' · ESSAY_CODEX_PATH'} 에 실행 파일 전체 경로를 넣어 주세요.
       </p>
     </section>
   )
@@ -146,7 +147,7 @@ function AiSettings() {
 function PlanNotes() {
   const config = useAppConfig()
   if (!config) return null
-  const rows = [config.plans.agy, config.plans.claude, config.plans['gemini-free']]
+  const rows = [config.plans.agy, config.plans.claude, ...(HAS_GPT && config.plans.gpt ? [config.plans.gpt] : []), config.plans['gemini-free']]
   return (
     <div className="plan-notes">
       <strong>필요한 계정 · {config.checkedAt.replaceAll('-', '.')} 기준</strong>

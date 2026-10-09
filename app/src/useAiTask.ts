@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { desktop, type AiProvider, type AiResult } from './desktop'
+import { HAS_GPT } from './platform'
 import { noteAiResult } from './useAiStatus'
 
 export const AI_MODEL_KEY = 'essay/ai-model'
@@ -7,10 +8,26 @@ export const AI_PROVIDER_KEY = 'essay/ai-provider'
 /** 다른 화면(환영 창)에서 AI 선택을 바꿨을 때 홈 AI 바가 다시 읽도록 알리는 이벤트 */
 export const AI_PREFS_EVENT = 'essay:ai-prefs'
 
-export const AI_PROVIDERS: { value: AiProvider; label: string; short: string; cli: string }[] = [
-  { value: 'claude', label: 'Claude (Claude Code · Claude 구독)', short: 'Claude 구독', cli: 'claude' },
-  { value: 'gemini', label: 'Gemini (Antigravity CLI · Google 계정)', short: 'Gemini', cli: 'agy 또는 gemini' },
+/** name: 탭 · 카드 제목, account: 로그인하는 계정 */
+type ProviderInfo = { value: AiProvider; label: string; short: string; cli: string; name: string; account: string }
+const ALL_PROVIDERS: ProviderInfo[] = [
+  { value: 'claude', label: 'Claude (Claude Code · Claude 구독)', short: 'Claude 구독', cli: 'claude', name: 'Claude', account: 'Claude 구독' },
+  { value: 'gemini', label: 'Gemini (Antigravity CLI · Google 계정)', short: 'Gemini', cli: 'agy 또는 gemini', name: 'Gemini', account: 'Google 계정' },
+  { value: 'gpt', label: 'GPT (Codex CLI · ChatGPT 계정)', short: 'GPT', cli: 'codex', name: 'GPT', account: 'ChatGPT 계정' },
 ]
+/** 이 운영체제에서 고를 수 있는 AI (설정 화면 순서) */
+export const AI_PROVIDERS = ALL_PROVIDERS.filter((x) => HAS_GPT || x.value !== 'gpt')
+/** 홈 AI 바 · 연결 카드 탭 순서: Gemini → Claude → GPT */
+export const AI_TABS = (['gemini', 'claude', 'gpt'] as AiProvider[]).flatMap((v) => AI_PROVIDERS.filter((x) => x.value === v))
+export const providerInfo = (p: AiProvider) => ALL_PROVIDERS.find((x) => x.value === p)!
+
+function cliModels(p: AiProvider) {
+  try {
+    return desktop.ai.models(p)
+  } catch {
+    return []
+  }
+}
 
 export const AI_MODELS: Record<AiProvider, { value: string; label: string }[]> = {
   claude: [
@@ -23,12 +40,15 @@ export const AI_MODELS: Record<AiProvider, { value: string; label: string }[]> =
     { value: 'gemini-3.1-pro-high', label: 'Gemini 3.1 Pro · 가장 잘 씀' },
     { value: 'gemini-3.8-flash-high', label: 'Gemini 3.8 Flash · 빠르고 한도 절약' },
   ],
+  // 요금제 · 시기마다 모델이 바뀌어서 기본은 Codex 가 정한 모델, 나머지는 Codex 가 받아 둔 목록(한 번 실행한 뒤부터 보임)
+  gpt: [{ value: '', label: '기본 모델 (Codex 추천)' }, ...(HAS_GPT ? cliModels('gpt') : [])],
 }
 
 /** 고른 적이 없으면 Gemini(Google 계정) 가 기본 */
 export function savedAiProvider(): AiProvider {
   try {
-    return localStorage.getItem(AI_PROVIDER_KEY) === 'claude' ? 'claude' : 'gemini'
+    const v = localStorage.getItem(AI_PROVIDER_KEY)
+    return v === 'claude' || (v === 'gpt' && HAS_GPT) ? v : 'gemini'
   } catch {
     return 'gemini'
   }
@@ -49,7 +69,9 @@ export function saveAiProvider(p: AiProvider) {
 
 export function savedAiModel(provider: AiProvider = savedAiProvider()) {
   try {
-    return localStorage.getItem(`${AI_MODEL_KEY}:${provider}`) ?? (provider === 'claude' ? localStorage.getItem(AI_MODEL_KEY) ?? '' : '')
+    const v = localStorage.getItem(`${AI_MODEL_KEY}:${provider}`) ?? (provider === 'claude' ? localStorage.getItem(AI_MODEL_KEY) ?? '' : '')
+    // GPT 모델 목록은 바뀌므로 목록에서 사라진(은퇴한) 모델이면 기본으로
+    return provider === 'gpt' && !AI_MODELS.gpt.some((m) => m.value === v) ? '' : v
   } catch {
     return ''
   }
