@@ -77,7 +77,8 @@ export interface Project {
   openedAt: number
 }
 
-export type JobStatus = 'new' | 'saved' | 'hidden' | 'started'
+/** 새 공고 · 숨김 · 자소서 시작. 저장 여부는 따로(saved) 둔다 → 저장해도 새 공고 목록에 남는다 */
+export type JobStatus = 'new' | 'hidden' | 'started'
 
 /** AI가 웹에서 찾아온 공고 */
 export interface JobPosting {
@@ -95,6 +96,8 @@ export interface JobPosting {
   foundAt: number
   status: JobStatus
   projectId: ID
+  /** 저장한 공고 (사이드바 [저장된 공고]에 모인다) */
+  saved: boolean
 }
 
 export interface JobQuery {

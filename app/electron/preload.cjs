@@ -46,6 +46,7 @@ contextBridge.exposeInMainWorld('desktop', {
       ipcRenderer.invoke('ai:run', { prompt, model, web: !!options.web, provider: options.provider || 'claude' }),
     geminiAllowWeb: () => ipcRenderer.invoke('ai:gemini-allow-web'),
     resolveUrls: (urls) => ipcRenderer.invoke('net:resolve-urls', urls),
+    checkPostings: (urls, today) => ipcRenderer.invoke('net:check-postings', urls, today),
     openTerminal: (action) => ipcRenderer.invoke('ai:open-terminal', action),
     install: (action) => ipcRenderer.invoke('ai:install', action),
     installCancel: () => ipcRenderer.invoke('ai:install-cancel'),

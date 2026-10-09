@@ -690,6 +690,77 @@ textarea:focus-visible {
   color: var(--primary-text);
 }
 
+/* 처음 설정 안내 마지막 단계: 예전 자소서 넣기 */
+.welcome-import {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  margin: 14px 0 10px;
+  padding: 16px 18px;
+  border-radius: 14px;
+  background: var(--primary-soft);
+}
+
+.welcome-import-icon {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: var(--primary);
+  color: #fff;
+}
+
+.welcome-import strong {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 15px;
+  color: var(--text);
+}
+
+.welcome-import p {
+  margin: 0;
+  line-height: 1.6;
+}
+
+/* 사이드바 하위 메뉴 (맞춤 공고 > 저장된 공고) */
+.nav a.nav-sub {
+  padding: 7px 12px 7px 40px;
+  font-size: 13.5px;
+  color: var(--text-3);
+}
+
+.nav a.nav-sub.active {
+  color: var(--primary-text);
+}
+
+/* 저장한 공고: 버튼이 채워진 모양으로 남는다 */
+.btn.save-on {
+  background: var(--primary-soft);
+  border-color: transparent;
+  color: var(--primary-text);
+}
+
+.btn.save-on:hover {
+  filter: brightness(0.97);
+}
+
+.job-card.is-saved {
+  box-shadow: inset 3px 0 0 var(--primary);
+}
+
+.job-grid.dim {
+  opacity: 0.6;
+}
+
+.section-title {
+  margin: 28px 0 12px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-2);
+}
+
 /* ---------- toolbar · chips · search ---------- */
 
 .toolbar {
@@ -3085,26 +3156,30 @@ textarea:focus-visible {
 
 .exp-map-bar {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 6px;
+  gap: 8px 14px;
+  margin-bottom: 12px;
 }
 
 .exp-map-zoom {
   display: flex;
+  gap: 2px;
   margin-left: auto;
+}
+
+.exp-map-body {
+  position: relative;
 }
 
 .exp-map-svg {
   display: block;
   width: 100%;
-  height: auto;
-  max-height: calc(100vh - 300px);
-  border-radius: 12px;
+  height: clamp(480px, 66vh, 780px);
+  border-radius: 14px;
   background:
-    radial-gradient(circle at center, #eef3ff 0, transparent 60%),
-    var(--surface);
-  touch-action: none;
+    radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--primary) 7%, transparent) 0, transparent 55%),
+    var(--surface-2);
   user-select: none;
 }
 
@@ -3116,110 +3191,334 @@ textarea:focus-visible {
   cursor: grabbing;
 }
 
+.exp-map-svg g,
+.exp-map-svg path {
+  transition: opacity 0.18s ease;
+}
+
 .map-edge {
   fill: none;
-  stroke: #b9c7ef;
-  stroke-width: 1.4;
-  transition: opacity 0.15s, stroke 0.15s;
+  stroke: color-mix(in srgb, var(--c, var(--primary)) 45%, transparent);
+  stroke-width: 1.6;
+  stroke-linecap: round;
 }
 
-.map-edge.center {
-  stroke: #d5def5;
-  stroke-width: 1.2;
-}
-
-.map-edge.hot {
-  stroke: var(--primary);
+.map-edge.trunk {
+  stroke: color-mix(in srgb, var(--c, var(--primary)) 30%, transparent);
   stroke-width: 2.2;
 }
 
-.map-edge.dim,
-.map-group.dim,
-.map-exp.dim {
-  opacity: 0.18;
+.map-edge.secondary {
+  stroke: var(--c, var(--primary));
+  stroke-dasharray: 4 5;
+  stroke-width: 1.4;
+}
+
+.exp-map-svg .dim {
+  opacity: 0.16;
+}
+
+.map-me .map-me-halo {
+  fill: color-mix(in srgb, var(--primary) 12%, transparent);
 }
 
 .map-me-label {
   fill: #fff;
-  font-size: 20px;
+  font-size: 19px;
   font-weight: 800;
 }
 
 .map-me-sub {
-  fill: rgb(255 255 255 / 75%);
+  fill: rgb(255 255 255 / 80%);
   font-size: 11px;
   font-weight: 600;
 }
 
 .map-group {
-  cursor: default;
-  transition: opacity 0.15s;
+  cursor: pointer;
 }
 
 .map-group rect {
-  fill: var(--primary-soft);
-  stroke: #b9ccff;
-  stroke-width: 1;
+  fill: color-mix(in srgb, var(--c) 11%, var(--surface));
+  stroke: color-mix(in srgb, var(--c) 35%, var(--surface));
+  stroke-width: 1.2;
 }
 
-.map-group text {
-  fill: var(--primary-text);
-  font-size: 13px;
+.map-group:hover rect,
+.map-group.selected rect {
+  fill: color-mix(in srgb, var(--c) 18%, var(--surface));
+  stroke: var(--c);
+}
+
+.map-dot {
+  fill: var(--c);
+}
+
+.map-group-name {
+  fill: var(--text);
+  font-size: 14px;
   font-weight: 700;
 }
 
-.map-group .map-count {
-  fill: var(--primary);
+.map-count {
+  fill: color-mix(in srgb, var(--c) 80%, var(--text));
+  font-size: 13px;
   font-weight: 800;
-}
-
-.map-group.zero rect {
-  fill: var(--surface);
-  stroke: #c3cad6;
-  stroke-dasharray: 4 3;
-}
-
-.map-group.zero text {
-  fill: var(--text-3);
-  font-weight: 600;
 }
 
 .map-exp {
   cursor: pointer;
-  transition: opacity 0.15s;
 }
 
-.map-exp rect {
+.map-card {
   fill: var(--surface);
-  stroke: var(--border-strong);
+  stroke: var(--border);
   stroke-width: 1;
-  filter: drop-shadow(0 1px 2px rgb(16 24 40 / 8%));
 }
 
-.map-exp:hover rect {
-  stroke: var(--primary);
+.map-exp:hover .map-card,
+.map-exp.selected .map-card {
+  stroke: var(--c);
   stroke-width: 1.6;
+}
+
+.map-accent {
+  fill: var(--c);
 }
 
 .map-exp-title {
   fill: var(--text);
-  font-size: 12.5px;
+  font-size: 14px;
   font-weight: 700;
 }
 
 .map-exp-sub {
   fill: var(--text-3);
-  font-size: 10.5px;
+  font-size: 12px;
 }
 
-.exp-map-gap {
-  margin-top: 10px;
-  padding: 10px 12px;
-  border-radius: 10px;
-  background: var(--surface-2);
-  font-size: 13px;
+.map-star {
+  fill: var(--border-strong);
+}
+
+.map-star.on {
+  fill: var(--c);
+}
+
+/* 고른 역량 · 경험 설명: 지도 오른쪽 위에 뜬다 */
+.map-panel {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: min(300px, calc(100% - 24px));
+  padding: 18px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: var(--shadow-lg);
+  animation: map-panel-in 0.16s ease-out;
+}
+
+@keyframes map-panel-in {
+  from {
+    opacity: 0;
+    transform: translateX(8px);
+  }
+}
+
+/* 지도 아래 요약 줄 */
+.map-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 14px 28px;
+  padding: 16px 4px 4px;
+}
+
+.map-summary .map-panel-stats {
+  width: 300px;
+}
+
+.map-summary-block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+}
+
+.map-summary-block p {
+  margin: 0;
+}
+
+.map-panel h3 {
+  margin: 0;
+  font-size: 17px;
+  line-height: 1.4;
+}
+
+.map-panel p {
+  margin: 0;
+}
+
+.map-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.map-panel-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.map-panel-title i {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--c);
+}
+
+.map-panel-summary {
+  font-size: 14px;
+  line-height: 1.65;
   color: var(--text-2);
 }
+
+.map-panel-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.map-panel-tags .chip {
+  height: 28px;
+  padding: 0 10px;
+  font-size: 12.5px;
+}
+
+.ghost-chip {
+  border-style: dashed !important;
+  background: transparent !important;
+  color: var(--text-3) !important;
+}
+
+.map-panel-label {
+  margin-top: 6px !important;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--text-2);
+}
+
+.map-panel-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.map-panel-stats div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 10px 4px;
+  border-radius: 10px;
+  background: var(--surface-2);
+}
+
+.map-panel-stats b {
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.map-panel-stats span {
+  font-size: 11.5px;
+  color: var(--text-3);
+}
+
+.map-panel-meta {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  gap: 8px 10px;
+  margin: 4px 0 6px;
+  font-size: 13px;
+}
+
+.map-panel-meta dt {
+  color: var(--text-3);
+}
+
+.map-panel-meta dd {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+}
+
+.star-pill {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background: var(--surface-2);
+  color: var(--text-3);
+  font-size: 11.5px;
+  font-weight: 800;
+}
+
+.star-pill.on {
+  background: var(--primary-soft);
+  color: var(--primary-text);
+}
+
+.map-panel-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.map-panel-list button {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  text-align: left;
+  cursor: pointer;
+}
+
+.map-panel-list button:hover {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+}
+
+.map-panel-list strong {
+  font-size: 13.5px;
+}
+
+.map-panel .btn {
+  align-self: flex-start;
+  margin-top: 4px;
+}
+
+
 
 /* ---------- AI 설정 ---------- */
 
@@ -3723,28 +4022,6 @@ textarea:focus-visible {
 
 :root[data-theme='dark'] .exp-card:hover {
   border-color: #33415f;
-}
-
-:root[data-theme='dark'] .exp-map-svg {
-  background:
-    radial-gradient(circle at center, #1c2230 0, transparent 60%),
-    var(--surface);
-}
-
-:root[data-theme='dark'] .map-edge {
-  stroke: #3d4a6b;
-}
-
-:root[data-theme='dark'] .map-edge.center {
-  stroke: #303644;
-}
-
-:root[data-theme='dark'] .map-group rect {
-  stroke: #33415f;
-}
-
-:root[data-theme='dark'] .map-group.zero rect {
-  stroke: #3d4454;
 }
 
 :root[data-theme='dark'] .alert-list a::before {

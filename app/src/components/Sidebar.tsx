@@ -1,11 +1,12 @@
-import { Archive, Database, FileText, GraduationCap, House, Lightbulb, LoaderCircle, Plus, Radar, Settings } from 'lucide-react'
+import { Archive, Bookmark, Database, FileText, GraduationCap, House, Lightbulb, LoaderCircle, Plus, Radar, Settings } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
 import { useJobSearch } from '../jobSearch'
 import { useStore } from '../store'
 
 export function Sidebar({ onNew }: { onNew: () => void }) {
   const { data } = useStore()
-  const newJobs = data.jobs.filter((j) => j.status === 'new').length
+  const newJobs = data.jobs.filter((j) => j.status === 'new' && !j.saved).length
+  const savedJobs = data.jobs.filter((j) => j.saved && j.status !== 'hidden').length
   const jobSearch = useJobSearch()
   const recent = data.projects
     .filter((p) => p.openedAt)
@@ -30,7 +31,7 @@ export function Sidebar({ onNew }: { onNew: () => void }) {
           <FileText size={18} /> 자소서 프로젝트
           {data.projects.length > 0 && <span className="nav-count">{data.projects.length}</span>}
         </NavLink>
-        <NavLink to="/jobs" title="맞춤 공고 (Ctrl+3)">
+        <NavLink to="/jobs" end title="맞춤 공고 (Ctrl+3)">
           <Radar size={18} /> 맞춤 공고
           {jobSearch.running ? (
             <span className="nav-count" title="공고를 찾는 중">
@@ -39,6 +40,10 @@ export function Sidebar({ onNew }: { onNew: () => void }) {
           ) : (
             newJobs > 0 && <span className="nav-count accent">{newJobs}</span>
           )}
+        </NavLink>
+        <NavLink to="/jobs/saved" className="nav-sub" title="저장한 맞춤 공고">
+          <Bookmark size={16} /> 저장된 공고
+          {savedJobs > 0 && <span className="nav-count">{savedJobs}</span>}
         </NavLink>
         <NavLink to="/experiences" title="경험 관리 (Ctrl+4)">
           <Lightbulb size={18} /> 경험 관리

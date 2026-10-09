@@ -75,10 +75,27 @@ export const emptyData = (): AppData => ({
   jobQuery: emptyJobQuery(),
 })
 
-/** 같은 공고인지: 주소가 같거나 회사·제목이 같으면 같은 공고 */
+/**
+ * 같은 공고인지: 주소가 같거나(주소가 없으면) 회사·제목이 같으면 같은 공고.
+ * 사람인(?rec_idx=…)처럼 물음표 뒤가 공고 번호인 사이트가 있어서 주소 뒤쪽은 지우지 않고,
+ * 추적용 값(utm_* · t_* · view_type 등)만 빼고 순서를 맞춰 비교한다.
+ */
 export function jobKey(j: Pick<JobPosting, 'url' | 'company' | 'title'>) {
-  const url = j.url.trim().replace(/[?#].*$/, '').replace(/\/$/, '').toLowerCase()
-  return url || `${j.company}|${j.title}`.replace(/\s+/g, '').toLowerCase()
+  let key = ''
+  try {
+    const u = new URL(j.url.trim())
+    const params = [...u.searchParams]
+      .filter(([k]) => !/^(utm_|t_|view_type$|ref$|src$|gclid$|fbclid$|recommend_ids$|location$)/i.test(k))
+      .sort(([a], [b]) => a.localeCompare(b))
+    key = (
+      u.host.replace(/^www\./, '') +
+      u.pathname.replace(/\/+$/, '') +
+      (params.length ? '?' + params.map(([k, v]) => `${k}=${v}`).join('&') : '')
+    ).toLowerCase()
+  } catch {
+    /* 주소가 아니면 회사 · 제목으로 */
+  }
+  return key || `${j.company}|${j.title}`.replace(/\s+/g, '').toLowerCase()
 }
 
 export const isEmptyData = (d: AppData) =>
@@ -222,7 +239,7 @@ export function normalize(raw: unknown): AppData {
     openedAt: num(p.openedAt, 0),
   }))
 
-  const JOB_STATUSES: JobStatus[] = ['new', 'saved', 'hidden', 'started']
+  const JOB_STATUSES: JobStatus[] = ['new', 'hidden', 'started']
   const jobs: JobPosting[] = objs(raw.jobs).map((j) => ({
     id: str(j.id) || uid(),
     company: str(j.company),
@@ -236,8 +253,10 @@ export function normalize(raw: unknown): AppData {
     matchScore: Math.max(0, Math.min(100, num(j.matchScore, 0))),
     matchReason: str(j.matchReason),
     foundAt: num(j.foundAt, now),
+    // 예전 버전의 'saved' 상태는 '새 공고 + 저장됨'으로 옮긴다
     status: JOB_STATUSES.includes(j.status as JobStatus) ? (j.status as JobStatus) : 'new',
     projectId: str(j.projectId),
+    saved: j.saved === true || j.status === 'saved',
   }))
   const q = isObj(raw.jobQuery) ? raw.jobQuery : {}
   const jobQuery: JobQuery = {

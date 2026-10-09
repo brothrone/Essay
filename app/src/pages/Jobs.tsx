@@ -1,4 +1,4 @@
-import { Bookmark, BookmarkCheck, EyeOff, ExternalLink, LoaderCircle, PenLine, Radar, Search, Sparkles } from 'lucide-react'
+import { Bookmark, EyeOff, ExternalLink, LoaderCircle, PenLine, Radar, Search, Sparkles } from 'lucide-react'
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Dday, Empty } from '../components/ui'
@@ -10,59 +10,44 @@ import { toast } from '../toast'
 import type { JobPosting, JobQuery, JobStatus } from '../types'
 import { daysUntil, fmtDate, fmtRelative } from '../utils'
 
-type Tab = 'new' | 'saved' | 'started' | 'hidden'
+type Tab = 'new' | 'started' | 'hidden'
 const TABS: { key: Tab; label: string }[] = [
   { key: 'new', label: '새 공고' },
-  { key: 'saved', label: '저장' },
   { key: 'started', label: '자소서 시작' },
   { key: 'hidden', label: '숨김' },
 ]
 
-export function Jobs() {
+/** 사이드바 [저장된 공고] */
+export function SavedJobs() {
+  return <Jobs mode="saved" />
+}
+
+/**
+ * 맞춤 공고 (mode='search'): AI로 찾기 + 새 공고 · 자소서 시작 · 숨김
+ * 저장된 공고 (mode='saved'): 저장한 공고만 마감이 가까운 순으로
+ */
+export function Jobs({ mode = 'search' }: { mode?: 'search' | 'saved' }) {
   const { data, updateJob, addProject } = useStore()
   const navigate = useNavigate()
-  const search = useJobSearch()
-  const [tab, setTab] = useState<Tab>('new')
-  const [elapsed, setElapsed] = useState(0)
   const reader = usePostingReader()
-
-  // 다른 화면에 다녀와도 시작 시각 기준으로 경과 시간을 이어서 보여 준다
-  useEffect(() => {
-    if (!search.running) return
-    const tick = () => setElapsed(Math.floor((Date.now() - search.startedAt) / 1000))
-    tick()
-    const id = setInterval(tick, 500)
-    return () => clearInterval(id)
-  }, [search.running, search.startedAt])
-
-  const defaults: JobQuery = {
-    ...data.jobQuery,
-    keywords:
-      data.jobQuery.keywords ||
-      [data.profile.targetJob, data.specs.find((s) => s.category === 'education')?.data.major].filter(Boolean).join(', '),
-  }
-  const [query, setQuery] = useState<JobQuery>(defaults)
+  const [tab, setTab] = useState<Tab>('new')
 
   const lists = useMemo(() => {
     const by = (s: JobStatus) => data.jobs.filter((j) => j.status === s)
     const sortNew = (a: JobPosting, b: JobPosting) => b.matchScore - a.matchScore || b.foundAt - a.foundAt
+    const byDeadline = (a: JobPosting, b: JobPosting) => (a.deadline || '9999').localeCompare(b.deadline || '9999')
+    const saved = data.jobs.filter((j) => j.saved && j.status !== 'hidden')
+    const isOver = (j: JobPosting) => (daysUntil(j.deadline) ?? 0) < 0
     return {
       new: by('new')
-        .filter((j) => (daysUntil(j.deadline) ?? 0) >= 0)
+        .filter((j) => !isOver(j))
         .sort(sortNew),
-      saved: by('saved').sort((a, b) => (a.deadline || '9999').localeCompare(b.deadline || '9999')),
       started: by('started').sort((a, b) => b.foundAt - a.foundAt),
       hidden: by('hidden').sort((a, b) => b.foundAt - a.foundAt),
+      savedOpen: saved.filter((j) => !isOver(j)).sort(byDeadline),
+      savedOver: saved.filter(isOver).sort(byDeadline).reverse(),
     }
   }, [data.jobs])
-
-  const lastFound = data.jobs.reduce((t, j) => Math.max(t, j.foundAt), 0)
-
-  const submit = (e: FormEvent) => {
-    e.preventDefault()
-    setTab('new') // 결과는 '새 공고' 탭에 쌓인다
-    search.start(query)
-  }
 
   // 자소서는 바로 만들고, AI가 뒤에서 공고를 읽어 문항 · 공고 내용 · 마감일을 채운다.
   // 공고 한 건을 가리키는 주소면 그 페이지를, 사이트 첫 화면뿐이면 회사명 · 공고 제목으로 찾아 읽는다.
@@ -89,8 +74,61 @@ export function Jobs() {
     navigate(`/projects/${p.id}`)
   }
 
-  const shown = lists[tab]
+  // 저장해도 새 공고 목록에서 사라지지 않고 버튼만 '저장됨'으로 채워진다
+  const toggleSave = (job: JobPosting) => {
+    updateJob(job.id, { saved: !job.saved })
+    toast(job.saved ? '저장을 풀었어요' : '저장했어요. 왼쪽 [저장된 공고]에서 모아 볼 수 있어요')
+  }
 
+  const card = (job: JobPosting) => (
+    <JobCard
+      key={job.id}
+      job={job}
+      reading={job.projectId ? taskFor(reader.tasks, job.projectId) : undefined}
+      onStart={() => start(job)}
+      onCancel={(key) => reader.cancel(key)}
+      onToggleSave={() => toggleSave(job)}
+      onStatus={(status) => updateJob(job.id, { status })}
+    />
+  )
+
+  if (mode === 'saved') {
+    const count = lists.savedOpen.length + lists.savedOver.length
+    return (
+      <div className="page">
+        <header className="page-head">
+          <div>
+            <h1>저장된 공고</h1>
+            <p className="muted">맞춤 공고에서 저장한 공고를 마감이 가까운 순으로 모았어요.</p>
+          </div>
+        </header>
+        {count ? (
+          <>
+            {lists.savedOpen.length > 0 && <div className="job-grid">{lists.savedOpen.map(card)}</div>}
+            {lists.savedOver.length > 0 && (
+              <>
+                <h3 className="section-title">마감된 공고 {lists.savedOver.length}</h3>
+                <div className="job-grid dim">{lists.savedOver.map(card)}</div>
+              </>
+            )}
+          </>
+        ) : (
+          <Empty
+            icon={<Bookmark size={28} />}
+            title="저장한 공고가 없어요"
+            desc="맞춤 공고에서 마음에 드는 공고의 [저장]을 누르면 여기에 모여요"
+            action={
+              <Link className="btn" to="/jobs">
+                <Radar size={16} /> 맞춤 공고로 가기
+              </Link>
+            }
+          />
+        )}
+      </div>
+    )
+  }
+
+  const shown = lists[tab]
   return (
     <div className="page">
       <header className="page-head">
@@ -100,79 +138,7 @@ export function Jobs() {
         </div>
       </header>
 
-      <form className="card job-search" onSubmit={submit}>
-        <div className="job-search-fields">
-          <div className="field grow">
-            <label className="field-label" htmlFor="jq-k">
-              키워드
-            </label>
-            <input
-              id="jq-k"
-              value={query.keywords}
-              onChange={(e) => setQuery({ ...query, keywords: e.target.value })}
-              placeholder="예: 항공우주, 기계 설계, 품질"
-            />
-          </div>
-          <div className="field">
-            <label className="field-label" htmlFor="jq-c">
-              경력 구분
-            </label>
-            <select id="jq-c" value={query.career} onChange={(e) => setQuery({ ...query, career: e.target.value })}>
-              {['신입', '인턴', '신입·인턴', '경력 무관'].map((c) => (
-                <option key={c}>{c}</option>
-              ))}
-            </select>
-          </div>
-          <div className="field">
-            <label className="field-label" htmlFor="jq-r">
-              지역
-            </label>
-            <input
-              id="jq-r"
-              value={query.region}
-              onChange={(e) => setQuery({ ...query, region: e.target.value })}
-              placeholder="무관"
-            />
-          </div>
-          <div className="field">
-            <label className="field-label" htmlFor="jq-n">
-              개수
-            </label>
-            <select id="jq-n" value={query.count} onChange={(e) => setQuery({ ...query, count: Number(e.target.value) })}>
-              {[5, 8, 12].map((n) => (
-                <option key={n} value={n}>
-                  {n}개
-                </option>
-              ))}
-            </select>
-          </div>
-          <button type="submit" className="btn primary" disabled={search.running}>
-            <Sparkles size={16} /> AI로 찾기
-          </button>
-        </div>
-        {!search.running && (
-          <p className="muted small">
-            AI 설정에서 고른 Claude 또는 Gemini가 사람인 · 잡코리아 · 원티드 · 잡알리오 등을 검색하고 공고를 직접 열어 마감일을
-            확인해요. 1~3분 걸리고 구독 사용량에서 차감돼요. 이름 · 연락처는 보내지 않아요.
-            {lastFound > 0 && ` · 마지막으로 찾은 때: ${fmtRelative(lastFound)}`}
-          </p>
-        )}
-        {search.running && (
-          <div className="job-progress">
-            <div className="ai-running">
-              <LoaderCircle size={16} className="spin" />
-              <span>공고를 찾는 중… {elapsed}초</span>
-              <button type="button" className="btn ghost small" onClick={search.cancel}>
-                취소
-              </button>
-            </div>
-            <ul className="job-steps">
-              {search.steps.length ? search.steps.map((s, i) => <li key={i}>{s}</li>) : <li>검색 계획을 세우는 중…</li>}
-            </ul>
-          </div>
-        )}
-        {search.error && !search.running && <p className="ai-error">{search.error}</p>}
-      </form>
+      <JobSearchForm onSearched={() => setTab('new')} />
 
       <div className="toolbar">
         <div className="chips">
@@ -187,21 +153,15 @@ export function Jobs() {
             </button>
           ))}
         </div>
+        {lists.savedOpen.length > 0 && (
+          <Link className="link-more" to="/jobs/saved">
+            <Bookmark size={14} /> 저장된 공고 {lists.savedOpen.length}
+          </Link>
+        )}
       </div>
 
       {shown.length ? (
-        <div className="job-grid">
-          {shown.map((job) => (
-            <JobCard
-              key={job.id}
-              job={job}
-              reading={job.projectId ? taskFor(reader.tasks, job.projectId) : undefined}
-              onStart={() => start(job)}
-              onCancel={(key) => reader.cancel(key)}
-              onStatus={(status) => updateJob(job.id, { status })}
-            />
-          ))}
-        </div>
+        <div className="job-grid">{shown.map(card)}</div>
       ) : (
         <Empty
           icon={<Radar size={28} />}
@@ -213,23 +173,132 @@ export function Jobs() {
   )
 }
 
+function JobSearchForm({ onSearched }: { onSearched: () => void }) {
+  const { data } = useStore()
+  const search = useJobSearch()
+  const [elapsed, setElapsed] = useState(0)
+
+  // 다른 화면에 다녀와도 시작 시각 기준으로 경과 시간을 이어서 보여 준다
+  useEffect(() => {
+    if (!search.running) return
+    const tick = () => setElapsed(Math.floor((Date.now() - search.startedAt) / 1000))
+    tick()
+    const id = setInterval(tick, 500)
+    return () => clearInterval(id)
+  }, [search.running, search.startedAt])
+
+  const defaults: JobQuery = {
+    ...data.jobQuery,
+    keywords:
+      data.jobQuery.keywords ||
+      [data.profile.targetJob, data.specs.find((s) => s.category === 'education')?.data.major].filter(Boolean).join(', '),
+  }
+  const [query, setQuery] = useState<JobQuery>(defaults)
+  const lastFound = data.jobs.reduce((t, j) => Math.max(t, j.foundAt), 0)
+
+  const submit = (e: FormEvent) => {
+    e.preventDefault()
+    onSearched() // 결과는 '새 공고' 탭에 쌓인다
+    search.start(query)
+  }
+
+  return (
+    <form className="card job-search" onSubmit={submit}>
+      <div className="job-search-fields">
+        <div className="field grow">
+          <label className="field-label" htmlFor="jq-k">
+            키워드
+          </label>
+          <input
+            id="jq-k"
+            value={query.keywords}
+            onChange={(e) => setQuery({ ...query, keywords: e.target.value })}
+            placeholder="예: 항공우주, 기계 설계, 품질"
+          />
+        </div>
+        <div className="field">
+          <label className="field-label" htmlFor="jq-c">
+            경력 구분
+          </label>
+          <select id="jq-c" value={query.career} onChange={(e) => setQuery({ ...query, career: e.target.value })}>
+            {['신입', '인턴', '신입·인턴', '경력 무관'].map((c) => (
+              <option key={c}>{c}</option>
+            ))}
+          </select>
+        </div>
+        <div className="field">
+          <label className="field-label" htmlFor="jq-r">
+            지역
+          </label>
+          <input id="jq-r" value={query.region} onChange={(e) => setQuery({ ...query, region: e.target.value })} placeholder="무관" />
+        </div>
+        <div className="field">
+          <label className="field-label" htmlFor="jq-n">
+            최대 개수
+          </label>
+          <select id="jq-n" value={query.count} onChange={(e) => setQuery({ ...query, count: Number(e.target.value) })}>
+            {[5, 8, 12].map((n) => (
+              <option key={n} value={n}>
+                {n}개
+              </option>
+            ))}
+          </select>
+        </div>
+        <button type="submit" className="btn primary" disabled={search.running}>
+          <Sparkles size={16} /> AI로 찾기
+        </button>
+      </div>
+      {!search.running && (
+        <p className="muted small">
+          AI가 사람인 · 잡코리아 · 원티드 · 잡알리오 등을 검색한 뒤, 찾은 공고 페이지를 직접 열어 지금 접수 중인 것만 남겨요. 조건에 맞는 확실한
+          공고가 적으면 고른 개수보다 적게 나와요. 구독 사용량에서 차감되고, 이름 · 연락처는 보내지 않아요.
+          {lastFound > 0 && ` · 마지막으로 찾은 때: ${fmtRelative(lastFound)}`}
+        </p>
+      )}
+      {!search.running && search.lastAdded !== null && (
+        <p className="import-ok">
+          확인된 공고 {search.lastAdded}개를 새로 더했어요
+          {search.lastDropped > 0 && <span className="muted"> · 마감됐거나 공고를 확인할 수 없는 {search.lastDropped}개는 뺐어요</span>}
+        </p>
+      )}
+      {search.running && (
+        <div className="job-progress">
+          <div className="ai-running">
+            <LoaderCircle size={16} className="spin" />
+            <span>공고를 찾는 중… {elapsed}초</span>
+            <button type="button" className="btn ghost small" onClick={search.cancel}>
+              취소
+            </button>
+          </div>
+          <ul className="job-steps">
+            {search.steps.length ? search.steps.map((s, i) => <li key={i}>{s}</li>) : <li>검색 계획을 세우는 중…</li>}
+          </ul>
+        </div>
+      )}
+      {search.error && !search.running && <p className="ai-error">{search.error}</p>}
+    </form>
+  )
+}
+
 function JobCard({
   job,
   reading,
   onStart,
   onCancel,
+  onToggleSave,
   onStatus,
 }: {
   job: JobPosting
   reading: PostingTask | undefined
   onStart: () => void
   onCancel: (key: string) => void
+  onToggleSave: () => void
   onStatus: (s: JobStatus) => void
 }) {
   const elapsed = useElapsed(reading)
   const tone = job.matchScore >= 80 ? 'green' : job.matchScore >= 60 ? 'blue' : 'gray'
   return (
-    <article className="job-card">
+    <article className={'job-card' + (job.saved ? ' is-saved' : '')}>
       <div className="job-card-top">
         <div className="job-titles">
           <span className="job-company">{job.company || '회사 미확인'}</span>
@@ -240,7 +309,7 @@ function JobCard({
         </span>
       </div>
       <div className="tag-row">
-        {job.deadline ? <Dday date={job.deadline} /> : <span className="badge tone-gray">마감일 미확인</span>}
+        {job.deadline ? <Dday date={job.deadline} /> : <span className="badge tone-gray">상시 · 마감일 미정</span>}
         {job.deadline && <span className="muted small">{fmtDate(job.deadline)}</span>}
         {job.kind && <span className="badge tone-violet">{job.kind}</span>}
         {job.location && <span className="badge tone-gray">{job.location}</span>}
@@ -284,17 +353,18 @@ function JobCard({
             <ExternalLink size={14} /> 공고 열기
           </a>
         )}
+        {job.status !== 'hidden' && (
+          <button
+            type="button"
+            className={'btn small ' + (job.saved ? 'save-on' : 'ghost')}
+            aria-pressed={job.saved}
+            title={job.saved ? '저장을 풀어요' : '[저장된 공고]에 모아 둬요'}
+            onClick={onToggleSave}
+          >
+            <Bookmark size={14} fill={job.saved ? 'currentColor' : 'none'} /> {job.saved ? '저장됨' : '저장'}
+          </button>
+        )}
         {job.status === 'new' && (
-          <button type="button" className="btn ghost small" onClick={() => onStatus('saved')}>
-            <Bookmark size={14} /> 저장
-          </button>
-        )}
-        {job.status === 'saved' && (
-          <button type="button" className="btn ghost small" onClick={() => onStatus('new')}>
-            <BookmarkCheck size={14} /> 저장됨
-          </button>
-        )}
-        {job.status !== 'hidden' && job.status !== 'started' && (
           <button type="button" className="btn ghost small" onClick={() => onStatus('hidden')}>
             <EyeOff size={14} /> 숨기기
           </button>

@@ -10,6 +10,8 @@ export interface JobSearchState {
   steps: string[]
   error: string
   lastAdded: number | null
+  /** 마지막 찾기에서 마감 · 확인 불가로 뺀 공고 수 */
+  lastDropped: number
 }
 
 export interface JobSearchApi extends JobSearchState {
@@ -51,5 +53,6 @@ export function toJob(raw: FoundJob): JobPosting | null {
     foundAt: Date.now(),
     status: 'new',
     projectId: '',
+    saved: false,
   }
 }

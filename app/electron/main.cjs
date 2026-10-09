@@ -715,6 +715,51 @@ async function resolveGrounding(url) {
 }
 ipcMain.handle('net:resolve-urls', (_e, urls) => Promise.all((Array.isArray(urls) ? urls : []).slice(0, 60).map(resolveGrounding)))
 
+// AI 가 찾은 공고가 정말 접수 중인지 공고 페이지를 직접 열어 확인한다 (AI 를 더 쓰지 않고 몇 초 안에 끝남)
+// - 마감 표시(제목의 '(마감)', "마감된 공고입니다" 등)나 지난 마감일(validThrough · '마감일:YYYY-MM-DD')이면 closed
+// - 페이지에서 마감일을 찾으면 돌려준다 (AI 가 못 찾은 마감일 채우기)
+// - 열리지 않거나 판단할 근거가 없으면 unknown (빼지 않는다)
+const PRIVATE_HOST = /^(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|169\.254\.|\[?::1\]?$|0\.)/i
+const pad2 = (n) => String(n).padStart(2, '0')
+const ymd = (y, m, d) => `${y}-${pad2(m)}-${pad2(d)}`
+async function checkPosting(url, today) {
+  try {
+    const u = new URL(String(url))
+    if (!/^https?:$/.test(u.protocol) || PRIVATE_HOST.test(u.hostname)) return { status: 'unknown', deadline: '' }
+    const r = await fetch(u, {
+      redirect: 'follow',
+      signal: AbortSignal.timeout(8000),
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0 Safari/537.36',
+        'Accept-Language': 'ko-KR,ko;q=0.9',
+      },
+    })
+    if (r.status === 404 || r.status === 410) return { status: 'closed', deadline: '' }
+    if (!r.ok) return { status: 'unknown', deadline: '' }
+    const html = (await r.text()).slice(0, 800000)
+    const title = (html.match(/<title[^>]*>([^<]*)<\/title>/i) || [])[1] || ''
+    let deadline = ''
+    const vt = html.match(/"validThrough"\s*:\s*"(\d{4})-(\d{2})-(\d{2})/)
+    if (vt) deadline = ymd(vt[1], vt[2], vt[3])
+    if (!deadline) {
+      const m = html.match(/(?:마감일|접수\s*마감|지원\s*마감|모집\s*마감)\s*[:：]?\s*(\d{4})[-./년]\s*(\d{1,2})[-./월]\s*(\d{1,2})/)
+      if (m) deadline = ymd(m[1], m[2], m[3])
+    }
+    if (deadline && deadline < today) return { status: 'closed', deadline }
+    if (/[([]\s*(마감|접수\s*마감|채용\s*마감)\s*[)\]]/.test(title)) return { status: 'closed', deadline }
+    const closedText = /마감된\s*(공고|포지션|채용)입니다|(채용|모집|접수|지원)이\s*마감(되었|됐)습니다|이미\s*마감된\s*(공고|채용)/.test(html)
+    if (closedText && !(deadline && deadline >= today)) return { status: 'closed', deadline }
+    // 제목에 남은 날짜(D-6) · 상시 채용 표시가 있으면 접수 중 (사람인 등)
+    if (deadline || /\(D-\d+\)|\(D-day\)|상시\s*채용|채용\s*시\s*마감/i.test(title)) return { status: 'open', deadline }
+    return { status: 'unknown', deadline }
+  } catch {
+    return { status: 'unknown', deadline: '' }
+  }
+}
+ipcMain.handle('net:check-postings', (_e, urls, today) =>
+  Promise.all((Array.isArray(urls) ? urls : []).slice(0, 30).map((u) => checkPosting(u, String(today || '')))),
+)
+
 ipcMain.handle('ai:cancel', () => {
   if (!aiChild) return false
   aiCancelled = true

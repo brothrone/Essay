@@ -1,4 +1,4 @@
-import { ArrowLeft, ArrowRight, Check } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Check, FileUp } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { desktop, type AiProvider } from '../desktop'
@@ -8,6 +8,7 @@ import { aiReady, useAiStatus } from '../useAiStatus'
 import { AI_PREFS_EVENT, saveAiProvider, savedAiProvider } from '../useAiTask'
 import { AiSetup } from './AiSetup'
 import { openHelpDialog } from './HelpDialog'
+import { openImportDialog } from './ImportModal'
 import { Logo } from './Logo'
 import { Modal } from './ui'
 
@@ -61,7 +62,7 @@ const CHOICES: { value: AiChoice; provider: AiProvider; name: string; need: stri
   { value: 'gemini-free', provider: 'gemini', name: 'Gemini 무료', need: 'Google 계정 · 무료 한도' },
 ]
 
-const STEP_LABELS = ['소개', 'AI', '연결', '끝']
+const STEP_LABELS = ['소개', 'AI', '연결', '내 자소서']
 
 function WelcomeWizard({ onClose }: { onClose: () => void }) {
   const [step, setStep] = useState(0)
@@ -91,6 +92,12 @@ function WelcomeWizard({ onClose }: { onClose: () => void }) {
     notify()
     onClose()
   }
+  // 마지막 단계: 예전 자소서 불러오기 창을 띄워 바로 내 경험 · 스펙 · 학력을 채우게 한다
+  const finishWithImport = () => {
+    close()
+    window.setTimeout(openImportDialog, 150)
+  }
+
   const trySample = () => {
     if (isEmptyData(data)) replaceAll(buildSample())
     close()
@@ -210,11 +217,19 @@ function WelcomeWizard({ onClose }: { onClose: () => void }) {
               <>AI는 나중에 홈의 [연결 관리]에서 연결할 수 있습니다. 자소서 작성은 AI 없이도 됩니다.</>
             )}
           </p>
-          <ol className="login-guide big">
-            <li>자소서를 열고 오른쪽 AI 도우미에서 [초안 쓰기].</li>
-            <li>모델은 홈 위쪽 AI 바에서 바꿉니다. 사용량을 아끼려면 "한도 절약".</li>
-            <li>이 안내는 F1 도움말과 설정에서 다시 볼 수 있습니다.</li>
-          </ol>
+          <div className="welcome-import">
+            <span className="welcome-import-icon">
+              <FileUp size={22} />
+            </span>
+            <div>
+              <strong>마지막으로, 지금까지 쓴 자소서를 넣어 주세요</strong>
+              <p className="muted small">
+                예전 자소서 · 이력서 파일을 넣거나 붙여넣으면 AI가 경험(STAR) · 스펙 · 학력 · 어학 · 수상을 뽑아 채우고, 맞춤 공고 조건까지 잡아요.
+                한 번만 하면 이후 초안 쓰기와 공고 추천이 내 이야기로 맞춰집니다.
+              </p>
+            </div>
+          </div>
+          <p className="muted small">이 안내는 F1 도움말과 설정에서 다시 볼 수 있습니다.</p>
         </div>
       )}
 
@@ -242,12 +257,15 @@ function WelcomeWizard({ onClose }: { onClose: () => void }) {
         {step === 3 && (
           <>
             {isEmptyData(data) && (
-              <button type="button" className="btn" onClick={trySample}>
-                예시 데이터로 시작
+              <button type="button" className="btn ghost" onClick={trySample}>
+                예시 데이터로 둘러보기
               </button>
             )}
-            <button type="button" className="btn primary" onClick={close}>
-              시작
+            <button type="button" className="btn" onClick={close}>
+              나중에 넣을게요
+            </button>
+            <button type="button" className="btn primary" onClick={finishWithImport}>
+              <FileUp size={16} /> 예전 자소서 넣기
             </button>
           </>
         )}

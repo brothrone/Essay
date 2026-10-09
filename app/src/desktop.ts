@@ -48,6 +48,8 @@ export interface DesktopBridge {
     geminiAllowWeb: () => Promise<{ ok: boolean; path: string }>
     /** Gemini 검색 결과의 구글 중간 주소를 실제 공고 주소로 바꾼다 (못 바꾸면 빈 문자열) */
     resolveUrls: (urls: string[]) => Promise<string[]>
+    /** 공고 페이지를 직접 열어 접수 중인지 · 마감일을 확인한다 (closed 면 목록에서 뺀다) */
+    checkPostings: (urls: string[], today: string) => Promise<{ status: 'open' | 'closed' | 'unknown'; deadline: string }[]>
     /** 설치·로그인 명령을 사용자가 보는 PowerShell 창에서 실행 */
     openTerminal: (action: TerminalAction) => Promise<boolean>
     /** 설치를 창 없이 조용히 실행. 진행 줄은 onInstallProgress, 끝은 onInstallDone 으로 온다 */

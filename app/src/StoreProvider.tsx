@@ -68,9 +68,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             known.add(k)
             return true
           })
-          // 오래된 '새 공고'는 최근 40개만 남긴다
-          const keep = d.jobs.filter((j) => j.status !== 'new')
-          const olderNew = d.jobs.filter((j) => j.status === 'new')
+          // 저장하지 않은 오래된 '새 공고'는 최근 40개만 남긴다 (저장 · 숨김 · 시작한 공고는 그대로)
+          const keep = d.jobs.filter((j) => j.status !== 'new' || j.saved)
+          const olderNew = d.jobs.filter((j) => j.status === 'new' && !j.saved)
           return { ...d, jobQuery: query, jobs: [...fresh, ...olderNew].slice(0, 40).concat(keep) }
         }),
       updateJob: (id, patch) =>

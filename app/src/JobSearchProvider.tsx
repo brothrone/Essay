@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { desktop } from './desktop'
-import { isGroundingUrl } from './format'
+import { isGroundingUrl, isPostingUrl } from './format'
 import { JobSearchContext, toJob, type FoundJob, type JobSearchApi, type JobSearchState } from './jobSearch'
 import { jobSearchPrompt, parseAiJson } from './prompts'
 import { jobKey, useStore } from './store'
@@ -9,7 +9,7 @@ import type { JobPosting, JobQuery } from './types'
 import { runWebTask } from './aiRun'
 import { toDateInput } from './utils'
 
-const IDLE: JobSearchState = { running: false, startedAt: 0, steps: [], error: '', lastAdded: null }
+const IDLE: JobSearchState = { running: false, startedAt: 0, steps: [], error: '', lastAdded: null, lastDropped: 0 }
 
 export function JobSearchProvider({ children }: { children: ReactNode }) {
   const { data, mergeJobs, setJobQuery } = useStore()
@@ -73,11 +73,47 @@ export function JobSearchProvider({ children }: { children: ReactNode }) {
           /* 못 바꾸면 그대로 둔다: 자소서 시작 때 다시 시도하고, 안 되면 회사명으로 찾는다 */
         }
       }
+      // 확실한 공고만 남긴다: 공고 한 건을 가리키는 주소가 있고, 공고 페이지를 직접 열어 봤을 때 마감 표시 · 지난 마감일이 없는 것
+      const today = toDateInput(new Date())
+      let verified = found.filter((j) => isPostingUrl(j.url) && !(j.deadline && j.deadline < today))
+      if (verified.length) {
+        setState((s) => ({ ...s, steps: [...s.steps, `공고 ${verified.length}개를 직접 열어 접수 중인지 확인하는 중`].slice(-12) }))
+        try {
+          const checks = await ai.checkPostings(
+            verified.map((j) => j.url),
+            today,
+          )
+          // 남기는 것: 공고 페이지에서 접수 중으로 확인됐거나, 마감일이 오늘 이후이고 페이지에 마감 표시가 없는 것
+          verified = verified.filter((j, i) => {
+            const c = checks[i]
+            if (c?.deadline) j.deadline = c.deadline // 페이지의 마감일이 AI 가 적은 것보다 정확하다
+            if (!c || c.status === 'closed') return false
+            if (j.deadline && j.deadline < today) return false
+            return c.status === 'open' || !!j.deadline
+          })
+        } catch {
+          // 확인을 못 하면 마감일이 오늘 이후로 적힌 것만 남긴다
+          verified = verified.filter((j) => !!j.deadline && j.deadline >= today)
+        }
+      }
+      // 같은 공고가 여러 번 나오면(한 공고의 여러 직무 등) 점수가 높은 하나만 남긴다
+      const seen = new Set<string>()
+      verified = verified
+        .sort((a, b) => b.matchScore - a.matchScore)
+        .filter((j) => {
+          const k = jobKey(j)
+          if (seen.has(k)) return false
+          seen.add(k)
+          return true
+        })
+        .slice(0, query.count)
+      const dropped = found.length - verified.length
       const known = new Set(latest.current.jobs.map(jobKey))
-      const added = found.filter((j) => !known.has(jobKey(j))).length
-      mergeJobs(found, query)
-      setState((s) => ({ ...s, running: false, lastAdded: added }))
-      toast(added ? `맞춤 공고 ${added}개를 새로 찾았어요` : '새로 찾은 공고가 없어요. 키워드를 바꿔 보세요')
+      const added = verified.filter((j) => !known.has(jobKey(j))).length
+      mergeJobs(verified, query)
+      setState((s) => ({ ...s, running: false, lastAdded: added, lastDropped: dropped }))
+      const droppedNote = dropped ? ` · 마감됐거나 공고를 확인할 수 없는 ${dropped}개는 뺐어요` : ''
+      toast(added ? `확인된 맞춤 공고 ${added}개를 새로 찾았어요${droppedNote}` : `새로 찾은 확실한 공고가 없어요${droppedNote}. 키워드나 지역을 넓혀 보세요`)
     },
     [ai, mergeJobs, setJobQuery],
   )
