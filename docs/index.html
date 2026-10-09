@@ -263,7 +263,7 @@
       <li><b>✓</b> Gemini는 무료 계정도 OK</li>
     </ul>
     <div class="cta rv d4" id="dl">
-      <a id="dl-win" class="dl" href="https://github.com/brothrone/Essay/releases/latest" rel="noopener">
+      <a id="dl-win" class="dl" href="windows.html">
         <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 5.6 10.6 4.5v7.1H3zM11.6 4.3 21 3v8.6h-9.4zM3 12.4h7.6v7.1L3 18.4zM11.6 12.4H21V21l-9.4-1.3z"/></svg>
         <span class="t">Windows용 다운로드<small id="dl-win-sub">Windows 10 / 11 · 64비트</small></span>
       </a>
@@ -404,7 +404,7 @@
     <div class="install">
       <ol class="steps rv d1">
         <li><strong>설치 파일 받기</strong><p>위의 <a href="#dl">다운로드</a> 버튼이 내 운영체제에 맞는 파일을 줍니다. <strong>Windows</strong>는 받은 .exe 를 실행하면 폴더를 고를 필요 없이 바로 설치되고 열립니다. <strong>Mac</strong>은 받은 .dmg 를 열어 Essay 를 응용 프로그램 폴더로 끌어다 놓으면 됩니다 (M1 이후 맥은 Apple Silicon 용, 그 전 맥은 Intel 용).</p></li>
-        <li><strong>처음 열 때 보안 안내가 뜨면</strong><p><strong>Windows</strong>: "Windows의 PC 보호" 창에서 <strong>추가 정보 → 실행</strong>. <strong>Mac</strong>: "Apple이 확인할 수 없음" 창이 뜨면 <strong>완료</strong>를 누르고 <strong>시스템 설정 → 개인정보 보호 및 보안</strong> 아래쪽의 <strong>[그래도 열기]</strong>. 아직 디지털 서명이 없는 새 앱이라 뜨는 안내이고, 한 번만 하면 됩니다. 그림으로 보기: <a href="mac.html">Mac 설치 안내</a>.</p></li>
+        <li><strong>처음 열 때 보안 안내가 뜨면</strong><p><strong>Windows</strong>: "Windows의 PC 보호" 창에서 <strong>추가 정보 → 실행</strong> (<a href="windows.html">그림 안내</a>). <strong>Mac</strong>: "Apple이 확인할 수 없음" 창이 뜨면 <strong>완료</strong>를 누르고 <strong>시스템 설정 → 개인정보 보호 및 보안</strong> 아래쪽의 <strong>[그래도 열기]</strong>. 아직 디지털 서명이 없는 새 앱이라 뜨는 안내이고, 한 번만 하면 됩니다. 그림으로 보기: <a href="mac.html">Mac 설치 안내</a>.</p></li>
         <li><strong>첫 실행 안내 따라가기</strong><p>Claude 또는 Gemini를 고르고 [설치] → [로그인]을 누르면 됩니다. 나중에 해도 되고, AI 없이 먼저 써 봐도 됩니다.</p></li>
         <li><strong>예시 데이터로 둘러보기</strong><p>홈의 [예시 데이터로 둘러보기]를 누르면 자소서 2개 · 경험 3개가 들어와 기능을 바로 볼 수 있습니다.</p></li>
       </ol>
@@ -438,7 +438,7 @@
       <h2>오늘 자소서, 지금 시작하세요</h2>
       <p>설치 3분, 추가 요금 0원. 공고 링크 하나로 문항까지 채우고, 내 경험으로 초안을 받으세요.</p>
       <div class="cta final-cta">
-      <a id="dl2-win" class="dl" href="https://github.com/brothrone/Essay/releases/latest" rel="noopener">
+      <a id="dl2-win" class="dl" href="windows.html">
         <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 5.6 10.6 4.5v7.1H3zM11.6 4.3 21 3v8.6h-9.4zM3 12.4h7.6v7.1L3 18.4zM11.6 12.4H21V21l-9.4-1.3z"/></svg>
         <span class="t">Windows용 다운로드<small id="dl2-win-sub">Windows 10 / 11 · 64비트</small></span>
       </a>
@@ -512,7 +512,7 @@
     ['dl', 'dl2'].forEach(function (p) {
       var a = document.getElementById(p + '-' + kind), sub = document.getElementById(p + '-' + kind + '-sub');
       if (!asset) { sub.textContent = 'GitHub에서 받기'; return; }
-      if (kind === 'win') a.href = asset.browser_download_url; // 맥은 mac.html 에서 안내와 함께 내려받는다
+      // 버튼은 안내 페이지(windows.html · mac.html)를 열고, 거기서 안내와 함께 내려받는다
       sub.textContent = (kind === 'win' ? '.exe · Windows 10 / 11' : '.dmg · Apple Silicon (M1 이후)') + ' · ' + (asset.size / 1048576).toFixed(0) + 'MB';
     });
   }

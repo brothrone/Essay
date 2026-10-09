@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Essay — Windows 설치 안내</title>
+<meta name="description" content="Windows에서 Essay 설치 파일을 처음 실행할 때 뜨는 'Windows의 PC 보호' 창을 넘기는 방법. 추가 정보 → 실행, 한 번이면 됩니다.">
+<meta name="color-scheme" content="light dark">
+<meta name="robots" content="noindex">
+<link rel="icon" href="img/icon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>
+  :root{
+    --bg:#f7f8fb; --bg-2:#ffffff; --bg-3:#eef1f7; --fg:#10141c; --fg-2:#4b5563; --fg-3:#8a93a3;
+    --line:#e3e7ee; --line-2:#cfd6e1;
+    --brand:#3854db; --brand-2:#6a4cff; --brand-deep:#0f1440; --brand-soft:#eef1fd; --brand-text:#2742b8;
+    --ok:#1a7f4b; --ok-soft:#e9f7ef; --warn:#b45309; --warn-soft:#fff3df;
+    --shadow:0 1px 2px rgb(16 20 28/.04),0 10px 30px rgb(16 20 28/.08);
+    --shadow-lg:0 30px 80px rgb(16 20 28/.18);
+    --glass:rgb(255 255 255/.72);
+    --mono:'JetBrains Mono',ui-monospace,Consolas,monospace;
+    --sans:'Pretendard Variable',Pretendard,'Inter','Segoe UI','Malgun Gothic',system-ui,sans-serif;
+    --maxw:860px;
+  }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      --bg:#0b0e14; --bg-2:#12161e; --bg-3:#171c26; --fg:#e8ecf3; --fg-2:#aab3c2; --fg-3:#737d8f;
+      --line:#242b38; --line-2:#323b4b;
+      --brand:#6f8bff; --brand-2:#a08bff; --brand-soft:#1b2342; --brand-text:#a7b8ff;
+      --ok:#5cc98a; --ok-soft:#14291d; --warn:#f0b65a; --warn-soft:#3a2b12;
+      --shadow:0 1px 2px rgb(0 0 0/.3),0 10px 30px rgb(0 0 0/.35);
+      --shadow-lg:0 30px 80px rgb(0 0 0/.55);
+      --glass:rgb(11 14 20/.7);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0b0e14; --bg-2:#12161e; --bg-3:#171c26; --fg:#e8ecf3; --fg-2:#aab3c2; --fg-3:#737d8f;
+    --line:#242b38; --line-2:#323b4b;
+    --brand:#6f8bff; --brand-2:#a08bff; --brand-soft:#1b2342; --brand-text:#a7b8ff;
+    --ok:#5cc98a; --ok-soft:#14291d; --warn:#f0b65a; --warn-soft:#3a2b12;
+    --shadow:0 1px 2px rgb(0 0 0/.3),0 10px 30px rgb(0 0 0/.35);
+    --shadow-lg:0 30px 80px rgb(0 0 0/.55);
+    --glass:rgb(11 14 20/.7);
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:16px;line-height:1.7;-webkit-font-smoothing:antialiased;word-break:keep-all}
+  a{color:var(--brand-text)}
+  p{margin:0 0 14px}
+  strong{font-weight:650}
+  code{font-family:var(--mono);font-size:.84em;background:var(--bg-3);border:1px solid var(--line);border-radius:6px;padding:1px 7px}
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 20px}
+
+  .top{position:sticky;top:0;z-index:50;backdrop-filter:saturate(1.4) blur(14px);-webkit-backdrop-filter:saturate(1.4) blur(14px);background:var(--glass);border-bottom:1px solid var(--line)}
+  .top .in{display:flex;align-items:center;justify-content:space-between;gap:12px;height:64px}
+  .brand{display:flex;align-items:center;gap:10px;color:var(--fg);font-weight:800;font-size:1.05rem;text-decoration:none;letter-spacing:-.01em}
+  .brand svg{width:28px;height:28px;border-radius:7px;box-shadow:0 2px 6px rgb(15 20 64/.3)}
+  .top nav a{color:var(--fg-2);text-decoration:none;font-size:.92rem;font-weight:500;padding:8px 12px;border-radius:10px}
+  .top nav a:hover{background:var(--bg-3);color:var(--fg)}
+
+  .hero{padding:56px 0 28px}
+  .eyebrow{display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;background:var(--ok-soft);color:var(--ok);font-weight:600;font-size:.86rem;margin:0 0 16px}
+  .eyebrow i{width:8px;height:8px;border-radius:50%;background:currentColor;animation:pulse 1.4s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+  h1{margin:0 0 12px;font-size:clamp(1.7rem,4.5vw,2.4rem);font-weight:800;letter-spacing:-.025em;line-height:1.2}
+  .lead{color:var(--fg-2);font-size:1.08rem;max-width:44em;margin:0 0 18px}
+  .dlbox{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;padding:14px 18px;border:1px solid var(--line);border-radius:14px;background:var(--bg-2);box-shadow:var(--shadow);font-size:.95rem;color:var(--fg-2)}
+  .dlbox b{color:var(--fg)}
+  .dlbox a.btn{margin-left:auto}
+  .btn{display:inline-flex;align-items:center;gap:8px;padding:10px 16px;border-radius:12px;background:linear-gradient(135deg,var(--brand),var(--brand-2));color:#fff;text-decoration:none;font-weight:700;font-size:.95rem;box-shadow:0 8px 22px rgb(56 84 219/.3)}
+  .btn.ghost{background:var(--bg-2);color:var(--fg);border:1px solid var(--line-2);box-shadow:none}
+  .btn svg{width:18px;height:18px}
+
+  h2{margin:0 0 10px;font-size:1.5rem;font-weight:800;letter-spacing:-.02em}
+  .sub{color:var(--fg-2);margin:0 0 26px;max-width:46em}
+  section{padding:40px 0;border-top:1px solid var(--line)}
+
+  .steps{list-style:none;margin:0;padding:0;counter-reset:s}
+  .steps li{position:relative;padding:0 0 30px 56px;counter-increment:s}
+  .steps li::before{content:counter(s);position:absolute;left:0;top:0;width:36px;height:36px;border-radius:12px;background:linear-gradient(135deg,var(--brand),var(--brand-2));color:#fff;font-weight:800;font-family:var(--mono);display:grid;place-items:center;box-shadow:0 6px 16px rgb(56 84 219/.3)}
+  .steps li::after{content:'';position:absolute;left:17.5px;top:44px;bottom:0;width:1px;background:var(--line)}
+  .steps li:last-child::after{display:none}
+  .steps li > strong{display:block;margin-bottom:4px;font-size:1.08rem}
+  .steps p strong{display:inline;font-size:inherit}
+  .steps p{color:var(--fg-2);font-size:.97rem}
+  .steps .warn{color:var(--warn);font-weight:600}
+
+  /* 맥 대화 상자 · 시스템 설정 모양 */
+  .mock{margin:14px 0 6px;max-width:460px;border-radius:16px;background:var(--bg-2);border:1px solid var(--line);box-shadow:var(--shadow-lg);overflow:hidden;font-size:.93rem}
+  .mock .body{padding:22px 24px 18px;text-align:center}
+  .mock .icon{width:56px;height:56px;margin:0 auto 12px;border-radius:14px;background:linear-gradient(145deg,#d9dee6,#9aa4b2);position:relative}
+  .mock .icon::after{content:'!';position:absolute;right:-6px;bottom:-6px;width:22px;height:22px;border-radius:5px;background:#f5b400;color:#1b1b1b;font-weight:800;display:grid;place-items:center;font-size:.8rem;clip-path:polygon(50% 0,100% 100%,0 100%)}
+  .mock h4{margin:0 0 8px;font-size:1.02rem;font-weight:700}
+  .mock .msg{color:var(--fg-2);font-size:.9rem;margin:0}
+  .mock .btns{display:flex;flex-direction:column;gap:8px;padding:0 24px 20px}
+  .mock .b{padding:9px;border-radius:10px;text-align:center;font-weight:600;background:var(--bg-3);color:var(--fg)}
+  .mock .b.primary{background:#2563eb;color:#fff}
+  .mock .b.pick{outline:3px solid var(--ok);outline-offset:2px}
+  .mock .tag{display:inline-block;margin-left:8px;padding:1px 8px;border-radius:999px;background:var(--ok-soft);color:var(--ok);font-size:.75rem;font-weight:700}
+  .mock .tag.no{background:var(--warn-soft);color:var(--warn)}
+  .mock.win{border-radius:8px;text-align:left}
+  .mock.win .body{background:#1565c0;color:#fff;text-align:left;padding:26px 28px 22px}
+  .mock.win h4{color:#fff;font-size:1.35rem;margin:0 0 10px}
+  .mock.win .msg{color:rgb(255 255 255/.9)}
+  .mock.win .more{display:inline-block;margin-top:8px;color:#fff;text-decoration:underline;font-weight:600}
+  .mock.win .btns{flex-direction:row;justify-content:flex-end;background:#1565c0;padding:0 28px 22px}
+  .mock.win .b{background:#e6eef9;color:#111;min-width:120px}
+  .mock.win .b.pick{outline-color:#9ff0c0}
+  .settings{max-width:560px}
+  .settings .row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;border-top:1px solid var(--line);font-size:.9rem}
+  .settings .row:first-child{border-top:0;background:var(--bg-3);font-weight:700}
+  .settings .row small{display:block;color:var(--fg-3);font-weight:400}
+  .settings .b{padding:6px 12px;border-radius:8px;background:var(--bg-3);font-weight:600;white-space:nowrap}
+
+  .cmd{display:flex;align-items:center;gap:10px;margin:10px 0 0;padding:10px 12px 10px 16px;border:1px solid var(--line);border-radius:12px;background:var(--bg-2);font-family:var(--mono);font-size:.9rem;overflow-x:auto}
+  .cmd code{background:none;border:0;padding:0;font-size:inherit}
+  .cmd button{margin-left:auto;flex:none;border:1px solid var(--line-2);background:var(--bg-3);color:var(--fg);border-radius:8px;padding:6px 10px;font:inherit;font-family:var(--sans);font-size:.82rem;cursor:pointer}
+
+  .faq details{border-top:1px solid var(--line);padding:14px 0}
+  .faq details:last-child{border-bottom:1px solid var(--line)}
+  .faq summary{cursor:pointer;font-weight:600;list-style:none;display:flex;justify-content:space-between;gap:12px}
+  .faq summary::-webkit-details-marker{display:none}
+  .faq summary::after{content:'+';color:var(--fg-3);font-family:var(--mono)}
+  .faq details[open] summary::after{content:'−'}
+  .faq p{margin:10px 0 0;color:var(--fg-2);font-size:.95rem}
+  footer{padding:36px 0 72px;color:var(--fg-3);font-size:.9rem}
+</style>
+</head>
+<body>
+
+<div class="top"><div class="wrap in">
+  <a class="brand" href="./">
+    <svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3854DB"/><stop offset="1" stop-color="#0F1440"/></linearGradient></defs><rect width="64" height="64" rx="14.5" fill="url(#g)"/><g fill="#fff" transform="translate(32 32) scale(0.96) translate(-32 -36.25)"><path fill-rule="evenodd" d="M32 57C28.5 50 21.5 40 21 32C20.8 27.5 22.6 24.2 25 22.5H39C41.4 24.2 43.2 27.5 43 32C42.5 40 35.5 50 32 57ZM34.6 33A2.6 2.6 0 1 0 29.4 33A2.6 2.6 0 1 0 34.6 33ZM31.25 36.2H32.75V53H31.25Z"/><rect x="24.5" y="15.5" width="15" height="5" rx="1.4"/></g></svg>
+    Essay
+  </a>
+  <nav><a href="./">← 소개 페이지</a><a href="./#faq">FAQ</a></nav>
+</div></div>
+
+<header class="hero"><div class="wrap">
+  <p class="eyebrow"><i></i> <span id="state">Windows용 Essay를 내려받는 중…</span></p>
+  <h1>받는 동안 1분만 읽어 주세요.<br>처음 실행할 때 한 번, 이 안내가 필요해요.</h1>
+  <p class="lead">
+    Essay는 아직 Microsoft 코드 서명을 받지 않은 개인 배포 앱이에요. 그래서 설치 파일을 처음 실행하면 파란 창으로
+    <strong>"Windows의 PC 보호"</strong> 라고 막아요. 바이러스가 아니라 <strong>서명이 없어서 뜨는 안내</strong>이고, 아래 순서대로 한 번만 넘기면 설치되고 다음부터는 바로 열려요.
+  </p>
+  <div class="dlbox">
+    <span>파일: <b id="fname">Essay-Setup.exe</b> <span id="fsize"></span></span>
+    <a class="btn" id="again" href="https://github.com/brothrone/Essay/releases/latest" rel="noopener">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+      다운로드가 시작되지 않으면 여기
+    </a>
+  </div>
+  <p style="margin:10px 0 0;font-size:.9rem;color:var(--fg-3)">Windows 10 / 11 (64비트) 용이에요. Mac 이면 <a href="mac.html">Mac 설치 안내</a>로 가세요.</p>
+</div></header>
+
+<section><div class="wrap">
+  <h2>설치하고 처음 여는 법</h2>
+  <p class="sub">3분이면 끝나요. 2번 파란 창에서 <strong>"추가 정보"를 먼저 눌러야 실행 버튼이 나오는 것</strong>만 기억하세요.</p>
+  <ol class="steps">
+    <li>
+      <strong>받은 Essay-Setup-&lt;버전&gt;.exe 를 더블클릭</strong>
+      <p>브라우저 오른쪽 위 다운로드 목록이나 <strong>다운로드</strong> 폴더에 있어요. 브라우저가 "일반적으로 다운로드되지 않는 파일" 이라고 하면 <strong>유지</strong>(또는 "그래도 다운로드")를 누르세요. 같은 이유(서명 없음)로 뜨는 안내예요.</p>
+    </li>
+    <li>
+      <strong>파란 "Windows의 PC 보호" 창 → 작은 글씨 <span class="warn">"추가 정보"</span> → <span class="warn">"실행"</span></strong>
+      <p>처음엔 <strong>[실행 안 함]</strong> 버튼만 보여요. 창 가운데 작은 글씨 <strong>"추가 정보"</strong> 를 누르면 아래에 <strong>[실행]</strong> 버튼이 나타나요. 그걸 누르세요.</p>
+      <div class="mock win" role="img" aria-label="Windows의 PC 보호 창 모양">
+        <div class="body">
+          <h4>Windows의 PC 보호</h4>
+          <p class="msg">Microsoft Defender SmartScreen이 인식할 수 없는 앱의 시작을 차단했습니다. 이 앱을 실행하면 PC가 위험에 노출될 수 있습니다.</p>
+          <span class="more">추가 정보 <span class="tag">먼저 이걸 누르세요</span></span>
+          <p class="msg" style="margin-top:12px">앱: Essay-Setup.exe<br>게시자: 알 수 없는 게시자</p>
+        </div>
+        <div class="btns">
+          <div class="b pick">실행 <span class="tag">그다음 이걸</span></div>
+          <div class="b">실행 안 함</div>
+        </div>
+      </div>
+    </li>
+    <li>
+      <strong>잠깐 기다리면 설치가 끝나고 Essay 가 바로 열려요</strong>
+      <p>물어보는 것 없이 작은 진행 창이 떴다가 사라지고 Essay 가 열려요. 바탕화면과 시작 메뉴에 <strong>Essay</strong> 아이콘이 생겨요. "사용자 계정 컨트롤" 창이 뜨면 <strong>예</strong>.</p>
+    </li>
+    <li>
+      <strong>처음 켜면 뜨는 안내를 따라 AI 연결</strong>
+      <p>Claude 또는 Gemini 를 고르고 [설치] → [로그인] 을 누르면 Essay 안에서 진행돼요. 나중에 해도 되고, AI 없이 먼저 써 봐도 돼요. 막히면 앱에서 <strong>F1</strong>.</p>
+    </li>
+  </ol>
+</div></section>
+
+<section><div class="wrap">
+  <h2>"추가 정보" 글씨가 안 보이면</h2>
+  <p class="sub">회사 PC 처럼 보안 정책이 걸린 경우예요. 받은 파일을 <strong>마우스 오른쪽 클릭 → 속성</strong> → 맨 아래 <strong>"차단 해제"</strong> 에 체크 → 확인 → 다시 실행해 보세요. 그래도 안 되면 PC 관리자에게 물어보세요.</p>
+</div></section>
+
+<section><div class="wrap faq">
+  <h2>궁금한 것</h2>
+  <details><summary>왜 이런 창이 뜨나요? 위험한 앱인가요?</summary><p>Windows 는 Microsoft 에 등록한 서명이 있는 앱만 바로 실행해 줘요. Essay 는 개인이 무료로 배포하는 앱이라 아직 서명을 받지 않았고, 그래서 "인식할 수 없는 앱" 이라고 뜨는 거예요. 앱이 하는 일은 <a href="./#ai">소개 페이지</a>에 그대로 적혀 있고, 데이터는 내 PC 의 문서 폴더 밖으로 나가지 않아요. 코드도 <a href="https://github.com/brothrone/Essay" rel="noopener">GitHub 에 공개</a>돼 있어요.</p></details>
+  <details><summary>매번 해야 하나요?</summary><p>아니요. 설치할 때 한 번만이에요. 새 버전은 앱이 스스로 내려받아 다음에 켤 때 조용히 적용되니 다시 받을 일도 없어요.</p></details>
+  <details><summary>어디에 설치되나요?</summary><p>내 계정 폴더 안(AppData\Local\Programs\Essay)에 설치돼서 관리자 권한이 필요 없어요. 내 글은 <strong>문서\Essay</strong> 폴더에 파일 하나로 저장돼요.</p></details>
+  <details><summary>Essay 를 지우고 싶어요</summary><p>Windows 설정 → 앱 → Essay → 제거. 내 글이 든 파일(문서\Essay)은 지워지지 않아요.</p></details>
+</div></section>
+
+<footer><div class="wrap">© 2026 brothrone · <a href="./">Essay 소개 페이지</a></div></footer>
+
+<script>
+(function () {
+  var state = document.getElementById('state'), fname = document.getElementById('fname'), fsize = document.getElementById('fsize');
+  var again = document.getElementById('again');
+  fetch('https://api.github.com/repos/brothrone/Essay/releases/latest', { headers: { Accept: 'application/vnd.github+json' } })
+    .then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (rel) {
+      var asset = (rel && rel.assets || []).filter(function (a) { return /\.exe$/i.test(a.name); })[0];
+      if (!asset) { state.textContent = '파일을 찾지 못했어요. 아래 버튼으로 받아 주세요.'; return; }
+      fname.textContent = asset.name; fsize.textContent = '· ' + (asset.size / 1048576).toFixed(0) + 'MB';
+      again.href = asset.browser_download_url;
+      // 안내를 읽을 시간을 주고 자동으로 내려받기 시작
+      setTimeout(function () { location.href = asset.browser_download_url; state.textContent = '다운로드가 시작됐어요. 끝나면 아래 순서대로 설치해 주세요.'; }, 1200);
+    })
+    .catch(function () { state.textContent = '아래 버튼으로 받아 주세요.'; });
+})();
+</script>
+</body>
+</html>
