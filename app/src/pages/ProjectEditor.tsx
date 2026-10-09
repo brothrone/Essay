@@ -6,20 +6,26 @@ import {
   ChevronRight,
   ChevronUp,
   Copy,
+  Download,
   ExternalLink,
   History,
   Lightbulb,
   LoaderCircle,
+  MessagesSquare,
   PanelRight,
   Pencil,
   Plus,
   Search,
+  Sparkles,
   Trash2,
   X,
 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { AiPanel } from '../components/AiPanel'
+import { CHAT_FOCUS_EVENT, ChatPanel } from '../components/ChatPanel'
+import { QuestionImportDialog } from '../components/QuestionImportDialog'
+import { toast } from '../toast'
 import { PostingCheck } from '../components/PostingCheck'
 import { isActive, taskFor, useElapsed, usePostingReader } from '../postingReader'
 import { answerWarnings } from '../checks'
@@ -32,11 +38,13 @@ import { newQuestion, useStore } from '../store'
 import type { CountMode, Experience, Project, Question } from '../types'
 import { copyText, countChars, fmtDateTime, fmtPeriod, fmtRelative, includesText, similarity } from '../utils'
 
-type Panel = 'exp' | 'ai' | 'answers' | 'info'
+type Panel = 'chat' | 'ai' | 'exp' | 'answers' | 'info'
 
-const PANELS: { key: Panel; label: string }[] = [
+// AI 두 탭을 앞에 두고 눈에 띄게 (처음 열면 AI 대화)
+const PANELS: { key: Panel; label: string; ai?: boolean }[] = [
+  { key: 'chat', label: 'AI 대화', ai: true },
+  { key: 'ai', label: 'AI 도우미', ai: true },
   { key: 'exp', label: '경험' },
-  { key: 'ai', label: 'AI 도우미' },
   { key: 'answers', label: '다른 답변' },
   { key: 'info', label: '공고 정보' },
 ]
@@ -46,9 +54,16 @@ export function ProjectEditor() {
   const { data, updateProject, touchProject, deleteProject } = useStore()
   const navigate = useNavigate()
   const [params, setParams] = useSearchParams()
-  const [panel, setPanel] = useState<Panel>('exp')
+  const [panel, setPanel] = useState<Panel>('chat')
   const [panelOpen, setPanelOpen] = useState(false)
+  const [importOpen, setImportOpen] = useState(false)
   const project = data.projects.find((p) => p.id === id)
+  /** 답변 아래 큰 버튼: 오른쪽 AI 탭을 열고(좁은 창에서는 패널을 펼쳐) 대화면 입력칸으로 */
+  const openAi = (p: 'chat' | 'ai') => {
+    setPanel(p)
+    setPanelOpen(true)
+    if (p === 'chat') window.dispatchEvent(new Event(CHAT_FOCUS_EVENT))
+  }
 
   useEffect(() => {
     touchProject(id)
@@ -97,6 +112,16 @@ export function ProjectEditor() {
     const q = newQuestion(preset)
     update((x) => ({ ...x, questions: [...x.questions, q] }))
     select(q.id)
+  }
+  /** [문항 불러오기]에서 고른 문항: 비어 있는 '새 문항' 자리는 바꾸고, 이미 있는 문항은 건너뛴다 */
+  const addQuestions = (qs: Pick<Question, 'prompt' | 'limit'>[]) => {
+    const keep = questions.filter((q) => q.prompt.trim() || q.answer.trim())
+    const have = new Set(keep.map((q) => q.prompt.trim()))
+    const added = qs.filter((q) => q.prompt.trim() && !have.has(q.prompt.trim())).map((q) => newQuestion(q))
+    if (!added.length) return
+    update((x) => ({ ...x, questions: [...x.questions.filter((q) => q.prompt.trim() || q.answer.trim()), ...added] }))
+    select(added[0].id)
+    toast(`문항 ${added.length}개를 넣었어요`)
   }
 
   const removeQ = async (q: Question) => {
@@ -214,6 +239,12 @@ export function ProjectEditor() {
           <button type="button" className="add-q" onClick={() => addQ()}>
             <Plus size={16} /> 문항 추가
           </button>
+          <button type="button" className="add-q import-q" onClick={() => setImportOpen(true)}>
+            <Download size={16} /> 문항 불러오기
+          </button>
+          {importOpen && (
+            <QuestionImportDialog project={project} onPatch={patch} onAdd={addQuestions} onClose={() => setImportOpen(false)} />
+          )}
           <details className="preset-menu">
             <summary>자주 나오는 문항으로 추가</summary>
             {QUESTION_PRESETS.map((p) => (
@@ -236,6 +267,7 @@ export function ProjectEditor() {
               onSnapshot={(label) => snapshotQ(active.id, label)}
               onRemove={() => removeQ(active)}
               onMove={(dir) => moveQ(active.id, dir)}
+              onOpenAi={openAi}
             />
           ) : (
             <Empty
@@ -259,9 +291,11 @@ export function ProjectEditor() {
                 role="tab"
                 key={p.key}
                 aria-selected={panel === p.key}
-                className={panel === p.key ? 'on' : ''}
+                className={(panel === p.key ? 'on' : '') + (p.ai ? ' ai-tab' : '')}
                 onClick={() => setPanel(p.key)}
               >
+                {p.key === 'chat' && <MessagesSquare size={15} />}
+                {p.key === 'ai' && <Sparkles size={15} />}
                 {p.label}
               </button>
             ))}
@@ -276,6 +310,9 @@ export function ProjectEditor() {
             </div>
             {active ? (
               <>
+                <div hidden={panel !== 'chat'} className="panel-fill">
+                  <ChatPanel key={active.id} project={project} q={active} onPatch={(p, label) => patchQ(active.id, p, label)} />
+                </div>
                 <div hidden={panel !== 'exp'}>
                   <ExperiencePanel project={project} q={active} onPatch={(p) => patchQ(active.id, p)} />
                 </div>
@@ -363,6 +400,7 @@ function QuestionEditor({
   onSnapshot,
   onRemove,
   onMove,
+  onOpenAi,
 }: {
   project: Project
   q: Question
@@ -372,6 +410,7 @@ function QuestionEditor({
   onSnapshot: (label: string) => void
   onRemove: () => void
   onMove: (dir: -1 | 1) => void
+  onOpenAi: (p: 'chat' | 'ai') => void
 }) {
   const [historyOpen, setHistoryOpen] = useState(false)
   const counts: Record<CountMode, number> = {
@@ -466,12 +505,34 @@ function QuestionEditor({
         </label>
       </div>
 
+      {/* AI 두 기능을 답변 칸 바로 위에 크게 (열자마자 보이게) */}
+      <div className="ai-strip">
+        <button type="button" className="ai-big chat" onClick={() => onOpenAi('chat')}>
+          <span className="ai-big-icon">
+            <MessagesSquare size={22} />
+          </span>
+          <span className="ai-big-text">
+            <strong>AI와 대화하며 고치기</strong>
+            <span>말로 부탁하면 답변을 고쳐 줘요</span>
+          </span>
+        </button>
+        <button type="button" className="ai-big helper" onClick={() => onOpenAi('ai')}>
+          <span className="ai-big-icon">
+            <Sparkles size={22} />
+          </span>
+          <span className="ai-big-text">
+            <strong>AI 도우미</strong>
+            <span>초안 · 피드백 · 글자수 맞추기</span>
+          </span>
+        </button>
+      </div>
+
       <AutoTextarea
         className="answer-input"
         minRows={16}
         value={q.answer}
         spellCheck={false}
-        placeholder={'여기에 답변을 작성하세요.\n\n오른쪽 [경험] 탭에서 내 경험을 연결하면 STAR 내용을 보면서 쓸 수 있어요.'}
+        placeholder={'여기에 답변을 작성하세요.\n\n위 [AI와 대화하며 고치기]로 AI에게 초안이나 고칠 점을 말로 부탁할 수 있어요.'}
         onChange={(e) => onPatch({ answer: e.target.value })}
       />
 

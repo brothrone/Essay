@@ -130,8 +130,8 @@ function WelcomeWizard({ onClose }: { onClose: () => void }) {
           </div>
           <ul className="welcome-points">
             <li>
-              <strong>비용 없음</strong>
-              <p>구독 한도 안에서 횟수 제한 없이.</p>
+              <strong>자소서 사이트 구독료 없음</strong>
+              <p>이미 쓰는 Claude · Google AI 구독(또는 무료 Google 계정) 한도 안에서 씁니다.</p>
             </li>
             <li>
               <strong>최신 모델</strong>

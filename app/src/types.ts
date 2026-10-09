@@ -56,6 +56,20 @@ export interface AnswerSnapshot {
   label?: string // AI 적용 전 · 되돌리기 전 · 직접 저장 (없으면 자동)
 }
 
+/** AI 대화 한 줄 (문항마다 따로 남는다) */
+export interface ChatMessage {
+  role: 'user' | 'ai'
+  text: string
+  at: number
+  /** AI 가 제안한 고친 답변 전체 (있을 때만) */
+  answer?: string
+  /** 그 답변을 [답변에 적용] 했는지 */
+  applied?: boolean
+  model?: string
+  seconds?: number
+  tokens?: number
+}
+
 export interface Question {
   id: ID
   prompt: string
@@ -67,6 +81,8 @@ export interface Question {
   done: boolean
   /** 답변을 고치기 직전 상태들 (최근 30개) */
   history: AnswerSnapshot[]
+  /** AI 와 나눈 대화 (최근 60개). 예전 데이터엔 없다 */
+  chat?: ChatMessage[]
 }
 
 export type ProjectStatus = 'writing' | 'submitted' | 'docPass' | 'interview' | 'finalPass' | 'failed'

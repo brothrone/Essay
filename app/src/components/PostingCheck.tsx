@@ -110,10 +110,14 @@ export function PostingCheck({ project, onPatch }: { project: Project; onPatch: 
                 <>
                   <Check size={13} /> 자소서 문항 {applied.questions}개를 넣었어요
                 </>
+              ) : applied?.suggested ? (
+                <>
+                  <Check size={13} /> 공고에 정해진 자소서 문항이 없어요(자유 양식). 공고 내용에 맞춘 예상 문항 {applied.suggested}개를 넣었어요
+                </>
               ) : info.questions.length ? (
                 '자소서 문항은 이미 모두 들어 있어요'
               ) : (
-                '지정된 자소서 문항은 찾지 못했어요 (자유 양식일 수 있어요). 왼쪽 [자주 나오는 문항으로 추가]에서 골라 넣을 수 있어요'
+                '공고에 정해진 자소서 문항이 없어요(자유 양식). 왼쪽 [문항 불러오기]에서 골라 넣을 수 있어요'
               )}
               {info.questions.length > 0 && info.questionsSource && info.questionsSource !== '공고 페이지' && (
                 <span className="muted"> · 출처: {info.questionsSource} (이번 공고 문항과 같은지 확인하세요)</span>

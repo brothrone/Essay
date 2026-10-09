@@ -1837,7 +1837,7 @@ textarea:focus-visible {
   flex: 1;
   min-height: 0;
   display: grid;
-  grid-template-columns: 250px minmax(0, 1fr) 380px;
+  grid-template-columns: 230px minmax(0, 1fr) 420px;
 }
 
 .q-list,
@@ -2969,7 +2969,7 @@ textarea:focus-visible {
     right: 0;
     bottom: 0;
     z-index: 60;
-    width: min(400px, 92vw);
+    width: min(420px, 92vw);
     box-shadow: var(--shadow-lg);
     transform: translateX(105%);
     transition: transform 0.2s ease;
@@ -5101,4 +5101,422 @@ textarea:focus-visible {
   padding-left: 8px;
   white-space: nowrap;
   font-size: 12px;
+}
+
+/* ---------- AI 대화 · AI 도우미를 크게 (1.9.0) ---------- */
+.panel-tabs {
+  gap: 2px;
+  padding: 10px 10px;
+}
+
+.panel-tabs [role='tab'] {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 9px;
+  white-space: nowrap;
+}
+
+.panel-tabs [role='tab'].ai-tab {
+  color: var(--primary-text);
+}
+
+.panel-tabs [role='tab'].ai-tab.on {
+  background: var(--primary);
+  color: #fff;
+  box-shadow: 0 4px 12px rgb(43 98 242 / 28%);
+}
+
+.side-panel .panel-body {
+  flex: 1 0 auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.panel-body > .panel-fill:not([hidden]) {
+  flex: 1 0 auto;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 답변 바로 아래 큰 AI 버튼 두 개 */
+.ai-strip {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 12px 0 4px;
+}
+
+.ai-big {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1px solid transparent;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.ai-big:hover {
+  transform: translateY(-1px);
+}
+
+.ai-big.chat {
+  background: linear-gradient(135deg, var(--primary), #6a4cff);
+  color: #fff;
+  box-shadow: 0 8px 22px rgb(43 98 242 / 28%);
+}
+
+.ai-big.helper {
+  background: var(--primary-soft);
+  border-color: color-mix(in srgb, var(--primary) 30%, transparent);
+  color: var(--primary-text);
+}
+
+.ai-big-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: rgb(255 255 255 / 18%);
+}
+
+.ai-big.helper .ai-big-icon {
+  background: var(--surface);
+}
+
+.ai-big-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.ai-big-text strong {
+  font-size: 15.5px;
+  font-weight: 750;
+}
+
+.ai-big-text span {
+  font-size: 13px;
+  opacity: 0.9;
+}
+
+@media (max-width: 900px) {
+  .ai-strip {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* AI 대화 패널 */
+.chat-panel {
+  flex: 1 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.chat-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chat-head strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 15px;
+}
+
+.chat-head .icon-btn {
+  margin-left: auto;
+}
+
+.chat-log {
+  flex: 1 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.chat-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  margin: 18px 0 6px;
+  padding: 22px 18px;
+  border-radius: 14px;
+  background: var(--primary-soft);
+  text-align: center;
+  color: var(--text-2);
+}
+
+.chat-empty strong {
+  color: var(--text);
+  font-size: 15px;
+}
+
+.chat-empty p {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.6;
+}
+
+.chat-empty-icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: var(--primary);
+  color: #fff;
+}
+
+.chat-msg {
+  max-width: 94%;
+  padding: 10px 12px;
+  border-radius: 14px;
+  font-size: 14px;
+  line-height: 1.65;
+  white-space: pre-wrap;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+.chat-msg.me {
+  align-self: flex-end;
+  background: var(--primary);
+  color: #fff;
+  border-bottom-right-radius: 4px;
+}
+
+.chat-msg.ai {
+  align-self: flex-start;
+  background: var(--surface-2);
+  border-bottom-left-radius: 4px;
+}
+
+.chat-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+.chat-proposal {
+  margin-top: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: 12px;
+  background: var(--surface);
+  white-space: normal;
+}
+
+.chat-proposal-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+  font-size: 13px;
+  font-weight: 650;
+  color: var(--text-2);
+}
+
+.chat-proposal-head strong.over {
+  color: var(--danger);
+}
+
+.chat-proposal-text {
+  position: relative;
+  max-height: 10.5em;
+  overflow: hidden;
+  white-space: pre-wrap;
+  font-size: 13.5px;
+  line-height: 1.6;
+}
+
+.chat-proposal:not(.open) .chat-proposal-text::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3em;
+  background: linear-gradient(transparent, var(--surface));
+}
+
+.chat-proposal.open .chat-proposal-text {
+  max-height: none;
+}
+
+.chat-more {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-top: 4px;
+  font-size: 13px;
+}
+
+.chat-proposal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.chat-applied {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 650;
+  color: var(--primary-text);
+}
+
+.chat-compose {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0 -16px -16px;
+  padding: 10px 16px 16px;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+}
+
+.chat-ideas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chat-ideas button {
+  padding: 5px 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text-2);
+  font-size: 12.5px;
+  cursor: pointer;
+}
+
+.chat-ideas button:hover {
+  border-color: var(--primary);
+  color: var(--primary-text);
+  background: var(--primary-soft);
+}
+
+.chat-input {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 8px;
+  padding: 8px;
+  border: 1.5px solid var(--primary);
+  border-radius: 14px;
+  background: var(--surface);
+}
+
+.chat-input textarea {
+  min-height: 44px;
+  max-height: 160px;
+  padding: 4px 6px;
+  border: 0;
+  outline: none;
+  resize: none;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.55;
+  field-sizing: content;
+}
+
+.btn.chat-send {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  justify-content: center;
+  border-radius: 12px;
+}
+
+.btn.chat-send.stop {
+  color: var(--danger);
+}
+
+/* 문항 불러오기 */
+.add-q.import-q {
+  margin-top: 6px;
+  border-style: solid;
+  border-color: color-mix(in srgb, var(--primary) 35%, transparent);
+  background: var(--primary-soft);
+  color: var(--primary-text);
+}
+
+.qi {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.qi-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.qi-section + .qi-section {
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.qi-section h4 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 15px;
+}
+
+.qi-section p {
+  margin: 0;
+}
+
+.qi-section input[type='url'] {
+  width: 100%;
+}
+
+.qi .preset:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+/* 가운데 칸이 좁으면 큰 AI 버튼의 둘째 줄은 숨긴다 */
+.ai-strip {
+  container-type: inline-size;
+}
+
+@container (max-width: 520px) {
+  .ai-big {
+    padding: 12px;
+    gap: 10px;
+  }
+
+  .ai-big-icon {
+    width: 36px;
+    height: 36px;
+  }
+
+  .ai-big-text span {
+    display: none;
+  }
 }

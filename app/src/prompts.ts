@@ -149,6 +149,99 @@ ${text || '(아직 비어 있음)'}
 ${direct ? `\n${DIRECT_FORMAT}` : ''}`
 }
 
+/** AI 대화 요청문의 최대 길이. 윈도우에서 Antigravity CLI 는 요청문을 명령 인자로 받아 3만 자를 넘기면 실행되지 않는다 */
+const CHAT_BUDGET = 24000
+
+/**
+ * AI 와 대화하며 답변 고치기. 지금 답변 · 공고 · 경험에 지난 대화(길이 안에서 최근 것부터)를 붙여 보낸다.
+ * 답변을 고쳐 달라는 말이면 <answer> 에 고친 전체 답변, 아니면 <reply> 만.
+ */
+export function chatPrompt(
+  data: AppData,
+  project: Project,
+  q: Question,
+  exps: Experience[],
+  history: { role: 'user' | 'ai'; text: string; answer?: string; applied?: boolean }[],
+  message: string,
+) {
+  const unit = q.countMode === 'byte' ? 'byte' : '자'
+  const goal = q.limit
+    ? `글자수 제한(${q.limit}${unit}, ${COUNT_MODE_LABEL[q.countMode]})의 90~100% 안으로 맞추세요(지원자가 분량을 따로 말하면 그 말을 따르세요)`
+    : '지원자가 분량을 따로 말하지 않으면 지금과 비슷한 분량으로 쓰세요'
+  const head = `${persona(project)}
+지금 지원자와 대화하며 아래 문항의 자기소개서 답변을 함께 다듬고 있습니다. 지원자의 마지막 말에 답하세요.
+
+${context(data, project, q, exps)}
+
+[지금 답변] (${countChars(q.answer, q.countMode).toLocaleString()}${unit}${q.limit ? ` / 제한 ${q.limit.toLocaleString()}${unit}` : ''})
+${q.answer.trim() || '(아직 비어 있음)'}
+`
+  const tail = `
+[지원자의 말]
+${message.trim().slice(0, 4000)}
+
+[답하는 방식]
+- 답변을 새로 쓰거나 고쳐 달라는 말이면, 고친 답변 전체를 <answer> 안에 넣고 <reply> 에는 무엇을 왜 바꿨는지 2~3문장으로만 적으세요.
+- 질문하거나 의견을 물으면 <reply> 에만 짧게(5문장 안팎) 답하고 <answer> 는 쓰지 마세요.
+- 지원자가 대화에서 새로 알려 준 경험 · 수치는 사실로 보고 써도 됩니다.
+- 고친 답변은 ${goal}. 지원자의 말투와 경험은 살리세요.
+${STYLE_RULES}
+
+[지켜야 할 것]
+${NO_FAKE}
+- 마크다운 표나 제목(#)은 쓰지 말고 평범한 문장으로 답하세요.
+
+[출력 형식]
+<reply>
+(지원자에게 하는 말)
+</reply>
+<answer>
+(고친 답변 전체 — 고칠 때만. 문항 원문 · 글자수 표시는 넣지 마세요)
+</answer>
+이 태그 밖에는 아무것도 쓰지 마세요.`
+
+  // 지난 대화: 최근 것부터 길이 안에서. 가장 최근에 제안했는데 아직 적용하지 않은 답변은 전문을 함께 넣는다 ("방금 그거에서 …" 같은 말을 알아듣게)
+  const lastProposal = [...history].reverse().find((m) => m.role === 'ai' && m.answer)
+  const lines: string[] = []
+  let room = CHAT_BUDGET - head.length - tail.length - 200
+  for (let i = history.length - 1; i >= 0 && room > 0; i--) {
+    const m = history[i]
+    let line =
+      m.role === 'user'
+        ? `지원자: ${m.text.trim().slice(0, 1500)}`
+        : `나: ${m.text.trim().slice(0, 1500)}${
+            m.answer
+              ? m === lastProposal && !m.applied
+                ? `\n(이때 제안한 고친 답변 — 아직 적용 안 함)\n${m.answer.slice(0, 3000)}`
+                : `\n(고친 답변을 제안함${m.applied ? ' — 지원자가 적용해 지금 답변이 됨' : ''})`
+              : ''
+          }`
+    if (line.length > room) {
+      if (lines.length) break
+      line = line.slice(0, Math.max(0, room))
+    }
+    lines.unshift(line)
+    room -= line.length + 1
+  }
+  return `${head}
+[지금까지 나눈 대화] (오래된 것부터)
+${lines.length ? lines.join('\n') : '(처음 대화)'}
+${tail}`
+}
+
+/** AI 대화 응답에서 말과 고친 답변을 나눈다. 태그가 없으면 전체를 말로 본다 */
+export function parseChatReply(text: string) {
+  const pick = (tag: string) => text.match(new RegExp(`<${tag}>\\s*([\\s\\S]*?)\\s*</${tag}>`))?.[1].trim()
+  const answer = pick('answer') ?? ''
+  const reply =
+    pick('reply') ??
+    text
+      .replace(/<answer>[\s\S]*?(<\/answer>|$)/, '')
+      .replace(/<\/?reply>/g, '')
+      .trim()
+  return { reply: reply || (answer ? '고친 답변이에요.' : ''), answer }
+}
+
 /** 앞서 받은 피드백을 반영해 다시 쓰기 (앱에서 바로 실행할 때) */
 export function revisePrompt(data: AppData, project: Project, q: Question, exps: Experience[], feedback: string) {
   const goal = q.limit ? `글자수 제한(${q.limit}${q.countMode === 'byte' ? 'byte' : '자'})의 90~98% 분량` : '지금과 비슷한 분량'
@@ -326,6 +419,8 @@ export interface PostingInfo {
   questions: { prompt: string; limit: number | null }[]
   questionsSource: string // 문항을 어디서 확인했는지 (공고 페이지가 아니면 사이트명 · 연도)
   url: string // 회사·직무로 찾았을 때 실제 공고 주소
+  /** 정해진 문항이 없는 공고(자유 양식)일 때 AI 가 공고 내용에 맞춰 고른 예상 문항. questions 가 있으면 비어 있다 */
+  suggested: { prompt: string; limit: number | null }[]
 }
 
 /** AI 응답(JSON)을 PostingInfo로 정리. 형식이 아니면 null */
@@ -351,6 +446,11 @@ export function parsePosting(text: string): PostingInfo | null {
       .join('\n')
     if (block.includes('\n')) notes = notes ? `${notes}\n\n${block}` : block
   }
+  const qs = (v: unknown) =>
+    (Array.isArray(v) ? (v as { prompt?: unknown; limit?: unknown }[]) : [])
+      .filter((q) => q && str(q.prompt))
+      .map((q) => ({ prompt: str(q.prompt), limit: typeof q.limit === 'number' && q.limit > 0 ? q.limit : null }))
+  const questions = qs(raw.questions)
   return {
     company: str(raw.company),
     position: str(raw.position),
@@ -358,13 +458,15 @@ export function parsePosting(text: string): PostingInfo | null {
     deadlineTime: /^\d{2}:\d{2}$/.test(str(raw.deadlineTime)) ? str(raw.deadlineTime) : '',
     isOpen: typeof raw.isOpen === 'boolean' ? raw.isOpen : null,
     notes,
-    questions: (Array.isArray(raw.questions) ? raw.questions : [])
-      .filter((q) => q && str(q.prompt))
-      .map((q) => ({ prompt: str(q.prompt), limit: typeof q.limit === 'number' && q.limit > 0 ? q.limit : null })),
+    questions,
     questionsSource: str(raw.questionsSource),
     url: /^https?:\/\/\S+$/i.test(str(raw.url)) ? str(raw.url) : '',
+    suggested: questions.length ? [] : qs((raw as Record<string, unknown>).suggestedQuestions).slice(0, 4),
   }
 }
+
+/** 예상 문항을 넣었을 때 공고 메모 · 안내에 남기는 말 */
+export const SUGGESTED_NOTE = '자소서 문항: 공고에 정해진 문항이 없어요(자유 양식). 공고 내용에 맞춘 예상 문항을 넣었어요. 필요 없으면 지우세요.'
 
 const POSTING_OUTPUT = `[시간 제한]
 - 검색(WebSearch)은 최대 3번, 페이지 읽기(WebFetch)는 최대 3번입니다. 그 안에 못 찾은 값은 빈 값으로 두고 바로 결과를 내세요. 완벽보다 빠른 답이 낫습니다.
@@ -380,9 +482,14 @@ const POSTING_OUTPUT = `[시간 제한]
 - keywords: 자소서에 녹이면 좋은 키워드 8~10개 (공고에 실제로 쓰인 단어 위주, 각 10자 이내)
 - idealTalent: 이 회사·직무가 원하는 사람을 한 줄로
 
+[정해진 문항이 없을 때 — suggestedQuestions]
+- questions 가 빈 배열일 때만(자유 양식 · 이력서 · 포트폴리오만 받는 공고 등), 이 공고의 주요 업무 · 우대 사항 · 제출 서류에 적힌 요구(예: 포트폴리오에 담을 수행 경험 · 문제 해결 과정 · 협업 경험)를 근거로 지원자가 준비하면 좋을 자기소개서 문항 3개를 suggestedQuestions 에 넣으세요.
+- 실제 기업들이 묻는 형태의 한 문장으로 쓰세요(예: "직무와 관련해 프로젝트를 주도하며 문제를 해결한 경험을 구체적으로 작성해 주세요."). limit 은 null.
+- questions 에 문항이 있으면 suggestedQuestions 는 빈 배열입니다.
+
 [출력 형식]
 <json>
-{"company":"회사명","position":"지원 직무","url":"공고 원문 주소","deadline":"YYYY-MM-DD 또는 빈 문자열","deadlineTime":"HH:mm 또는 빈 문자열","isOpen":true,"notes":"주요 업무, 자격 요건, 우대 사항, 전형 절차, 근무 조건을 항목별로 짧게 정리한 글(줄바꿈 포함, 1000자 이내)","questions":[{"prompt":"자기소개서 문항","limit":700}],"questionsSource":"공고 페이지","analysis":{"competencies":["..."],"keywords":["..."],"idealTalent":"..."}}
+{"company":"회사명","position":"지원 직무","url":"공고 원문 주소","deadline":"YYYY-MM-DD 또는 빈 문자열","deadlineTime":"HH:mm 또는 빈 문자열","isOpen":true,"notes":"주요 업무, 자격 요건, 우대 사항, 전형 절차, 근무 조건을 항목별로 짧게 정리한 글(줄바꿈 포함, 1000자 이내)","questions":[{"prompt":"자기소개서 문항","limit":700}],"questionsSource":"공고 페이지","suggestedQuestions":[],"analysis":{"competencies":["..."],"keywords":["..."],"idealTalent":"..."}}
 </json>
 - isOpen: 지금 접수 중이면 true, 마감됐으면 false, 알 수 없으면 null
 - 페이지에서 확인되지 않은 값은 빈 값 또는 null로 두고 지어내지 마세요. limit은 글자수 제한(숫자), 없으면 null.

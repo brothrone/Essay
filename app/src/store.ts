@@ -240,6 +240,19 @@ export function normalize(raw: unknown): AppData {
         .filter((h) => typeof h.answer === 'string' && typeof h.at === 'number')
         .map((h) => ({ at: h.at as number, answer: h.answer as string, ...(typeof h.label === 'string' && h.label ? { label: h.label } : {}) }))
         .slice(-30),
+      chat: objs(q.chat)
+        .filter((m) => (m.role === 'user' || m.role === 'ai') && typeof m.text === 'string')
+        .map((m) => ({
+          role: m.role as 'user' | 'ai',
+          text: m.text as string,
+          at: num(m.at, 0),
+          ...(typeof m.answer === 'string' && m.answer ? { answer: m.answer } : {}),
+          ...(m.applied === true ? { applied: true } : {}),
+          ...(typeof m.model === 'string' && m.model ? { model: m.model } : {}),
+          ...(typeof m.seconds === 'number' ? { seconds: m.seconds } : {}),
+          ...(typeof m.tokens === 'number' ? { tokens: m.tokens } : {}),
+        }))
+        .slice(-60),
     })),
     createdAt: num(p.createdAt, now),
     updatedAt: num(p.updatedAt, now),
