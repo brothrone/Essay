@@ -8,7 +8,7 @@
 #   3) ./scripts/release.sh                 # 맥 + 윈도우 빌드 + 릴리스 업로드
 #      ./scripts/release.sh --no-publish    # 빌드만 (release/ 에 파일만)
 #      ./scripts/release.sh --mac-only      # 맥 파일만 (윈도우는 윈도우 PC 의 release.ps1 로 같은 버전에 올린다)
-#   토큰: 환경변수 GH_TOKEN 이 없으면 `gh auth token` 에서 가져온다 (gh auth login 이 돼 있어야 함).
+#   토큰: 환경변수 GH_TOKEN 이 없으면 `gh auth token` 에서 가져온다 (gh auth login 이 돼 있어야 함). 업로드는 gh 로 한다.
 #   맥에서 윈도우용 NSIS 설치 파일을 만드는 데 wine 은 필요 없다 (electron-builder 24+).
 #   끝나면 릴리스에 Essay-Setup-<버전>.exe · latest.yml · .blockmap(윈도우) 과 Essay-<버전>-mac-arm64.dmg · Essay-<버전>-mac-x64.dmg(맥) 이 올라간다.
 #   latest.yml 을 지우면 윈도우 자동 업데이트가 멈춘다.
@@ -49,11 +49,25 @@ if [[ "$PUBLISH" == "always" ]]; then
       -d "{\"tag_name\":\"v$VERSION\",\"name\":\"Essay $VERSION\",\"draft\":false,\"prerelease\":false}" >/dev/null || true
   fi
 fi
+# electron-builder 의 업로드는 큰 파일에서 가끔 끊긴다(socket hang up). 그래서 빌드만 하고, 올리는 건 gh 로 한다 (이어 올리기 · 덮어쓰기 가능)
+upload() {
+  [[ "$PUBLISH" == "always" ]] || return 0
+  local files=()
+  for f in "$@"; do [[ -f "$f" ]] && files+=("$f"); done
+  [[ ${#files[@]} -gt 0 ]] || return 0
+  for try in 1 2 3; do
+    GH_TOKEN="$GH_TOKEN" gh release upload "v$VERSION" "${files[@]}" --repo brothrone/Essay --clobber && return 0
+    echo "업로드 실패 ($try/3) — 다시 시도" >&2; sleep 5
+  done
+  return 1
+}
 # 맥 파일 (arch 는 package.json 의 build.mac 설정을 따른다 — Apple Silicon 용 arm64 와 Intel 용 x64 dmg 따로)
-npx electron-builder --mac --publish "$PUBLISH"
-# 윈도우 파일
+npx electron-builder --mac --publish never
+upload release/Essay-"$VERSION"-mac-*.dmg release/Essay-"$VERSION"-mac-*.dmg.blockmap release/latest-mac.yml
+# 윈도우 파일 (latest.yml 이 있어야 설치된 윈도우 앱이 자동 업데이트된다)
 if [[ "$MAC_ONLY" == "0" ]]; then
-  npx electron-builder --win --x64 --publish "$PUBLISH"
+  npx electron-builder --win --x64 --publish never
+  upload release/Essay-Setup-"$VERSION".exe release/Essay-Setup-"$VERSION".exe.blockmap release/latest.yml
 fi
 
 echo
