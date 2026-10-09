@@ -22,6 +22,7 @@ import { noteAiResult } from '../useAiStatus'
 import { AI_MODELS, AI_PROVIDERS, saveAiModel, saveAiProvider, savedAiModel, savedAiProvider } from '../useAiTask'
 import { copyText, countChars, fmtTokens } from '../utils'
 import { track } from '../community'
+import { fitToLimit, lengthMiss } from '../fitLength'
 
 type Kind = 'draft' | 'feedback' | 'fit' | 'revise' | 'interview' | 'gap'
 type Result = { kind: Kind; answer: string; note: string; seconds: number; model: string; tokens: number }
@@ -35,14 +36,24 @@ const RUNNING_LABEL: Record<Kind, string> = {
   gap: '공고 요건과 내 스펙을 견주는',
 }
 
+/**
+ * AI 도우미 (편집 화면 가운데, 문항 바로 아래 AI 카드 안).
+ * request 가 바뀌면 [AI로 초안 쓰기] 를 누른 것으로 보고 초안을 바로 쓴다.
+ */
 export function AiPanel({
   project,
   q,
   onPatch,
+  request = 0,
+  onRunning,
+  onClose,
 }: {
   project: Project
   q: Question
   onPatch: (p: Partial<Question>, label?: string) => void
+  request?: number
+  onRunning?: (kind: string | null) => void
+  onClose?: () => void
 }) {
   const { data } = useStore()
   const exps = q.experienceIds
@@ -62,6 +73,7 @@ export function AiPanel({
   const [result, setResult] = useState<Result | null>(null)
   const [undo, setUndo] = useState<string | null>(null)
   const [live, setLive] = useState<{ text: string; retry?: boolean } | null>(null)
+  const [fixing, setFixing] = useState(false)
   const runningRef = useRef(false)
 
   // 생성 중인 글을 실시간으로 받는다
@@ -93,6 +105,7 @@ export function AiPanel({
   const run = async (kind: Kind, prompt: string) => {
     if (runningRef.current) return
     runningRef.current = true
+    onRunning?.(kind)
     setRunning(kind)
     setElapsed(0)
     setError('')
@@ -101,16 +114,44 @@ export function AiPanel({
     track(`ai_${kind}`)
     const r = await ai.run(prompt, model || undefined, { provider })
     noteAiResult(provider, r)
+    let next: Result | null = null
+    if (r.ok) {
+      const parsed = kind === 'feedback' || kind === 'interview' || kind === 'gap' ? { answer: r.text.trim(), note: '' } : parseAiAnswer(r.text)
+      let answer = parsed.answer
+      let seconds = r.seconds
+      let tokens = r.usage ? r.usage.input + r.usage.output : 0
+      // 쓴 답변은 앱이 직접 세어, 글자수 범위를 벗어나면 맞출 때까지 최대 2번 더 고친다
+      if ((kind === 'draft' || kind === 'revise' || kind === 'fit') && lengthMiss(answer, q) > 0) {
+        setFixing(true)
+        setLive(null)
+        const fixed = await fitToLimit(answer, q, { provider, model })
+        answer = fixed.text
+        seconds += fixed.extraSeconds
+        tokens += fixed.extraTokens
+        setFixing(false)
+      }
+      next = { kind, ...parsed, answer, seconds, model: r.model, tokens }
+    }
     runningRef.current = false
+    onRunning?.(null)
     setRunning(null)
     setLive(null)
     if (!r.ok) {
       if (!r.cancelled) setError(r.error)
       return
     }
-    const parsed = kind === 'feedback' || kind === 'interview' || kind === 'gap' ? { answer: r.text.trim(), note: '' } : parseAiAnswer(r.text)
-    setResult({ kind, ...parsed, seconds: r.seconds, model: r.model, tokens: r.usage ? r.usage.input + r.usage.output : 0 })
+    setResult(next)
   }
+
+  // 문항 바로 아래 [AI로 초안 쓰기] 를 누르면 초안을 바로 쓴다
+  const lastRequest = useRef(request)
+  useEffect(() => {
+    if (!request || request === lastRequest.current) return
+    lastRequest.current = request
+    if (available === false) return
+    void run('draft', draftPrompt(data, project, q, exps, true))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [request])
 
   const apply = () => {
     if (!result) return
@@ -165,13 +206,17 @@ export function AiPanel({
   ]
 
   return (
-    <div className="panel-stack">
+    <div className="ai-helper">
       <section className="ai-direct">
-          <header className="ai-direct-head">
+          <header className="ai-bench-head">
             <strong>
-              <Sparkles size={16} /> AI로 바로 쓰기
+              <Sparkles size={16} /> AI 도우미
             </strong>
-            <span className="badge tone-blue">{providerInfo.short}</span>
+            {onClose && (
+              <button type="button" className="icon-btn" onClick={onClose} aria-label="AI 도우미 닫기" title="닫기">
+                <X size={16} />
+              </button>
+            )}
           </header>
 
           <div className="ai-selects">
@@ -216,23 +261,18 @@ export function AiPanel({
             </p>
           ) : (
             <>
-              <p className="muted small">
-                이 컴퓨터에 설치된 {status?.[provider].cli ?? providerInfo.cli}로 실행돼요. API 요금 없이{' '}
-                {provider === 'claude' ? 'Claude 구독' : 'Google 계정'} 사용량에서 차감돼요.
-              </p>
-
               {exps.length === 0 && !hasAnswer && (
-                <p className="ai-hint">[경험] 탭에서 이 문항에 쓸 경험을 연결하면 내 경험으로 초안을 써요.</p>
+                <p className="ai-hint">오른쪽 [경험] 탭에서 이 문항에 쓸 경험을 연결하면 내 경험으로 초안을 써요.</p>
               )}
 
               <div className="ai-direct-buttons">
                 <button
                   type="button"
-                  className="btn primary small"
+                  className="btn small"
                   disabled={!!running || available === null}
                   onClick={() => run('draft', draftPrompt(data, project, q, exps, true))}
                 >
-                  <PenLine size={14} /> 초안 쓰기
+                  <PenLine size={14} /> {hasAnswer ? '초안 다시 쓰기' : '초안 쓰기'}
                 </button>
                 <button
                   type="button"
@@ -269,16 +309,11 @@ export function AiPanel({
                   <ListChecks size={14} /> 스펙 비교
                 </button>
               </div>
-              <p className="muted small ai-method">
-                초안은 문항 의도 → 핵심 메시지 → 두괄식 구성으로, 피드백은 100점 채점 · 고칠 문장 · 첫 문장 대안 3개로 돌려줘요. 상투어와 번역투는
-                자동으로 피해요.
-              </p>
-
               {running && (
                 <div className="ai-running">
                   <LoaderCircle size={16} className="spin" />
                   <span>
-                    {RUNNING_LABEL[running]} 중… {elapsed}초
+                    {fixing ? '글자수를 맞추는' : RUNNING_LABEL[running]} 중… {elapsed}초
                   </span>
                   <button type="button" className="btn ghost small" onClick={() => ai.cancel()}>
                     취소
@@ -402,8 +437,8 @@ export function AiPanel({
           )}
       </section>
 
-      <section className="panel-stack">
-        <h4 className="panel-title">다른 AI 채팅에 붙여넣기</h4>
+      <details className="ai-copy">
+        <summary>다른 AI 채팅에 붙여넣어 쓰기 (요청문 복사)</summary>
         <ol className="ai-steps">
           <li>아래 버튼으로 요청문을 복사해요</li>
           <li>쓰고 있는 AI 채팅(Claude · Gemini)에 붙여넣어요</li>
@@ -438,7 +473,7 @@ export function AiPanel({
         <p className="muted small">
           연결한 경험 {exps.length}개와 공고 메모가 들어가요. 이름 · 연락처 · 주소 같은 개인정보는 넣지 않아요.
         </p>
-      </section>
+      </details>
     </div>
   )
 }

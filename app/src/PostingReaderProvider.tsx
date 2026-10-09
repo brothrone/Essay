@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { runWebTask } from './aiRun'
 import { desktop } from './desktop'
 import { PostingReaderContext, type PostingMode, type PostingReaderApi, type PostingTask } from './postingReader'
-import { parsePosting, SUGGESTED_NOTE, type PostingInfo } from './prompts'
+import { parsePosting, type PostingInfo } from './prompts'
 import { newQuestion, useStore } from './store'
 import { toast } from './toast'
 import type { Project } from './types'
@@ -16,13 +16,7 @@ export function applyPosting(p: Project, info: PostingInfo, mode: PostingMode) {
   const have = new Set(p.questions.map((q) => q.prompt.trim()))
   const fresh = info.questions.filter((q) => !have.has(q.prompt))
   const fromElsewhere = fresh.length > 0 && !!info.questionsSource && info.questionsSource !== '공고 페이지'
-  // 정해진 문항이 없는 공고(자유 양식): 아직 문항을 하나도 안 적었으면 공고에 맞춘 예상 문항으로 채운다
-  const useSuggested = !info.questions.length && (info.suggested?.length ?? 0) > 0 && p.questions.every(isBlank)
-  const sourceNote = fromElsewhere
-    ? `자소서 문항 출처: ${info.questionsSource} — 이번 공고 문항과 같은지 확인하세요`
-    : useSuggested
-      ? SUGGESTED_NOTE
-      : ''
+  const sourceNote = fromElsewhere ? `자소서 문항 출처: ${info.questionsSource} — 이번 공고 문항과 같은지 확인하세요` : ''
 
   let notes = p.notes
   let notesApplied = false
@@ -47,21 +41,9 @@ export function applyPosting(p: Project, info: PostingInfo, mode: PostingMode) {
     deadline: fillDeadline ? info.deadline : p.deadline,
     deadlineTime: fillDeadline ? info.deadlineTime || p.deadlineTime : p.deadlineTime,
     notes,
-    questions: fresh.length
-      ? [...p.questions.filter((q) => !isBlank(q)), ...fresh.map((q) => newQuestion(q))]
-      : useSuggested
-        ? info.suggested.map((q) => newQuestion(q))
-        : p.questions,
+    questions: fresh.length ? [...p.questions.filter((q) => !isBlank(q)), ...fresh.map((q) => newQuestion(q))] : p.questions,
   }
-  return {
-    next,
-    applied: {
-      questions: fresh.length,
-      suggested: useSuggested ? info.suggested.length : 0,
-      notes: notesApplied,
-      deadline: fillDeadline && info.deadline !== p.deadline,
-    },
-  }
+  return { next, applied: { questions: fresh.length, notes: notesApplied, deadline: fillDeadline && info.deadline !== p.deadline } }
 }
 
 export function PostingReaderProvider({ children }: { children: ReactNode }) {
@@ -108,11 +90,9 @@ export function PostingReaderProvider({ children }: { children: ReactNode }) {
         const name = p.company || info.company || t.label || '자소서'
         const what = applied.questions
           ? `${name} 자소서에 자소서 문항 ${applied.questions}개를 넣었어요`
-          : applied.suggested
-            ? `${name}: 공고에 정해진 자소서 문항이 없어요(자유 양식). 공고 내용에 맞춘 예상 문항 ${applied.suggested}개를 넣었어요`
-            : info.questions.length
-              ? `${name}: 공고를 다시 읽었어요. 새로 추가할 문항은 없어요`
-              : `${name}: 공고는 정리했지만 정해진 자소서 문항은 없어요. 왼쪽 [문항 불러오기]에서 골라 넣을 수 있어요`
+          : info.questions.length
+            ? `${name}: 공고를 다시 읽었어요. 새로 추가할 문항은 없어요`
+            : `${name}: 공고에서 자소서 문항을 찾지 못했어요. 왼쪽 [문항 불러오기]에서 직접 골라 넣을 수 있어요`
         toast(info.isOpen === false ? `${what}. 다만 마감된 공고로 보여요 — 마감일을 확인해 주세요` : what)
       }
       const attempt = (tries: number) => {

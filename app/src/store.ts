@@ -80,6 +80,16 @@ export const emptyData = (): AppData => ({
  * 사람인(?rec_idx=…)처럼 물음표 뒤가 공고 번호인 사이트가 있어서 주소 뒤쪽은 지우지 않고,
  * 추적용 값(utm_* · t_* · view_type 등)만 빼고 순서를 맞춰 비교한다.
  */
+/** 맞춤 공고에 보여도 되는 공고: 마감 · 확인 안 됨으로 뺀 것이 아니고, 마감일이 지나지 않은 것 */
+export function isLiveJob(j: Pick<JobPosting, 'closed' | 'deadline'>, today = localToday()) {
+  return !j.closed && !(j.deadline && j.deadline < today)
+}
+function localToday() {
+  const d = new Date()
+  const p = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`
+}
+
 export function jobKey(j: Pick<JobPosting, 'url' | 'company' | 'title'>) {
   let key = ''
   try {
@@ -277,6 +287,8 @@ export function normalize(raw: unknown): AppData {
     status: JOB_STATUSES.includes(j.status as JobStatus) ? (j.status as JobStatus) : 'new',
     projectId: str(j.projectId),
     saved: j.saved === true || j.status === 'saved',
+    ...(typeof j.checkedAt === 'number' ? { checkedAt: j.checkedAt } : {}),
+    ...(j.closed === true ? { closed: true } : {}),
   }))
   const q = isObj(raw.jobQuery) ? raw.jobQuery : {}
   const jobQuery: JobQuery = {

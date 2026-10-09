@@ -3,7 +3,7 @@ import { desktop } from './desktop'
 import { isArticleUrl, isGroundingUrl, isPostingUrl } from './format'
 import { JobSearchContext, toJob, type DroppedJob, type FoundJob, type JobSearchApi, type JobSearchState } from './jobSearch'
 import { jobSearchPrompt, parseAiJson } from './prompts'
-import { jobKey, useStore } from './store'
+import { isLiveJob, jobKey, useStore } from './store'
 import { toast } from './toast'
 import type { JobPosting, JobQuery } from './types'
 import { runWebTask } from './aiRun'
@@ -12,9 +12,11 @@ import { toDateInput } from './utils'
 import { track } from './community'
 
 const IDLE: JobSearchState = { running: false, startedAt: 0, steps: [], error: '', lastAdded: null, lastDropped: 0, lastDroppedList: [] }
+/** 찾아 둔 맞춤 공고를 다시 확인하는 간격 */
+const RECHECK_MS = 3 * 60 * 60 * 1000
 
 export function JobSearchProvider({ children }: { children: ReactNode }) {
-  const { data, mergeJobs, setJobQuery } = useStore()
+  const { data, mergeJobs, setJobQuery, updateJob } = useStore()
   const ai = desktop.ai
   const [state, setState] = useState<JobSearchState>(IDLE)
   const active = useRef(false) // 지금 실행 중인 AI 작업이 공고 찾기인지 (진행 단계를 모을지)
@@ -97,19 +99,21 @@ export function JobSearchProvider({ children }: { children: ReactNode }) {
             verified.map((j) => j.url),
             today,
           )
-          // 남기는 것: 공고 페이지에서 접수 중으로 확인됐거나, 마감일이 오늘 이후이고 페이지에 마감 표시가 없는 것
+          // 남기는 것: 공고 페이지에서 접수 중으로 확인된 것만 (남은 마감일 · D-day · 상시 채용 표시).
+          // AI 가 적은 마감일만으로는 남기지 않는다 — 마감된 공고가 섞이지 않게
+          const checkedAt = Date.now()
           verified = verified.filter((j, i) => {
             const c = checks[i]
             if (c?.deadline) j.deadline = c.deadline // 페이지의 마감일이 AI 가 적은 것보다 정확하다
             if (!c) return drop(j, '공고 페이지를 열지 못했어요', 'check'), false
             if (c.status === 'closed') return drop(j, c.deadline && c.deadline < today ? `마감일(${c.deadline})이 지났어요` : '공고 페이지에 마감 표시가 있어요'), false
             if (j.deadline && j.deadline < today) return drop(j, `마감일(${j.deadline})이 지났어요`), false
-            if (c.status === 'open' || j.deadline) return true
-            return drop(j, '공고 페이지에서 접수 중인지 · 마감일을 확인하지 못했어요', 'check'), false
+            if (c.status === 'open') return (j.checkedAt = checkedAt), true
+            return drop(j, '공고 페이지에서 접수 중인지 확인하지 못했어요', 'check'), false
           })
         } catch {
-          // 확인을 못 하면 마감일이 오늘 이후로 적힌 것만 남긴다
-          verified = verified.filter((j) => (j.deadline && j.deadline >= today) || (drop(j, '공고 페이지를 확인하지 못했어요', 'check'), false))
+          // 공고 페이지를 확인하지 못하면 하나도 남기지 않는다
+          verified = verified.filter((j) => (drop(j, '공고 페이지를 확인하지 못했어요', 'check'), false))
         }
       }
       // 같은 공고가 여러 번 나오면(한 공고의 여러 직무 등) 점수가 높은 하나만 남긴다
@@ -124,7 +128,7 @@ export function JobSearchProvider({ children }: { children: ReactNode }) {
         })
       verified.slice(query.count).forEach((j) => drop(j, `최대 ${query.count}개를 넘어 점수가 낮은 것을 뺐어요`))
       verified = verified.slice(0, query.count)
-      const known = new Set(latest.current.jobs.map(jobKey))
+      const known = new Set(latest.current.jobs.filter((j) => !j.closed).map(jobKey))
       const added = verified.filter((j) => !known.has(jobKey(j))).length
       mergeJobs(verified, query)
       setState((st) => ({ ...st, running: false, lastAdded: added, lastDropped: dropped.length, lastDroppedList: dropped }))
@@ -133,6 +137,55 @@ export function JobSearchProvider({ children }: { children: ReactNode }) {
     },
     [ai, mergeJobs, setJobQuery],
   )
+
+  // 이미 찾아 둔 맞춤 공고도 몇 시간마다 공고 페이지를 다시 열어, 마감됐거나 접수 중인지 확인되지 않으면 뺀다
+  const rechecking = useRef(false)
+  const recheck = useCallback(async () => {
+    if (rechecking.current || running.current) return
+    const today = toDateInput(new Date())
+    const now = Date.now()
+    // '(예시)' 회사는 화면 구경용 예시 데이터라 확인하지 않는다
+    const live = latest.current.jobs.filter((j) => j.status !== 'hidden' && isLiveJob(j, today) && !/\(예시\)/.test(j.company))
+    // 예전 버전에서 들어온, 공고 한 건이 아닌 주소(사이트 첫 화면 · 구글 중간 주소 · 기사)는 열어 보지 않고 바로 뺀다
+    const notPosting = live.filter((j) => !/^https?:\/\//.test(j.url) || isGroundingUrl(j.url) || !isPostingUrl(j.url) || isArticleUrl(j.url))
+    notPosting.forEach((j) => updateJob(j.id, { closed: true, checkedAt: now }))
+    const due = live.filter((j) => !notPosting.includes(j) && (!j.checkedAt || now - j.checkedAt > RECHECK_MS))
+    if (notPosting.length && !due.length) toast(`맞춤 공고 중 공고 주소가 확인되지 않는 ${notPosting.length}개를 뺐어요`)
+    if (!due.length) return
+    rechecking.current = true
+    try {
+      const batch = due.slice(0, 30)
+      const checks = await ai.checkPostings(
+        batch.map((j) => j.url),
+        today,
+      )
+      // 전부 '확인 못 함'이면 인터넷이 안 되는 것 — 아무것도 바꾸지 않는다
+      if (!checks.some((c) => c && c.status !== 'unknown')) return
+      let removed = notPosting.length
+      batch.forEach((j, i) => {
+        const c = checks[i]
+        if (!c) return
+        const deadline = c.deadline ? { deadline: c.deadline } : {}
+        if (c.status === 'open') return updateJob(j.id, { checkedAt: now, ...deadline })
+        // 마감 표시가 있거나, 접수 중인지 확인되지 않으면 뺀다
+        removed++
+        updateJob(j.id, { closed: true, checkedAt: now, ...deadline })
+      })
+      if (removed) toast(`맞춤 공고 중 마감됐거나 접수 중인지 확인되지 않는 ${removed}개를 뺐어요`)
+    } catch {
+      /* 다음에 다시 */
+    } finally {
+      rechecking.current = false
+    }
+  }, [ai, updateJob])
+  useEffect(() => {
+    const first = setTimeout(recheck, 3000)
+    const every = setInterval(recheck, RECHECK_MS)
+    return () => {
+      clearTimeout(first)
+      clearInterval(every)
+    }
+  }, [recheck])
 
   const api = useMemo<JobSearchApi>(
     () => ({

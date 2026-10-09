@@ -5,10 +5,10 @@ import { Dday, Empty } from '../components/ui'
 import { useJobSearch, type DroppedJob } from '../jobSearch'
 import { isActive, taskFor, useElapsed, usePostingReader, type PostingTask } from '../postingReader'
 import { postingRequest } from '../aiRun'
-import { newProject, newQuestion, useStore } from '../store'
+import { isLiveJob, newProject, newQuestion, useStore } from '../store'
 import { toast } from '../toast'
 import type { JobPosting, JobQuery, JobStatus } from '../types'
-import { daysUntil, fmtDate, fmtRelative } from '../utils'
+import { fmtDate, fmtRelative } from '../utils'
 
 type Tab = 'new' | 'started' | 'hidden'
 const TABS: { key: Tab; label: string }[] = [
@@ -37,12 +37,15 @@ export function Jobs({ mode = 'search' }: { mode?: 'search' | 'saved' }) {
     const sortNew = (a: JobPosting, b: JobPosting) => b.matchScore - a.matchScore || b.foundAt - a.foundAt
     const byDeadline = (a: JobPosting, b: JobPosting) => (a.deadline || '9999').localeCompare(b.deadline || '9999')
     const saved = data.jobs.filter((j) => j.saved && j.status !== 'hidden')
-    const isOver = (j: JobPosting) => (daysUntil(j.deadline) ?? 0) < 0
+    // 마감일이 지났거나 마감 · 확인 안 됨으로 뺀 공고는 맞춤 공고에 띄우지 않는다
+    const isOver = (j: JobPosting) => !isLiveJob(j)
     return {
       new: by('new')
         .filter((j) => !isOver(j))
         .sort(sortNew),
-      started: by('started').sort((a, b) => b.foundAt - a.foundAt),
+      started: by('started')
+        .filter((j) => !isOver(j))
+        .sort((a, b) => b.foundAt - a.foundAt),
       hidden: by('hidden').sort((a, b) => b.foundAt - a.foundAt),
       savedOpen: saved.filter((j) => !isOver(j)).sort(byDeadline),
       savedOver: saved.filter(isOver).sort(byDeadline).reverse(),

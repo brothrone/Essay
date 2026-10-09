@@ -40,7 +40,7 @@ export function Calendar() {
     }
     // 자소서를 이미 시작한 공고는 자소서로 보이므로 빼고, 저장한 공고만 올린다
     for (const j of data.jobs) {
-      if (!j.saved || !j.deadline || j.status === 'hidden' || j.status === 'started') continue
+      if (!j.saved || !j.deadline || j.status === 'hidden' || j.status === 'started' || j.closed) continue
       list.push({ key: `j-${j.id}`, date: j.deadline, label: j.company || j.title, sub: '저장한 공고', to: '/jobs/saved', kind: 'job' })
     }
     const map = new Map<string, CalEntry[]>()

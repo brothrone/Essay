@@ -61,16 +61,19 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       // 새로 찾은 공고를 앞에 붙이고, 이미 있던 공고(저장·숨김·시작)는 상태를 유지한다
       mergeJobs: (found, query) =>
         mutate((d) => {
-          const known = new Set(d.jobs.map(jobKey))
+          // 마감 · 확인 안 됨으로 뺐던 공고라도 이번 검색에서 접수 중으로 다시 확인되면 새 것으로 바꿔 넣는다
+          const known = new Set(d.jobs.filter((j) => !j.closed).map(jobKey))
           const fresh = found.filter((j) => {
             const k = jobKey(j)
             if (known.has(k)) return false
             known.add(k)
             return true
           })
+          const reopened = new Set(fresh.map(jobKey))
+          const jobs = d.jobs.filter((j) => !(j.closed && reopened.has(jobKey(j))))
           // 저장하지 않은 오래된 '새 공고'는 최근 40개만 남긴다 (저장 · 숨김 · 시작한 공고는 그대로)
-          const keep = d.jobs.filter((j) => j.status !== 'new' || j.saved)
-          const olderNew = d.jobs.filter((j) => j.status === 'new' && !j.saved)
+          const keep = jobs.filter((j) => j.status !== 'new' || j.saved)
+          const olderNew = jobs.filter((j) => j.status === 'new' && !j.saved)
           return { ...d, jobQuery: query, jobs: [...fresh, ...olderNew].slice(0, 40).concat(keep) }
         }),
       updateJob: (id, patch) =>

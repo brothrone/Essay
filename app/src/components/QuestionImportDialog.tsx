@@ -103,8 +103,8 @@ export function QuestionImportDialog({
         <section className="qi-section">
           <h4>공고에서 불러오기</h4>
           <p className="muted small">
-            공고 주소를 넣고 버튼을 누르면 AI가 공고를 읽어 문항을 바로 채워요. 정해진 문항이 없는 공고(자유 양식)면 공고 내용에 맞춘 예상
-            문항을 넣어요. 창을 닫아도 계속 읽어요.
+            공고 주소를 넣고 버튼을 누르면 AI가 공고를 읽어 문항을 바로 채워요. 공고에 문항이 없으면 찾지 못했다고 알려 드려요. 창을 닫아도
+            계속 읽어요.
           </p>
           <input
             type="url"

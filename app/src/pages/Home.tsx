@@ -7,7 +7,7 @@ import { Dday, Empty, Progress, StatusBadge } from '../components/ui'
 import { useLayout } from '../layoutContext'
 import { COMPETENCY_TAGS, STATUS, STATUS_ORDER } from '../constants'
 import { languageExpiry } from '../specConfig'
-import { isEmptyData, newProject, useStore } from '../store'
+import { isEmptyData, isLiveJob, newProject, useStore } from '../store'
 import { daysUntil, fmtDate } from '../utils'
 
 export function Home() {
@@ -62,7 +62,7 @@ export function Home() {
   }, [data.experiences])
 
   const topJobs = data.jobs
-    .filter((j) => j.status === 'new' && (daysUntil(j.deadline) ?? 0) >= 0)
+    .filter((j) => j.status === 'new' && isLiveJob(j))
     .sort((a, b) => b.matchScore - a.matchScore)
     .slice(0, 6)
 

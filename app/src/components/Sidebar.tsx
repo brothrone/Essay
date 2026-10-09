@@ -2,11 +2,11 @@ import { Archive, Bookmark, CalendarDays, Database, FileText, GraduationCap, Hou
 import { NavLink } from 'react-router-dom'
 import { useJobSearch } from '../jobSearch'
 import { kbd } from '../platform'
-import { useStore } from '../store'
+import { isLiveJob, useStore } from '../store'
 
 export function Sidebar({ onNew }: { onNew: () => void }) {
   const { data } = useStore()
-  const newJobs = data.jobs.filter((j) => j.status === 'new' && !j.saved).length
+  const newJobs = data.jobs.filter((j) => j.status === 'new' && !j.saved && isLiveJob(j)).length
   const savedJobs = data.jobs.filter((j) => j.saved && j.status !== 'hidden').length
   const jobSearch = useJobSearch()
   const recent = data.projects

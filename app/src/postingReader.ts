@@ -23,7 +23,7 @@ export interface PostingTask {
   error: string
   info: PostingInfo | null
   /** 자소서에 실제로 넣은 것 */
-  applied: { questions: number; suggested?: number; notes: boolean; deadline: boolean } | null
+  applied: { questions: number; notes: boolean; deadline: boolean } | null
 }
 
 export interface PostingReaderApi {

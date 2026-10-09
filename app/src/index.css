@@ -1837,7 +1837,7 @@ textarea:focus-visible {
   flex: 1;
   min-height: 0;
   display: grid;
-  grid-template-columns: 230px minmax(0, 1fr) 420px;
+  grid-template-columns: 250px minmax(0, 1fr) 380px;
 }
 
 .q-list,
@@ -2969,7 +2969,7 @@ textarea:focus-visible {
     right: 0;
     bottom: 0;
     z-index: 60;
-    width: min(420px, 92vw);
+    width: min(400px, 92vw);
     box-shadow: var(--shadow-lg);
     transform: translateX(105%);
     transition: transform 0.2s ease;
@@ -5112,117 +5112,173 @@ textarea:focus-visible {
   font-size: 12px;
 }
 
-/* ---------- AI 대화 · AI 도우미를 크게 (1.9.0) ---------- */
-.panel-tabs {
-  gap: 2px;
-  padding: 10px 10px;
-}
-
-.panel-tabs [role='tab'] {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 7px 9px;
-  white-space: nowrap;
-}
-
-.panel-tabs [role='tab'].ai-tab {
-  color: var(--primary-text);
-}
-
-.panel-tabs [role='tab'].ai-tab.on {
-  background: var(--primary);
-  color: #fff;
-  box-shadow: 0 4px 12px rgb(43 98 242 / 28%);
-}
-
-.side-panel .panel-body {
-  flex: 1 0 auto;
-  display: flex;
-  flex-direction: column;
-}
-
-.panel-body > .panel-fill:not([hidden]) {
-  flex: 1 0 auto;
-  display: flex;
-  flex-direction: column;
-}
-
-/* 답변 바로 아래 큰 AI 버튼 두 개 */
-.ai-strip {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
+/* ---------- 문항 바로 아래 AI 카드: 초안 쓰기 · AI 도우미 · AI 대화 (1.9.2) ---------- */
+.ai-bench {
   margin: 12px 0 4px;
+  border: 1px solid color-mix(in srgb, var(--primary) 28%, var(--border));
+  border-radius: 16px;
+  background: var(--surface);
+  container-type: inline-size;
 }
 
-.ai-big {
+.ai-bench-bar {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  padding: 8px;
+}
+
+.ai-tool {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 14px 16px;
-  border-radius: 14px;
-  border: 1px solid transparent;
+  gap: 10px;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-2);
+  color: var(--text);
   text-align: left;
   cursor: pointer;
-  transition: transform 0.12s ease, box-shadow 0.12s ease;
+  transition: border-color 0.12s ease, background 0.12s ease;
 }
 
-.ai-big:hover {
-  transform: translateY(-1px);
+.ai-tool:hover:not(:disabled) {
+  border-color: var(--primary);
 }
 
-.ai-big.chat {
+.ai-tool:disabled {
+  cursor: default;
+  opacity: 0.85;
+}
+
+.ai-tool.main {
+  border-color: transparent;
   background: linear-gradient(135deg, var(--primary), #6a4cff);
   color: #fff;
-  box-shadow: 0 8px 22px rgb(43 98 242 / 28%);
 }
 
-.ai-big.helper {
+.ai-tool.on {
+  border-color: var(--primary);
   background: var(--primary-soft);
-  border-color: color-mix(in srgb, var(--primary) 30%, transparent);
   color: var(--primary-text);
 }
 
-.ai-big-icon {
+.ai-tool-icon {
   flex: none;
   display: grid;
   place-items: center;
-  width: 42px;
-  height: 42px;
-  border-radius: 12px;
-  background: rgb(255 255 255 / 18%);
-}
-
-.ai-big.helper .ai-big-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
   background: var(--surface);
+  color: var(--primary-text);
 }
 
-.ai-big-text {
+.ai-tool.main .ai-tool-icon {
+  background: rgb(255 255 255 / 18%);
+  color: #fff;
+}
+
+.ai-tool-text {
   display: flex;
   flex-direction: column;
   min-width: 0;
 }
 
-.ai-big-text strong {
-  font-size: 15.5px;
-  font-weight: 750;
+.ai-tool-text strong {
+  font-size: 14.5px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.ai-big-text span {
-  font-size: 13px;
-  opacity: 0.9;
+.ai-tool-text span {
+  font-size: 12.5px;
+  opacity: 0.85;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-@media (max-width: 900px) {
-  .ai-strip {
-    grid-template-columns: minmax(0, 1fr);
+/* 좁은 가운데 칸: 설명 줄은 숨기고, 더 좁으면 세로로 */
+@container (max-width: 620px) {
+  .ai-tool-text span {
+    display: none;
   }
+}
+
+@container (max-width: 560px) {
+  .ai-tool {
+    flex-direction: column;
+    justify-content: center;
+    gap: 6px;
+    padding: 10px 6px;
+    text-align: center;
+  }
+
+  .ai-tool-text strong {
+    font-size: 13px;
+    white-space: normal;
+    line-height: 1.3;
+  }
+}
+
+.ai-bench-body {
+  padding: 4px 14px 14px;
+  border-top: 1px solid var(--border);
+}
+
+.ai-bench-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0 8px;
+}
+
+.ai-bench-head strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 15px;
+}
+
+.ai-bench-head .icon-btn {
+  margin-left: auto;
+}
+
+.ai-helper .ai-direct {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ai-copy {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--border);
+}
+
+.ai-copy summary {
+  cursor: pointer;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-2);
+}
+
+.ai-copy[open] summary {
+  margin-bottom: 10px;
+}
+
+.ai-copy .ai-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 8px;
 }
 
 /* AI 대화 패널 */
 .chat-panel {
-  flex: 1 0 auto;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -5241,15 +5297,19 @@ textarea:focus-visible {
   font-size: 15px;
 }
 
-.chat-head .icon-btn {
+.chat-head-tools {
+  display: inline-flex;
+  gap: 2px;
   margin-left: auto;
 }
 
 .chat-log {
-  flex: 1 0 auto;
   display: flex;
   flex-direction: column;
   gap: 10px;
+  max-height: 440px;
+  overflow-y: auto;
+  padding-right: 4px;
 }
 
 .chat-empty {
@@ -5391,15 +5451,9 @@ textarea:focus-visible {
 }
 
 .chat-compose {
-  position: sticky;
-  bottom: 0;
   display: flex;
   flex-direction: column;
   gap: 8px;
-  margin: 0 -16px -16px;
-  padding: 10px 16px 16px;
-  background: var(--surface);
-  border-top: 1px solid var(--border);
 }
 
 .chat-ideas {
@@ -5507,25 +5561,4 @@ textarea:focus-visible {
 .qi .preset:disabled {
   opacity: 0.55;
   cursor: default;
-}
-
-/* 가운데 칸이 좁으면 큰 AI 버튼의 둘째 줄은 숨긴다 */
-.ai-strip {
-  container-type: inline-size;
-}
-
-@container (max-width: 520px) {
-  .ai-big {
-    padding: 12px;
-    gap: 10px;
-  }
-
-  .ai-big-icon {
-    width: 36px;
-    height: 36px;
-  }
-
-  .ai-big-text span {
-    display: none;
-  }
 }

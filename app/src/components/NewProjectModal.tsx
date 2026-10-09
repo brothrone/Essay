@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { QUESTION_PRESETS } from '../constants'
 import { isHttpUrl } from '../format'
 import { isActive, useElapsed, usePostingReader } from '../postingReader'
-import { companyLookupPrompt, postingPrompt, postingTextPrompt, SUGGESTED_NOTE } from '../prompts'
+import { companyLookupPrompt, postingPrompt, postingTextPrompt } from '../prompts'
 import { newProject, newQuestion, useStore } from '../store'
 import type { Question } from '../types'
 import { toast } from '../toast'
@@ -76,13 +76,7 @@ export function NewProjectModal({ onClose }: { onClose: () => void }) {
       deadlineTime: info.deadlineTime || f.deadlineTime,
       jobUrl: f.jobUrl.trim() || info.url,
     }))
-    // 정해진 문항이 없는 공고(자유 양식)면 AI 가 공고에 맞춰 고른 예상 문항을 넣는다
-    const suggested = !info.questions.length && (info.suggested?.length ?? 0) > 0
-    setImported({
-      notes: suggested ? [info.notes, SUGGESTED_NOTE].filter(Boolean).join('\n\n') : info.notes,
-      questions: (suggested ? info.suggested : info.questions).map((q) => newQuestion(q)),
-      source: suggested ? '예상' : info.questionsSource,
-    })
+    setImported({ notes: info.notes, questions: info.questions.map((q) => newQuestion(q)), source: info.questionsSource })
     if (info.isOpen === false) setImportError('이 공고는 마감된 것으로 보여요. 마감일을 확인해 주세요.')
     else if (info.isOpen === null && task.kind === 'company') setImportError('지금 접수 중인 공고는 찾지 못했어요. 찾은 내용은 참고용이에요.')
   }, [task])
@@ -363,11 +357,11 @@ export function NewProjectModal({ onClose }: { onClose: () => void }) {
           {imported && !busy && (
             <p className="import-ok">
               <Check size={14} />{' '}
-              {imported.source === '예상'
-                ? `공고 내용을 채웠어요. 공고에 정해진 자소서 문항이 없어서(자유 양식) 공고 내용에 맞춘 예상 문항 ${imported.questions.length}개를 넣어요.`
-                : `${imported.questions.length ? `공고 내용과 자소서 문항 ${imported.questions.length}개를` : '공고 내용을'} 채웠어요.`}{' '}
+              {imported.questions.length
+                ? `공고 내용과 자소서 문항 ${imported.questions.length}개를 채웠어요.`
+                : '공고 내용을 채웠어요. 공고에서 자소서 문항은 찾지 못했어요.'}{' '}
               아래 칸을 확인하고 [시작하기]를 누르면 [공고 정보]에 정리돼요.
-              {imported.questions.length > 0 && imported.source && imported.source !== '공고 페이지' && imported.source !== '예상' && (
+              {imported.questions.length > 0 && imported.source && imported.source !== '공고 페이지' && (
                 <span className="muted"> 문항 출처: {imported.source} — 이번 공고 문항과 같은지 확인하세요.</span>
               )}
             </p>

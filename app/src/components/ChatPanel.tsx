@@ -1,4 +1,4 @@
-import { ArrowUp, Check, ChevronDown, ChevronUp, Copy, LoaderCircle, MessagesSquare, RotateCcw, Square, Trash2, Undo2 } from 'lucide-react'
+import { ArrowUp, Check, ChevronDown, ChevronUp, Copy, LoaderCircle, MessagesSquare, RotateCcw, Square, Trash2, Undo2, X } from 'lucide-react'
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { track } from '../community'
 import { desktop, type AiProvider, type AiStatus } from '../desktop'
@@ -9,6 +9,7 @@ import type { ChatMessage, Experience, Project, Question } from '../types'
 import { noteAiResult } from '../useAiStatus'
 import { AI_PREFS_EVENT, AI_PROVIDERS, savedAiModel, savedAiProvider } from '../useAiTask'
 import { copyText, countChars, fmtTokens } from '../utils'
+import { fitToLimit, lengthMiss } from '../fitLength'
 
 /** 답변 아래 [AI와 대화하며 고치기] 를 누르면 대화 입력칸으로 커서를 옮긴다 */
 export const CHAT_FOCUS_EVENT = 'essay:chat-focus'
@@ -22,10 +23,12 @@ export function ChatPanel({
   project,
   q,
   onPatch,
+  onClose,
 }: {
   project: Project
   q: Question
   onPatch: (p: Partial<Question>, label?: string) => void
+  onClose?: () => void
 }) {
   const { data } = useStore()
   const exps = q.experienceIds.map((id) => data.experiences.find((e) => e.id === id)).filter((e): e is Experience => !!e)
@@ -40,11 +43,12 @@ export function ChatPanel({
   const [running, setRunning] = useState(false)
   const [elapsed, setElapsed] = useState(0)
   const [live, setLive] = useState('')
+  const [fixing, setFixing] = useState(false)
   const [error, setError] = useState('')
   const [undo, setUndo] = useState<{ answer: string; at: number } | null>(null)
   const runningRef = useRef(false)
   const inputRef = useRef<HTMLTextAreaElement>(null)
-  const endRef = useRef<HTMLDivElement>(null)
+  const logRef = useRef<HTMLDivElement>(null)
   const ai = desktop.ai
 
   useEffect(() => {
@@ -78,9 +82,11 @@ export function ChatPanel({
     },
     [ai],
   )
+  // 대화 칸 안에서만 맨 아래로 (화면 전체는 움직이지 않게)
   useEffect(() => {
-    endRef.current?.scrollIntoView({ block: 'end' })
-  }, [chat.length, running, error])
+    const el = logRef.current
+    if (el) el.scrollTop = el.scrollHeight
+  }, [chat.length, running, error, live])
 
   const available = status ? status[provider].available : null
   const providerName = AI_PROVIDERS.find((x) => x.value === provider)?.short ?? provider
@@ -99,22 +105,34 @@ export function ChatPanel({
     const model = savedAiModel(p)
     const r = await ai.run(chatPrompt(data, project, q, exps, history, message), model || undefined, { provider: p })
     noteAiResult(p, r)
+    let parsed = r.ok ? parseChatReply(r.text) : null
+    let seconds = r.ok ? r.seconds : 0
+    let tokens = r.ok && r.usage ? r.usage.input + r.usage.output : 0
+    // 고친 답변이 글자수 제한을 넘으면 앱이 세어 보고 맞춘다 (일부러 짧게 해 달라는 말일 수 있어 모자란 건 두고 넘친 것만)
+    if (parsed?.answer && lengthMiss(parsed.answer, q, true) > 0) {
+      setFixing(true)
+      setLive('')
+      const fixed = await fitToLimit(parsed.answer, q, { provider: p, model, overOnly: true })
+      parsed = { ...parsed, answer: fixed.text }
+      seconds += fixed.extraSeconds
+      tokens += fixed.extraTokens
+      setFixing(false)
+    }
     runningRef.current = false
     setRunning(false)
     setLive('')
-    if (!r.ok) {
-      setError(r.cancelled ? '멈췄어요. 아래에서 다시 보낼 수 있어요.' : r.error)
+    if (!r.ok || !parsed) {
+      setError(!r.ok && r.cancelled ? '멈췄어요. 아래에서 다시 보낼 수 있어요.' : !r.ok ? r.error : '답을 읽지 못했어요.')
       return
     }
-    const parsed = parseChatReply(r.text)
     const reply: ChatMessage = {
       role: 'ai',
       text: parsed.reply,
       at: Date.now(),
       ...(parsed.answer ? { answer: parsed.answer } : {}),
       model: r.model,
-      seconds: r.seconds,
-      ...(r.usage ? { tokens: r.usage.input + r.usage.output } : {}),
+      seconds,
+      ...(tokens ? { tokens } : {}),
     }
     onPatch({ chat: [...chatRef.current, reply].slice(-KEEP) })
   }
@@ -185,14 +203,21 @@ export function ChatPanel({
           <MessagesSquare size={17} /> AI와 대화하며 고치기
         </strong>
         <span className="badge tone-blue">{providerName}</span>
-        {chat.length > 0 && (
-          <button type="button" className="icon-btn" onClick={clear} disabled={running} aria-label="대화 지우기" title="대화 지우기">
-            <Trash2 size={15} />
-          </button>
-        )}
+        <span className="chat-head-tools">
+          {chat.length > 0 && (
+            <button type="button" className="icon-btn" onClick={clear} disabled={running} aria-label="대화 지우기" title="대화 지우기">
+              <Trash2 size={15} />
+            </button>
+          )}
+          {onClose && (
+            <button type="button" className="icon-btn" onClick={onClose} aria-label="AI 대화 닫기" title="닫기">
+              <X size={16} />
+            </button>
+          )}
+        </span>
       </header>
 
-      <div className="chat-log">
+      <div className="chat-log" ref={logRef}>
         {chat.length === 0 && !running && (
           <div className="chat-empty">
             <span className="chat-empty-icon">
@@ -235,8 +260,14 @@ export function ChatPanel({
         {running && (
           <div className="chat-msg ai pending">
             <div className="chat-text">
-              {liveReply || (writingAnswer ? '' : <span className="muted">생각하는 중…</span>)}
-              {writingAnswer && <span className="muted">{liveReply ? '\n' : ''}고친 답변을 쓰는 중…</span>}
+              {fixing ? (
+                <span className="muted">고친 답변이 글자수 제한을 넘어서 맞추는 중…</span>
+              ) : (
+                <>
+                  {liveReply || (writingAnswer ? '' : <span className="muted">생각하는 중…</span>)}
+                  {writingAnswer && <span className="muted">{liveReply ? '\n' : ''}고친 답변을 쓰는 중…</span>}
+                </>
+              )}
             </div>
             <span className="chat-meta">
               <LoaderCircle size={12} className="spin" /> {elapsed}초 · 보통 30초~1분 걸려요
@@ -262,7 +293,6 @@ export function ChatPanel({
             </button>
           </p>
         )}
-        <div ref={endRef} />
       </div>
 
       <div className="chat-compose">

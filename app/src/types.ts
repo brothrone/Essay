@@ -125,6 +125,10 @@ export interface JobPosting {
   projectId: ID
   /** 저장한 공고 (사이드바 [저장된 공고]에 모인다) */
   saved: boolean
+  /** 공고 페이지를 마지막으로 직접 열어 확인한 때 */
+  checkedAt?: number
+  /** 마감됐거나 접수 중인지 확인되지 않아 맞춤 공고에서 뺀 공고 (다시 찾아도 다시 넣지 않는다) */
+  closed?: boolean
 }
 
 export interface JobQuery {

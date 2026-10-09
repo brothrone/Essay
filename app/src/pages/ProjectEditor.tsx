@@ -11,19 +11,16 @@ import {
   History,
   Lightbulb,
   LoaderCircle,
-  MessagesSquare,
   PanelRight,
   Pencil,
   Plus,
   Search,
-  Sparkles,
   Trash2,
   X,
 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { AiPanel } from '../components/AiPanel'
-import { CHAT_FOCUS_EVENT, ChatPanel } from '../components/ChatPanel'
+import { AiWorkbench, type AiMode } from '../components/AiWorkbench'
 import { QuestionImportDialog } from '../components/QuestionImportDialog'
 import { toast } from '../toast'
 import { PostingCheck } from '../components/PostingCheck'
@@ -38,12 +35,10 @@ import { newQuestion, useStore } from '../store'
 import type { CountMode, Experience, Project, Question } from '../types'
 import { copyText, countChars, fmtDateTime, fmtPeriod, fmtRelative, includesText, similarity } from '../utils'
 
-type Panel = 'chat' | 'ai' | 'exp' | 'answers' | 'info'
+type Panel = 'exp' | 'answers' | 'info'
 
-// AI 두 탭을 앞에 두고 눈에 띄게 (처음 열면 AI 대화)
-const PANELS: { key: Panel; label: string; ai?: boolean }[] = [
-  { key: 'chat', label: 'AI 대화', ai: true },
-  { key: 'ai', label: 'AI 도우미', ai: true },
+// 오른쪽은 참고 자료만. AI 도구는 가운데 문항 바로 아래 (AiWorkbench)
+const PANELS: { key: Panel; label: string }[] = [
   { key: 'exp', label: '경험' },
   { key: 'answers', label: '다른 답변' },
   { key: 'info', label: '공고 정보' },
@@ -54,16 +49,12 @@ export function ProjectEditor() {
   const { data, updateProject, touchProject, deleteProject } = useStore()
   const navigate = useNavigate()
   const [params, setParams] = useSearchParams()
-  const [panel, setPanel] = useState<Panel>('chat')
+  const [panel, setPanel] = useState<Panel>('exp')
   const [panelOpen, setPanelOpen] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
+  // 문항 아래 AI 카드에서 펼친 도구 (다른 문항으로 옮겨도 그대로)
+  const [aiMode, setAiMode] = useState<AiMode>(null)
   const project = data.projects.find((p) => p.id === id)
-  /** 답변 아래 큰 버튼: 오른쪽 AI 탭을 열고(좁은 창에서는 패널을 펼쳐) 대화면 입력칸으로 */
-  const openAi = (p: 'chat' | 'ai') => {
-    setPanel(p)
-    setPanelOpen(true)
-    if (p === 'chat') window.dispatchEvent(new Event(CHAT_FOCUS_EVENT))
-  }
 
   useEffect(() => {
     touchProject(id)
@@ -267,7 +258,8 @@ export function ProjectEditor() {
               onSnapshot={(label) => snapshotQ(active.id, label)}
               onRemove={() => removeQ(active)}
               onMove={(dir) => moveQ(active.id, dir)}
-              onOpenAi={openAi}
+              aiMode={aiMode}
+              onAiMode={setAiMode}
             />
           ) : (
             <Empty
@@ -291,11 +283,9 @@ export function ProjectEditor() {
                 role="tab"
                 key={p.key}
                 aria-selected={panel === p.key}
-                className={(panel === p.key ? 'on' : '') + (p.ai ? ' ai-tab' : '')}
+                className={panel === p.key ? 'on' : ''}
                 onClick={() => setPanel(p.key)}
               >
-                {p.key === 'chat' && <MessagesSquare size={15} />}
-                {p.key === 'ai' && <Sparkles size={15} />}
                 {p.label}
               </button>
             ))}
@@ -303,21 +293,15 @@ export function ProjectEditor() {
               <X size={18} />
             </button>
           </div>
-          {/* 탭을 옮겨도 진행 중인 AI 작업 · 입력이 끊기지 않게 패널은 숨기기만 한다 */}
+          {/* 탭을 옮겨도 입력이 끊기지 않게 패널은 숨기기만 한다 */}
           <div className="panel-body">
             <div hidden={panel !== 'info'}>
               <InfoPanel project={project} onPatch={patch} />
             </div>
             {active ? (
               <>
-                <div hidden={panel !== 'chat'} className="panel-fill">
-                  <ChatPanel key={active.id} project={project} q={active} onPatch={(p, label) => patchQ(active.id, p, label)} />
-                </div>
                 <div hidden={panel !== 'exp'}>
                   <ExperiencePanel project={project} q={active} onPatch={(p) => patchQ(active.id, p)} />
-                </div>
-                <div hidden={panel !== 'ai'}>
-                  <AiPanel key={active.id} project={project} q={active} onPatch={(p, label) => patchQ(active.id, p, label)} />
                 </div>
                 <div hidden={panel !== 'answers'}>
                   <AnswersPanel q={active} />
@@ -400,7 +384,8 @@ function QuestionEditor({
   onSnapshot,
   onRemove,
   onMove,
-  onOpenAi,
+  aiMode,
+  onAiMode,
 }: {
   project: Project
   q: Question
@@ -410,7 +395,8 @@ function QuestionEditor({
   onSnapshot: (label: string) => void
   onRemove: () => void
   onMove: (dir: -1 | 1) => void
-  onOpenAi: (p: 'chat' | 'ai') => void
+  aiMode: AiMode
+  onAiMode: (m: AiMode) => void
 }) {
   const [historyOpen, setHistoryOpen] = useState(false)
   const counts: Record<CountMode, number> = {
@@ -505,34 +491,15 @@ function QuestionEditor({
         </label>
       </div>
 
-      {/* AI 두 기능을 답변 칸 바로 위에 크게 (열자마자 보이게) */}
-      <div className="ai-strip">
-        <button type="button" className="ai-big chat" onClick={() => onOpenAi('chat')}>
-          <span className="ai-big-icon">
-            <MessagesSquare size={22} />
-          </span>
-          <span className="ai-big-text">
-            <strong>AI와 대화하며 고치기</strong>
-            <span>말로 부탁하면 답변을 고쳐 줘요</span>
-          </span>
-        </button>
-        <button type="button" className="ai-big helper" onClick={() => onOpenAi('ai')}>
-          <span className="ai-big-icon">
-            <Sparkles size={22} />
-          </span>
-          <span className="ai-big-text">
-            <strong>AI 도우미</strong>
-            <span>초안 · 피드백 · 글자수 맞추기</span>
-          </span>
-        </button>
-      </div>
+      {/* AI 도구는 모두 문항 바로 아래 한 곳에: 초안 쓰기 · 도우미 · 대화 */}
+      <AiWorkbench project={project} q={q} onPatch={onPatch} mode={aiMode} onMode={onAiMode} />
 
       <AutoTextarea
         className="answer-input"
         minRows={16}
         value={q.answer}
         spellCheck={false}
-        placeholder={'여기에 답변을 작성하세요.\n\n위 [AI와 대화하며 고치기]로 AI에게 초안이나 고칠 점을 말로 부탁할 수 있어요.'}
+        placeholder={'여기에 답변을 작성하세요.\n\n위 [AI로 초안 쓰기]를 누르면 연결한 경험으로 초안을 써 주고, [AI와 대화하며 고치기]로 고칠 점을 말로 부탁할 수 있어요.'}
         onChange={(e) => onPatch({ answer: e.target.value })}
       />
 

@@ -1029,7 +1029,12 @@ async function checkPosting(url, today) {
     }
     if (deadline && deadline < today) return { status: 'closed', deadline }
     if (/[([]\s*(마감|접수\s*마감|채용\s*마감)\s*[)\]]/.test(title)) return { status: 'closed', deadline }
-    const closedText = /마감된\s*(공고|포지션|채용)입니다|(채용|모집|접수|지원)이\s*마감(되었|됐)습니다|이미\s*마감된\s*(공고|채용)/.test(html)
+    // 사이트마다 다른 '마감' 안내 문구 (사람인 · 잡코리아 · 원티드 · 캐치 · 회사 채용 페이지).
+    // "접수가 마감된 이후에는 …" 같은 안내문에 걸리지 않게 문장이 끝나는 꼴만 본다
+    const closedText =
+      /마감된\s*(공고|포지션|채용|모집)(입니다|이에요|예요)|(채용|모집|접수|지원)(이|가)\s*(마감|종료)(되었|됐)(습니다|어요)|이미\s*마감(된|되었)\s*(공고|포지션|채용)|(접수|지원|모집)\s*기간이\s*(지났습니다|종료되었습니다|아닙니다)|(채용|모집)\s*(마감|종료)된\s*(공고|포지션)|지원이\s*불가능한\s*(공고|포지션)/.test(
+        html,
+      )
     if (closedText && !(deadline && deadline >= today)) return { status: 'closed', deadline }
     // 제목에 남은 날짜(D-6) · 상시 채용 표시가 있으면 접수 중 (사람인 등)
     if (deadline || alwaysOpen || /\(D-\d+\)|\(D-day\)|상시\s*채용|채용\s*시\s*마감/i.test(title)) return { status: 'open', deadline }

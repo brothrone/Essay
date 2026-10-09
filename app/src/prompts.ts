@@ -84,7 +84,7 @@ const persona = (project: Project) =>
   `당신은 ${project.company || '지원 회사'} ${project.position ? `${project.position} 직무` : ''} 채용을 10년 넘게 담당한 인사담당자이자 취업 컨설턴트입니다. 수천 장의 자기소개서를 읽어 봤고, 어떤 글이 서류를 통과하고 어떤 글이 AI가 쓴 티가 나서 걸러지는지 압니다.`
 
 export function draftPrompt(data: AppData, project: Project, q: Question, exps: Experience[], direct = false) {
-  const target = q.limit ? `글자수 제한의 90~100% 분량으로 맞춰 주세요.` : '700~1000자 정도로 써 주세요.'
+  const target = q.limit ? lengthRule(q) : '700~1000자 정도로 써 주세요.'
   return `${persona(project)}
 아래 자료만 사용해서 자기소개서 문항의 답변 초안을 써 주세요. 지원자가 자기 말투로 다듬어 제출할 초안입니다.
 
@@ -128,13 +128,47 @@ ${NO_FAKE}
 - 지원자의 개성과 진정성은 유지하는 방향으로 제안하세요. 글을 통째로 다시 써 주지 말고 고칠 점만 알려 주세요.`
 }
 
+/**
+ * 글자수 목표: 제한의 90~100% (공백 포함 · 제외 · 바이트 기준 그대로).
+ * AI 는 글자수를 잘 못 세므로 범위를 숫자로 주고, 한국어 한 문장 길이로 문장 수를 어림해 준다
+ */
+export function lengthGoal(q: Pick<Question, 'limit' | 'countMode'>) {
+  if (!q.limit) return null
+  const unit = q.countMode === 'byte' ? 'byte' : '자'
+  const perSentence = q.countMode === 'byte' ? 100 : q.countMode === 'without' ? 40 : 50
+  return {
+    min: Math.round(q.limit * 0.9),
+    max: q.limit,
+    unit,
+    perSentence,
+    sentences: Math.max(3, Math.round(q.limit / perSentence)),
+    label: COUNT_MODE_LABEL[q.countMode],
+  }
+}
+
+/** 초안 · 고쳐 쓰기 · 대화에 넣는 분량 규칙 한 줄 */
+function lengthRule(q: Question) {
+  const g = lengthGoal(q)
+  if (!g) return ''
+  return `분량은 ${g.label} 기준 ${g.min.toLocaleString()}~${g.max.toLocaleString()}${g.unit}입니다. ${g.max.toLocaleString()}${g.unit}을 절대 넘기지 마세요. 한국어 한 문장은 보통 ${g.perSentence}${g.unit} 안팎이라 약 ${g.sentences}문장 분량입니다. 다 쓴 뒤 직접 세어 보고 범위를 벗어나면 고쳐서 내세요.`
+}
+
 export function fitPrompt(q: Question, text = q.answer, direct = false) {
   const current = countChars(text, q.countMode)
-  const unit = q.countMode === 'byte' ? 'byte' : '자'
-  const goal = q.limit
-    ? `${q.limit}${unit} 이하 (${COUNT_MODE_LABEL[q.countMode]}, 목표 ${Math.round(q.limit * 0.9)}~${Math.round(q.limit * 0.98)}${unit})`
-    : `지금과 비슷한 분량`
-  return `당신은 자기소개서 퇴고 전문 컨설턴트입니다. 아래 답변을 내용과 말투는 유지하면서 ${goal}로 다듬어 주세요. 현재 ${current}${unit}입니다.
+  const g = lengthGoal(q)
+  const unit = g?.unit ?? (q.countMode === 'byte' ? 'byte' : '자')
+  // 목표 가운데(95%)까지 얼마나 줄이거나 늘려야 하는지 숫자로 알려 준다
+  const center = g ? Math.round(g.max * 0.95) : current
+  const diff = center - current
+  const goal = g
+    ? `${g.label} 기준 ${g.min.toLocaleString()}~${g.max.toLocaleString()}${unit}(${g.max.toLocaleString()}${unit} 초과 금지)`
+    : '지금과 비슷한 분량'
+  const move =
+    g && Math.abs(diff) > 15
+      ? ` 목표까지 약 ${Math.abs(diff).toLocaleString()}${unit}를 ${diff < 0 ? '줄여' : '늘려'} 주세요 — 한 문장이 보통 ${g.perSentence}${unit} 안팎이니 문장 약 ${Math.max(1, Math.round(Math.abs(diff) / g.perSentence))}개 분량입니다.`
+      : ''
+  return `당신은 자기소개서 퇴고 전문 컨설턴트입니다. 아래 답변을 내용과 말투는 유지하면서 ${goal}로 다듬어 주세요. 현재 ${current.toLocaleString()}${unit}입니다.${move}
+- 다 고친 뒤 직접 세어 보고 범위를 벗어나면 한 번 더 고쳐서 내세요.
 - 첫 줄의 [소제목]과 두괄식 첫 문장은 유지해 주세요.
 - 핵심 경험과 수치는 남기고, 중복 표현·군더더기·상투어(${CLICHES.slice(0, 4).join(', ')} 등)를 먼저 줄이세요.
 - 줄여야 하면 '배경 설명'부터, 늘려야 하면 '내 행동의 구체적 과정'을 자료 안에서 보강하세요.
@@ -166,7 +200,7 @@ export function chatPrompt(
 ) {
   const unit = q.countMode === 'byte' ? 'byte' : '자'
   const goal = q.limit
-    ? `글자수 제한(${q.limit}${unit}, ${COUNT_MODE_LABEL[q.countMode]})의 90~100% 안으로 맞추세요(지원자가 분량을 따로 말하면 그 말을 따르세요)`
+    ? `지원자가 분량을 따로 말하지 않으면 이 범위로 맞추세요. ${lengthRule(q)}`
     : '지원자가 분량을 따로 말하지 않으면 지금과 비슷한 분량으로 쓰세요'
   const head = `${persona(project)}
 지금 지원자와 대화하며 아래 문항의 자기소개서 답변을 함께 다듬고 있습니다. 지원자의 마지막 말에 답하세요.
@@ -184,7 +218,8 @@ ${message.trim().slice(0, 4000)}
 - 답변을 새로 쓰거나 고쳐 달라는 말이면, 고친 답변 전체를 <answer> 안에 넣고 <reply> 에는 무엇을 왜 바꿨는지 2~3문장으로만 적으세요.
 - 질문하거나 의견을 물으면 <reply> 에만 짧게(5문장 안팎) 답하고 <answer> 는 쓰지 마세요.
 - 지원자가 대화에서 새로 알려 준 경험 · 수치는 사실로 보고 써도 됩니다.
-- 고친 답변은 ${goal}. 지원자의 말투와 경험은 살리세요.
+- 고친 답변의 분량: ${goal}
+- 지원자의 말투와 경험은 살리세요.
 ${STYLE_RULES}
 
 [지켜야 할 것]
@@ -244,7 +279,7 @@ export function parseChatReply(text: string) {
 
 /** 앞서 받은 피드백을 반영해 다시 쓰기 (앱에서 바로 실행할 때) */
 export function revisePrompt(data: AppData, project: Project, q: Question, exps: Experience[], feedback: string) {
-  const goal = q.limit ? `글자수 제한(${q.limit}${q.countMode === 'byte' ? 'byte' : '자'})의 90~98% 분량` : '지금과 비슷한 분량'
+  const goal = q.limit ? lengthRule(q) : '지금과 비슷한 분량으로 맞춰 주세요.'
   return `${persona(project)} 아래 피드백을 반영해 자기소개서 답변을 고쳐 주세요. 지원자의 경험과 말투는 살리고, 피드백이 짚은 곳만 정확히 고치세요.
 
 ${context(data, project, q, exps)}
@@ -258,7 +293,7 @@ ${feedback}
 [고쳐 쓰는 방식]
 - 피드백의 '가장 먼저 고칠 3가지'와 '고쳐야 할 문장'을 우선 반영하세요.
 - 첫 줄의 [소제목]은 유지하거나 더 좋게 바꾸고, 첫 문장은 결론으로 시작하세요.
-- ${goal}으로 맞춰 주세요.
+- ${goal}
 ${STYLE_RULES.replace('[문체 규칙]\n', '')}
 
 [지켜야 할 것]
@@ -419,8 +454,6 @@ export interface PostingInfo {
   questions: { prompt: string; limit: number | null }[]
   questionsSource: string // 문항을 어디서 확인했는지 (공고 페이지가 아니면 사이트명 · 연도)
   url: string // 회사·직무로 찾았을 때 실제 공고 주소
-  /** 정해진 문항이 없는 공고(자유 양식)일 때 AI 가 공고 내용에 맞춰 고른 예상 문항. questions 가 있으면 비어 있다 */
-  suggested: { prompt: string; limit: number | null }[]
 }
 
 /** AI 응답(JSON)을 PostingInfo로 정리. 형식이 아니면 null */
@@ -461,12 +494,8 @@ export function parsePosting(text: string): PostingInfo | null {
     questions,
     questionsSource: str(raw.questionsSource),
     url: /^https?:\/\/\S+$/i.test(str(raw.url)) ? str(raw.url) : '',
-    suggested: questions.length ? [] : qs((raw as Record<string, unknown>).suggestedQuestions).slice(0, 4),
   }
 }
-
-/** 예상 문항을 넣었을 때 공고 메모 · 안내에 남기는 말 */
-export const SUGGESTED_NOTE = '자소서 문항: 공고에 정해진 문항이 없어요(자유 양식). 공고 내용에 맞춘 예상 문항을 넣었어요. 필요 없으면 지우세요.'
 
 const POSTING_OUTPUT = `[시간 제한]
 - 검색(WebSearch)은 최대 3번, 페이지 읽기(WebFetch)는 최대 3번입니다. 그 안에 못 찾은 값은 빈 값으로 두고 바로 결과를 내세요. 완벽보다 빠른 답이 낫습니다.
@@ -482,14 +511,9 @@ const POSTING_OUTPUT = `[시간 제한]
 - keywords: 자소서에 녹이면 좋은 키워드 8~10개 (공고에 실제로 쓰인 단어 위주, 각 10자 이내)
 - idealTalent: 이 회사·직무가 원하는 사람을 한 줄로
 
-[정해진 문항이 없을 때 — suggestedQuestions]
-- questions 가 빈 배열일 때만(자유 양식 · 이력서 · 포트폴리오만 받는 공고 등), 이 공고의 주요 업무 · 우대 사항 · 제출 서류에 적힌 요구(예: 포트폴리오에 담을 수행 경험 · 문제 해결 과정 · 협업 경험)를 근거로 지원자가 준비하면 좋을 자기소개서 문항 3개를 suggestedQuestions 에 넣으세요.
-- 실제 기업들이 묻는 형태의 한 문장으로 쓰세요(예: "직무와 관련해 프로젝트를 주도하며 문제를 해결한 경험을 구체적으로 작성해 주세요."). limit 은 null.
-- questions 에 문항이 있으면 suggestedQuestions 는 빈 배열입니다.
-
 [출력 형식]
 <json>
-{"company":"회사명","position":"지원 직무","url":"공고 원문 주소","deadline":"YYYY-MM-DD 또는 빈 문자열","deadlineTime":"HH:mm 또는 빈 문자열","isOpen":true,"notes":"주요 업무, 자격 요건, 우대 사항, 전형 절차, 근무 조건을 항목별로 짧게 정리한 글(줄바꿈 포함, 1000자 이내)","questions":[{"prompt":"자기소개서 문항","limit":700}],"questionsSource":"공고 페이지","suggestedQuestions":[],"analysis":{"competencies":["..."],"keywords":["..."],"idealTalent":"..."}}
+{"company":"회사명","position":"지원 직무","url":"공고 원문 주소","deadline":"YYYY-MM-DD 또는 빈 문자열","deadlineTime":"HH:mm 또는 빈 문자열","isOpen":true,"notes":"주요 업무, 자격 요건, 우대 사항, 전형 절차, 근무 조건을 항목별로 짧게 정리한 글(줄바꿈 포함, 1000자 이내)","questions":[{"prompt":"자기소개서 문항","limit":700}],"questionsSource":"공고 페이지","analysis":{"competencies":["..."],"keywords":["..."],"idealTalent":"..."}}
 </json>
 - isOpen: 지금 접수 중이면 true, 마감됐으면 false, 알 수 없으면 null
 - 페이지에서 확인되지 않은 값은 빈 값 또는 null로 두고 지어내지 마세요. limit은 글자수 제한(숫자), 없으면 null.
