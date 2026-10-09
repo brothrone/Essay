@@ -7,6 +7,7 @@ import { Sidebar } from './Sidebar'
 import { useTheme } from '../useTheme'
 import { AboutDialogHost } from './AboutDialog'
 import { AuthCodeDialog } from './AuthCodeDialog'
+import { FeedbackDialogHost } from './FeedbackDialog'
 import { HelpDialogHost } from './HelpDialog'
 import { ImportDialogHost, openImportDialog } from './ImportModal'
 import { TitleBar } from './TitleBar'
@@ -49,6 +50,7 @@ export function Layout() {
       <ImportDialogHost />
       <AboutDialogHost />
       <HelpDialogHost />
+      <FeedbackDialogHost />
       <WelcomeDialogHost />
       <UpdateBanner />
       <Toaster />

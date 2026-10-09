@@ -115,19 +115,9 @@ export function AiSetup({
       ) : (
         <>
           <p className="muted small">
-            Antigravity CLI는 Google AI 구독, Gemini CLI는 무료 한도를 써요. 하나만 설치하면 돼요.
+            Antigravity CLI 하나면 돼요. Google AI Pro · Ultra 구독은 물론 무료 Google 계정으로도 로그인돼요(무료는 한도가 작아요).
           </p>
-          <div className="btn-row">
-            {btn('install-agy', 'Antigravity CLI 설치 (권장)', true)}
-            {status?.nodeAvailable ? (
-              btn('install-gemini', 'Gemini CLI 설치')
-            ) : (
-              <>
-                {btn('install-node', 'Node.js 설치')}
-                <span className="muted small">Gemini CLI는 Node.js가 먼저 필요해요</span>
-              </>
-            )}
-          </div>
+          <div className="btn-row">{btn('install-agy', 'Antigravity CLI 설치', true)}</div>
         </>
       ),
     })

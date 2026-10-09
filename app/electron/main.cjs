@@ -1150,6 +1150,127 @@ ipcMain.handle('ai:gemini-login-status', () => ({
 
 ipcMain.handle('ai:run', (e, opts) => runAi(e.sender, opts))
 
+/* ---------- AI 사용량 (토큰) 기록: 이 컴퓨터에서 Essay 가 실행한 것만 날짜 · AI 별로 더해 둔다 ---------- */
+const USAGE_FILE = () => path.join(app.getPath('userData'), 'ai-usage.json')
+const USAGE_KEEP_DAYS = 120
+const num = (v) => (typeof v === 'number' && Number.isFinite(v) && v > 0 ? Math.round(v) : 0)
+
+// CLI 마다 다른 결과 형식에서 입력 · 출력 토큰만 뽑는다 (캐시로 읽은 입력도 입력에 넣는다)
+function usageFrom(cli, d) {
+  if (!d) return null
+  if (cli === 'claude') {
+    const u = d.usage || {}
+    const input = num(u.input_tokens) + num(u.cache_creation_input_tokens) + num(u.cache_read_input_tokens)
+    const output = num(u.output_tokens)
+    return input || output ? { input, output } : null
+  }
+  if (cli === 'agy') {
+    const u = d.usage || {}
+    const input = num(u.input_tokens) + num(u.cache_read_tokens)
+    const output = num(u.output_tokens)
+    return input || output ? { input, output } : null
+  }
+  // Gemini CLI: result.stats (input_tokens · output_tokens · total_tokens)
+  const s = d.stats || d.usage || {}
+  const input = num(s.input_tokens ?? s.prompt_tokens ?? s.inputTokens)
+  const output = num(s.output_tokens ?? s.candidates_tokens ?? s.outputTokens)
+  return input || output ? { input, output } : null
+}
+
+function readUsage() {
+  try {
+    const d = JSON.parse(fs.readFileSync(USAGE_FILE(), 'utf8'))
+    return d && typeof d === 'object' && d.days && typeof d.days === 'object' ? d : { days: {} }
+  } catch {
+    return { days: {} }
+  }
+}
+
+function recordUsage(provider, usage, web) {
+  try {
+    const d = readUsage()
+    const day = localDay()
+    const today = (d.days[day] ||= {})
+    const row = (today[provider] ||= { runs: 0, web: 0, input: 0, output: 0 })
+    row.runs += 1
+    if (web) row.web += 1
+    row.input += usage?.input || 0
+    row.output += usage?.output || 0
+    const keys = Object.keys(d.days).sort()
+    for (const k of keys.slice(0, Math.max(0, keys.length - USAGE_KEEP_DAYS))) delete d.days[k]
+    fs.writeFileSync(USAGE_FILE(), JSON.stringify(d))
+  } catch {
+    /* 기록 실패는 무시 */
+  }
+}
+
+// 오늘 · 최근 7일 · 최근 30일 합계와 최근 14일 날짜별 값
+ipcMain.handle('ai:usage', () => {
+  const d = readUsage()
+  const daysAgo = (n) => {
+    const t = new Date()
+    t.setDate(t.getDate() - n)
+    const p = (x) => String(x).padStart(2, '0')
+    return `${t.getFullYear()}-${p(t.getMonth() + 1)}-${p(t.getDate())}`
+  }
+  const empty = () => ({ runs: 0, web: 0, input: 0, output: 0 })
+  const sum = (from) => {
+    const out = { claude: empty(), gemini: empty() }
+    for (const [day, rows] of Object.entries(d.days)) {
+      if (day < from) continue
+      for (const p of ['claude', 'gemini']) {
+        const r = rows[p]
+        if (!r) continue
+        out[p].runs += r.runs || 0
+        out[p].web += r.web || 0
+        out[p].input += r.input || 0
+        out[p].output += r.output || 0
+      }
+    }
+    return out
+  }
+  const recent = Array.from({ length: 14 }, (_, i) => {
+    const day = daysAgo(13 - i)
+    const rows = d.days[day] || {}
+    return { day, claude: rows.claude || empty(), gemini: rows.gemini || empty() }
+  })
+  return { today: sum(daysAgo(0)), week: sum(daysAgo(6)), month: sum(daysAgo(29)), recent }
+})
+// 요금제 안내 · 공지 · 의견 보내기 주소: 사이트의 app-config.json 을 하루 한 번 받아 두고, 안 되면 앱에 든 기본값
+const CONFIG_URL = 'https://brothrone.github.io/Essay/app-config.json'
+const CONFIG_CACHE = () => path.join(app.getPath('userData'), 'app-config.json')
+const CONFIG_DEFAULT = () => JSON.parse(fs.readFileSync(path.join(__dirname, 'app-config-default.json'), 'utf8'))
+const validConfig = (c) => c && typeof c === 'object' && c.plans && typeof c.plans === 'object' && c.feedback && typeof c.feedback === 'object'
+ipcMain.handle('app:config', async () => {
+  let cached = null
+  try {
+    cached = JSON.parse(fs.readFileSync(CONFIG_CACHE(), 'utf8'))
+  } catch {
+    /* 처음 */
+  }
+  if (validConfig(cached?.config) && Date.now() - (cached.at || 0) < 24 * 3600 * 1000) return cached.config
+  try {
+    const r = await fetch(CONFIG_URL, { signal: AbortSignal.timeout(8000), cache: 'no-store' })
+    const c = r.ok ? await r.json() : null
+    if (validConfig(c)) {
+      fs.writeFileSync(CONFIG_CACHE(), JSON.stringify({ at: Date.now(), config: c }))
+      return c
+    }
+  } catch {
+    /* 오프라인 등 */
+  }
+  return validConfig(cached?.config) ? cached.config : CONFIG_DEFAULT()
+})
+
+ipcMain.handle('ai:usage-reset', () => {
+  try {
+    fs.rmSync(USAGE_FILE(), { force: true })
+  } catch {
+    /* 무시 */
+  }
+  return true
+})
+
 const GEMINI_LOGIN_ERROR =
   'Gemini 로그인이 필요해요. 홈의 [AI 연결하기] 카드에서 [로그인]을 눌러 브라우저 로그인 → 인증 코드 입력을 진행해 주세요.'
 
@@ -1342,7 +1463,9 @@ function runAi(sender, { prompt, model, web, provider }) {
         if (failed) return resolve({ ok: false, error: geminiErrorMessage(geminiError || final?.error?.message || err || `Gemini CLI가 결과 없이 끝났어요(종료 코드 ${code}).`) })
         if (!text) return resolve({ ok: false, error: geminiErrorMessage(err || 'Gemini CLI가 빈 답을 돌려줬어요.') })
         const used = initModel || model || 'gemini'
-        return resolve({ ok: true, text, seconds, model: used, models: [used] })
+        const usage = usageFrom('gemini', final)
+        recordUsage('gemini', usage, web)
+        return resolve({ ok: true, text, seconds, model: used, models: [used], usage })
       }
       if (cli === 'agy') {
         const d = final
@@ -1364,14 +1487,19 @@ function runAi(sender, { prompt, model, web, provider }) {
             error: 'Gemini(Antigravity CLI)가 웹 페이지를 읽을 권한이 없어요. 설정 → AI 설정에서 [웹 읽기 권한 허용]을 눌러 주세요.',
           })
         const used = initModel || model || 'gemini'
-        return resolve({ ok: true, text, seconds: Math.round(d.duration_seconds || seconds), model: used, models: [used] })
+        const usage = usageFrom('agy', d)
+        recordUsage('gemini', usage, web)
+        return resolve({ ok: true, text, seconds: Math.round(d.duration_seconds || seconds), model: used, models: [used], usage })
       }
       try {
         const d = final
         if (!d) throw new Error('no result')
         if (d.is_error) return resolve({ ok: false, error: claudeErrorMessage(d) })
+        const usage = usageFrom('claude', d)
+        recordUsage('claude', usage, web)
         resolve({
           ok: true,
+          usage,
           text: String(d.result || ''),
           seconds: Math.round((d.duration_ms || Date.now() - started) / 1000),
           // 여러 모델이 쓰였으면 출력을 가장 많이 만든 모델(실제로 글을 쓴 모델)을 보여 준다
@@ -1760,6 +1888,7 @@ function buildMenu() {
         { label: '예전 자소서 불러오기', click: send('app:import') },
         { label: '로그 폴더 열기', click: () => shell.openPath(app.getPath('logs')) },
         { type: 'separator' },
+        { label: '의견 보내기', click: send('app:feedback') },
         { label: 'Essay 정보', click: send('app:about') },
       ],
     },

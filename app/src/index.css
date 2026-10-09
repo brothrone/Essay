@@ -4932,3 +4932,122 @@ textarea:focus-visible {
   border: 1px dashed var(--border-strong);
   border-radius: 10px;
 }
+
+/* ---------- AI 사용량 · 요금제 안내 · 의견 보내기 ---------- */
+
+.usage-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+}
+
+.usage-table th,
+.usage-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+}
+
+.usage-table thead th {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-3);
+}
+
+.usage-table tbody th {
+  font-weight: 700;
+}
+
+.usage-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  height: 92px;
+  margin: 16px 0 8px;
+}
+
+.usage-bar {
+  position: relative;
+  display: flex;
+  flex: 1;
+  flex-direction: column-reverse;
+  justify-content: flex-start;
+  height: 100%;
+  padding-bottom: 18px;
+}
+
+.usage-bar i {
+  display: block;
+  width: 100%;
+  min-height: 0;
+  border-radius: 3px;
+}
+
+.usage-bar span {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 10.5px;
+  color: var(--text-3);
+}
+
+.usage-bar .c,
+.usage-legend .c {
+  background: #d97757;
+}
+
+.usage-bar .g,
+.usage-legend .g {
+  background: var(--primary);
+}
+
+.usage-legend i {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  margin: 0 3px 0 6px;
+  border-radius: 2px;
+  vertical-align: middle;
+}
+
+.usage-legend .link-btn {
+  margin-right: 10px;
+}
+
+.plan-notes {
+  margin: 14px 0 6px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-2);
+  font-size: 13.5px;
+}
+
+.plan-notes ul {
+  margin: 6px 0 0;
+  padding-left: 18px;
+}
+
+.plan-notes li {
+  margin: 3px 0;
+}
+
+.feedback {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.feedback textarea {
+  width: 100%;
+  resize: vertical;
+}
+
+.check-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+}

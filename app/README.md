@@ -45,10 +45,10 @@
 
 | | Claude | Gemini |
 | --- | --- | --- |
-| 쓰는 CLI | Claude Code (`claude`) | Antigravity CLI (`agy`) → 없으면 Gemini CLI (`gemini`) |
+| 쓰는 CLI | Claude Code (`claude`) | Antigravity CLI (`agy`) (Gemini CLI `gemini` 는 2026-06-18부터 개인 계정 불가, 이미 설치된 경우만 대신 씀) |
 | 설치 (PowerShell) | `irm https://claude.ai/install.ps1 \| iex` | `irm https://antigravity.google/cli/install.ps1 \| iex` 또는 `npm install -g @google/gemini-cli` |
 | 로그인 | `claude auth login --claudeai` (구독 계정, Console 아님) | `agy` 실행 → 브라우저 로그인 / `gemini` 실행 → Login with Google |
-| 차감 | Claude Pro·Max 사용량 | Google AI Pro·Ultra 또는 Google 계정 무료 한도 |
+| 차감 | Claude Pro·Max 사용량 | Google AI Pro·Ultra 또는 무료 Google 계정 한도 |
 | 웹 기능(맞춤 공고 · 공고 불러오기) | 바로 됨 | agy: AI 설정에서 **[웹 읽기 권한 허용]** 한 번 / gemini: 바로 됨 |
 
 - 글쓰기는 도구를 끈 채, 웹 기능은 검색·페이지 읽기만 허용한 채 빈 임시 폴더(`%TEMP%\essay-ai`)에서 실행합니다. 내 파일을 읽거나 바꾸지 않습니다.
@@ -76,7 +76,7 @@
 | 예전 자소서 불러오기 | 지금까지 쓴 자소서·이력서(txt·md·docx 또는 붙여넣기)를 AI가 읽어 **경험(STAR) · 스펙 · 희망 직무/스킬 · 과거 자소서 답변**을 자동으로 채우고, 학력·직무로 **맞춤 공고 조건**을 잡아 바로 검색 |
 | 백업 | 백업 파일 저장/불러오기, **자동백업에서 복원**(일별 30일치 + 예시/불러오기/삭제/복원 직전 스냅샷 20개, 목록에서 한 번에 되돌리기) |
 | 데이터 | 저장된 데이터 요약과 파일 위치, 데이터·로그 폴더 열기, 예전 자소서 불러오기, 예시 데이터, 전체 초기화 |
-| 설정 | 화면 테마, AI 설정, 업데이트, Essay 정보 |
+| 설정 | 화면 테마, AI 설정(필요한 계정 안내는 사이트의 `app-config.json` 으로 갱신), **AI 사용량**(Essay 가 쓴 토큰 · 오늘/7일/30일 · 14일 막대), 업데이트, Essay 정보, **의견 보내기**(GitHub 이슈 · 설문지) |
 
 개발자: **brothrone** (제목 표시줄 ⓘ 또는 설정 맨 아래에서 볼 수 있어요)
 

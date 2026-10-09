@@ -1,7 +1,10 @@
-import { BookOpen, Bot, CircleHelp, Info, Monitor, Moon, Sun } from 'lucide-react'
+import { BookOpen, Bot, CircleHelp, Info, MessageSquareHeart, Monitor, Moon, Sun } from 'lucide-react'
 import { useState } from 'react'
 import { AboutContent } from '../components/AboutDialog'
 import { AiSetup } from '../components/AiSetup'
+import { AiUsageCard } from '../components/AiUsageCard'
+import { openFeedbackDialog } from '../components/FeedbackDialog'
+import { useAppConfig } from '../useAppConfig'
 import { openHelpDialog } from '../components/HelpDialog'
 import { UpdateCard } from '../components/UpdateBanner'
 import { openWelcomeDialog } from '../components/WelcomeDialog'
@@ -27,6 +30,8 @@ export function Settings() {
 
       <AiSettings />
 
+      <AiUsageCard />
+
       <UpdateCard />
 
       <section className="card">
@@ -36,6 +41,11 @@ export function Settings() {
           </h3>
         </header>
         <AboutContent />
+        <div className="btn-row">
+          <button type="button" className="btn small" onClick={openFeedbackDialog}>
+            <MessageSquareHeart size={14} /> 의견 보내기
+          </button>
+        </div>
       </section>
     </div>
   )
@@ -121,9 +131,31 @@ function AiSettings() {
           <CircleHelp size={14} /> 도움말 ({IS_MAC ? '⌘/' : 'F1'})
         </button>
       </div>
+      <PlanNotes />
       <p className="muted small">
         설치 경로가 특이하면 환경 변수 ESSAY_CLAUDE_PATH · ESSAY_AGY_PATH · ESSAY_GEMINI_PATH 에 실행 파일 전체 경로를 넣어 주세요.
       </p>
     </section>
+  )
+}
+
+/** 어떤 계정으로 어떤 AI 를 쓸 수 있는지 (사이트의 app-config.json 으로 갱신) */
+function PlanNotes() {
+  const config = useAppConfig()
+  if (!config) return null
+  const rows = [config.plans.agy, config.plans.claude, config.plans['gemini-free']]
+  return (
+    <div className="plan-notes">
+      <strong>필요한 계정 · {config.checkedAt.replaceAll('-', '.')} 기준</strong>
+      {config.notice && <p className="ai-hint">{config.notice}</p>}
+      <ul>
+        {rows.map((r) => (
+          <li key={r.name}>
+            <b>{r.name}</b> · {r.need}
+            {r.note && <span className="muted small"> — {r.note}</span>}
+          </li>
+        ))}
+      </ul>
+    </div>
   )
 }

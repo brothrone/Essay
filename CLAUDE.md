@@ -47,6 +47,6 @@ npx vite build              # 화면 빌드
 ## 남은 일 (사용자가 나중에 다시 알려 달라고 한 것)
 1. 맥 서명 · 공증 (Apple Developer Program 가입 뒤 — 그러면 Gatekeeper 안내가 사라지고 맥 자동 업데이트도 켤 수 있다) — `guides/맥-작업-안내.md`
 2. 유료 판매(개당 990원): 사업자 등록, PG(나이스체크아웃 검토: 가입비 면제 프로모션, 수수료 1.9~3.4%, 코드 NICE27 시 2.7%, 결제 후 키 자동 발송 없음), 통신판매업 신고, 환불 제한 표시 + 체험판, 사이트 하단 사업자 정보 표시(익명 유지와 충돌하니 상호로)
-3. AI별 토큰 사용량 표시
-4. 요금제별 CLI 사용 가능 여부 주기적 재확인 (Claude 는 Pro · Max, Antigravity CLI 는 무료 Google 계정도 가능 — 2026-10 기준)
-5. 앱 안 피드백 보내기 (지금은 Web3Forms · Google 설문지, 유료 판매 땐 Cloudflare Workers 로 피드백 · 결제 확인 · 라이선스 키를 함께)
+3. (완료 1.6.0) AI별 토큰 사용량 표시 — `ai-usage.json`(userData), 설정의 [AI 사용량]
+4. 요금제별 CLI 사용 가능 여부 주기적 재확인 — 결과는 `docs/app-config.json`(앱이 하루 한 번 받아 설정 · 처음 안내에 표시, 기본값은 `app/electron/app-config-default.json`)만 고쳐 push 하면 앱 재배포 없이 바뀐다. 2026-10-09 기준: Claude Code 는 Pro · Max(무료 불가), Antigravity CLI 는 무료 Google 계정도 가능(한도 작음), Gemini CLI 는 2026-06-18부터 개인 계정 불가. agy 를 다른 앱에서 실행하는 것이 Antigravity 약관상 괜찮은지는 Google 공식 답이 없음
+5. (완료 1.6.0) 앱 안 의견 보내기 — 도움말 메뉴 · 설정 · F1 도움말. GitHub 이슈 작성 화면을 내용이 채워진 채로 열고, `app-config.json` 의 `feedback.formUrl` 에 Google 설문지 주소를 넣으면 [설문지로 보내기]도 생긴다. 유료 판매 땐 Cloudflare Workers 로 피드백 · 결제 확인 · 라이선스 키를 함께

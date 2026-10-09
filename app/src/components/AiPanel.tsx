@@ -20,10 +20,10 @@ import { toast } from '../toast'
 import type { Experience, Project, Question } from '../types'
 import { noteAiResult } from '../useAiStatus'
 import { AI_MODELS, AI_PROVIDERS, saveAiModel, saveAiProvider, savedAiModel, savedAiProvider } from '../useAiTask'
-import { copyText, countChars } from '../utils'
+import { copyText, countChars, fmtTokens } from '../utils'
 
 type Kind = 'draft' | 'feedback' | 'fit' | 'revise' | 'interview' | 'gap'
-type Result = { kind: Kind; answer: string; note: string; seconds: number; model: string }
+type Result = { kind: Kind; answer: string; note: string; seconds: number; model: string; tokens: number }
 
 const RUNNING_LABEL: Record<Kind, string> = {
   draft: '초안을 쓰는',
@@ -107,7 +107,7 @@ export function AiPanel({
       return
     }
     const parsed = kind === 'feedback' || kind === 'interview' || kind === 'gap' ? { answer: r.text.trim(), note: '' } : parseAiAnswer(r.text)
-    setResult({ kind, ...parsed, seconds: r.seconds, model: r.model })
+    setResult({ kind, ...parsed, seconds: r.seconds, model: r.model, tokens: r.usage ? r.usage.input + r.usage.output : 0 })
   }
 
   const apply = () => {
@@ -469,6 +469,7 @@ function AnswerResult({
         </strong>
         <span className="muted small">
           {result.seconds}초{result.model ? ` · ${result.model}` : ''}
+          {result.tokens ? ` · ${fmtTokens(result.tokens)} 토큰` : ''}
         </span>
       </div>
       <div className="ai-result-text">{result.answer}</div>

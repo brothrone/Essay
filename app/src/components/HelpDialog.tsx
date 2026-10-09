@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { desktop } from '../desktop'
 import { IS_MAC, PASTE_HINT, TERMINAL } from '../platform'
 import { toast } from '../toast'
+import { openFeedbackDialog } from './FeedbackDialog'
 import { Modal } from './ui'
 
 type Listener = () => void
@@ -160,16 +161,6 @@ const COMMANDS: { title: string; lines: { cmd: string; note?: string }[] }[] = [
     ],
   },
   {
-    title: 'Gemini 무료 (Gemini CLI) · Node.js가 먼저 필요',
-    lines: [
-      IS_MAC
-        ? { cmd: 'brew install node', note: 'Node.js 설치 (Homebrew 가 없으면 nodejs.org 에서 받으세요)' }
-        : { cmd: 'winget install --id OpenJS.NodeJS.LTS -e', note: 'Node.js 설치 (끝나면 창을 새로 여세요)' },
-      { cmd: 'npm install -g @google/gemini-cli', note: '설치' },
-      { cmd: 'gemini', note: '"Login with Google" 선택 → 브라우저 로그인 → /quit' },
-    ],
-  },
-  {
     title: '설치됐는지 확인',
     lines: [
       { cmd: 'agy --version', note: '버전 숫자가 나오면 설치된 거예요' },
@@ -219,6 +210,16 @@ export function HelpContent() {
             ))}
           </div>
         ))}
+      </section>
+
+      <section className="help-group">
+        <h3>그래도 안 되면</h3>
+        <p className="muted small">어떤 화면에서 무엇을 했는지 적어 보내 주시면 고쳐 드려요.</p>
+        <div className="btn-row">
+          <button type="button" className="btn small" onClick={openFeedbackDialog}>
+            의견 보내기
+          </button>
+        </div>
       </section>
     </div>
   )

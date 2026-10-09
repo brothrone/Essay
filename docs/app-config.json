@@ -1,0 +1,25 @@
+{
+  "checkedAt": "2026-10-09",
+  "plans": {
+    "agy": {
+      "name": "Gemini",
+      "need": "Google AI Pro · Ultra 구독",
+      "note": "Antigravity CLI(agy). 5시간마다 한도가 다시 차고 주간 상한이 있어요."
+    },
+    "claude": {
+      "name": "Claude",
+      "need": "Claude Pro · Max 구독",
+      "note": "Claude Code. 무료 Claude 계정은 쓸 수 없어요. 5시간 · 주간 한도를 Claude 앱과 같이 써요. Console(API) 계정으로 로그인하면 요금이 나가니 구독 계정으로 로그인하세요."
+    },
+    "gemini-free": {
+      "name": "Gemini 무료",
+      "need": "무료 Google 계정 · 한도 작음",
+      "note": "Antigravity CLI(agy)를 무료 Google 계정으로 로그인해 써요. 예전 Gemini CLI(gemini)는 2026-06-18부터 개인 계정으로 쓸 수 없어요."
+    }
+  },
+  "notice": "",
+  "feedback": {
+    "formUrl": "",
+    "issuesUrl": "https://github.com/brothrone/Essay/issues/new"
+  }
+}

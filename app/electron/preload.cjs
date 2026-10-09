@@ -15,6 +15,8 @@ contextBridge.exposeInMainWorld('desktop', {
   onImport: on('app:import'),
   onWelcome: on('app:welcome'),
   onHelp: on('app:help'),
+  onFeedback: on('app:feedback'),
+  appConfig: () => ipcRenderer.invoke('app:config'),
   loadData: () => ipcRenderer.sendSync('data:load'),
   saveData: (json) => ipcRenderer.invoke('data:save', json),
   saveDataSync: (json) => ipcRenderer.sendSync('data:save-sync', json),
@@ -62,6 +64,8 @@ contextBridge.exposeInMainWorld('desktop', {
     geminiLoginStatus: () => ipcRenderer.invoke('ai:gemini-login-status'),
     sendAuthCode: (code) => ipcRenderer.invoke('ai:auth-code', code),
     cancel: () => ipcRenderer.invoke('ai:cancel'),
+    usage: () => ipcRenderer.invoke('ai:usage'),
+    usageReset: () => ipcRenderer.invoke('ai:usage-reset'),
     onProgress: on('ai:progress'),
   },
 })

@@ -11,6 +11,7 @@ import { openHelpDialog } from './HelpDialog'
 import { openImportDialog } from './ImportModal'
 import { Logo } from './Logo'
 import { Modal } from './ui'
+import { useAppConfig } from '../useAppConfig'
 
 const DONE_KEY = 'essay/welcome-done'
 
@@ -59,12 +60,13 @@ type AiChoice = 'agy' | 'claude' | 'gemini-free'
 const CHOICES: { value: AiChoice; provider: AiProvider; name: string; need: string }[] = [
   { value: 'agy', provider: 'gemini', name: 'Gemini', need: 'Google AI Pro · Ultra 구독' },
   { value: 'claude', provider: 'claude', name: 'Claude', need: 'Claude Pro · Max 구독' },
-  { value: 'gemini-free', provider: 'gemini', name: 'Gemini 무료', need: 'Google 계정 · 무료 한도' },
+  { value: 'gemini-free', provider: 'gemini', name: 'Gemini 무료', need: '무료 Google 계정 · 한도 작음' },
 ]
 
 const STEP_LABELS = ['소개', 'AI', '연결', '내 자소서']
 
 function WelcomeWizard({ onClose }: { onClose: () => void }) {
+  const config = useAppConfig()
   const [step, setStep] = useState(0)
   // 여러 개 골라도 된다. 먼저 고른 것이 홈의 기본 AI
   const [choices, setChoices] = useState<AiChoice[]>(() => [savedAiProvider() === 'claude' ? 'claude' : 'agy'])
@@ -172,7 +174,7 @@ function WelcomeWizard({ onClose }: { onClose: () => void }) {
                 <span className="ai-choice-radio check">{choices.includes(c.value) && <Check size={12} strokeWidth={3} />}</span>
                 <span className="ai-choice-text">
                   <strong>{c.name}</strong>
-                  <span>{c.need}</span>
+                  <span>{config?.plans[c.value]?.need || c.need}</span>
                 </span>
               </button>
             ))}
@@ -188,7 +190,7 @@ function WelcomeWizard({ onClose }: { onClose: () => void }) {
         <div className="welcome">
           <p className="muted">
             위에서부터 차례로 누르세요.
-            {choices.includes('gemini-free') && !choices.includes('agy') && <> 무료로 쓰려면 Gemini CLI 설치를 고르세요.</>}
+            {choices.includes('gemini-free') && <> 무료 Google 계정도 Antigravity CLI 로 로그인하면 돼요.</>}
           </p>
           {providers.map((p) => (
             <AiSetup key={p} provider={p} status={status} checking={checking} refresh={refresh} title={p === 'claude' ? 'Claude' : 'Gemini'} />

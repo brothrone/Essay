@@ -57,6 +57,13 @@ export function fmtPeriod(start: string, end: string) {
   return `${fmtYm(start)} ~ ${end ? fmtYm(end) : '현재'}`
 }
 
+/** 토큰 수를 짧게: 950 · 12.3천 · 1.2백만 */
+export function fmtTokens(n: number) {
+  if (n < 1000) return n.toLocaleString()
+  if (n < 1_000_000) return `${(n / 1000).toFixed(n < 10_000 ? 1 : 0)}천`
+  return `${(n / 1_000_000).toFixed(1)}백만`
+}
+
 export function fmtDateTime(ts: number) {
   const d = new Date(ts)
   const p = (n: number) => String(n).padStart(2, '0')

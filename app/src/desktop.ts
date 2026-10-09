@@ -11,6 +11,10 @@ export interface DesktopBridge {
   onWelcome: (fn: () => void) => () => void
   /** 도움말 메뉴(F1) → 문제 해결 */
   onHelp: (fn: () => void) => () => void
+  /** 도움말 메뉴 → 의견 보내기 */
+  onFeedback: (fn: () => void) => () => void
+  /** 요금제 안내 · 공지 · 의견 보내기 주소 (사이트에서 하루 한 번 갱신) */
+  appConfig: () => Promise<AppConfig>
   loadData: () => string | null
   saveData: (json: string) => Promise<void>
   saveDataSync: (json: string) => boolean
@@ -73,7 +77,24 @@ export interface DesktopBridge {
     /** 브라우저에 뜬 인증 코드를 로그인 콘솔 창에 대신 입력 */
     sendAuthCode: (code: string) => Promise<{ ok: boolean; error?: string }>
     onProgress: (fn: (p: AiProgress) => void) => () => void
+    /** 이 컴퓨터에서 Essay 가 쓴 AI 토큰 합계 (오늘 · 7일 · 30일, 최근 14일 날짜별) */
+    usage: () => Promise<AiUsageSummary>
+    usageReset: () => Promise<boolean>
   }
+}
+
+export interface PlanInfo {
+  name: string
+  need: string
+  note: string
+}
+export interface AppConfig {
+  /** 요금제 조건을 마지막으로 확인한 날 (YYYY-MM-DD) */
+  checkedAt: string
+  plans: Record<'agy' | 'claude' | 'gemini-free', PlanInfo>
+  /** 앱 안에 띄울 공지 (비어 있으면 안 띄움) */
+  notice: string
+  feedback: { formUrl: string; issuesUrl: string }
 }
 
 export interface BackupFile {
@@ -144,8 +165,18 @@ export type AiProgress = {
   auth?: { url: string; timeout: number }
 }
 
+export type TokenUsage = { input: number; output: number }
+export type UsageRow = { runs: number; web: number; input: number; output: number }
+export type UsageByProvider = Record<AiProvider, UsageRow>
+export interface AiUsageSummary {
+  today: UsageByProvider
+  week: UsageByProvider
+  month: UsageByProvider
+  recent: ({ day: string } & UsageByProvider)[]
+}
+
 export type AiResult =
-  | { ok: true; text: string; seconds: number; model: string }
+  | { ok: true; text: string; seconds: number; model: string; usage?: TokenUsage | null }
   | { ok: false; error: string; cancelled?: boolean; code?: string }
 
 declare global {

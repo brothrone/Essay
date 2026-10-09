@@ -9,7 +9,7 @@ export const AI_PREFS_EVENT = 'essay:ai-prefs'
 
 export const AI_PROVIDERS: { value: AiProvider; label: string; short: string; cli: string }[] = [
   { value: 'claude', label: 'Claude (Claude Code · Claude 구독)', short: 'Claude 구독', cli: 'claude' },
-  { value: 'gemini', label: 'Gemini (Antigravity CLI 또는 Gemini CLI · Google 계정)', short: 'Gemini', cli: 'agy 또는 gemini' },
+  { value: 'gemini', label: 'Gemini (Antigravity CLI · Google 계정)', short: 'Gemini', cli: 'agy 또는 gemini' },
 ]
 
 export const AI_MODELS: Record<AiProvider, { value: string; label: string }[]> = {
