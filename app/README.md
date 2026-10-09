@@ -24,7 +24,7 @@
 | AI 도구 찾기 | `zsh -lc` 로 읽은 로그인 셸 PATH + `~/.local/bin` · `/opt/homebrew/bin` · `/usr/local/bin` |
 | 설치 · 로그인 | 설치는 공식 셸 스크립트(`curl … \| bash`)를 앱 안에서 실행, 터미널 작업은 `.command` 파일을 터미널 앱으로 열기. Gemini(agy) 로그인은 `/usr/bin/expect` 가상 터미널로 agy 를 띄우고 Essay 창에 붙여넣은 코드를 그 터미널에 입력 |
 | 업데이트 | 애플 서명이 없어 자동 교체는 안 됨. GitHub 최신 릴리스를 확인해 새 버전이 있으면 "다운로드" 띠를 띄움 |
-| 빌드 | `npm run app:build:mac` → `release/Essay-<버전>-mac-universal.dmg` · `.zip` (Apple Silicon · Intel 공용, ad-hoc 서명) |
+| 빌드 | `npm run app:build:mac` → `release/Essay-<버전>-mac-arm64.dmg` · `-x64.dmg` (ad-hoc 서명, 한국어 · 영어 언어 파일만, bzip2 압축 dmg) |
 
 ## 윈도우 전용으로 되어 있는 것
 
@@ -88,8 +88,8 @@ npm run dev              # Vite 개발 서버 + Electron 창 (저장하면 바�
 npm run start            # 빌드 후 Electron으로 실행
 npm run app:build        # release\Essay-Setup-<버전>.exe (NSIS 설치 파일)
 npm run app:build:dir    # release\win-unpacked\Essay.exe (설치 없이 실행 확인용)
-npm run app:build:mac    # 맥: release/Essay-<버전>-mac-universal.dmg · .zip
-npm run app:build:mac:dir   # 맥: release/mac-universal/Essay.app (실행 확인용)
+npm run app:build:mac    # 맥: release/Essay-<버전>-mac-arm64.dmg · -x64.dmg
+npm run app:build:mac:dir   # 맥: release/mac-arm64/Essay.app (실행 확인용)
 npm run installer:art    # 설치 화면 그림(build\installerSidebar.bmp, installerHeader.bmp) 다시 그리기
 ```
 

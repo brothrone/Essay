@@ -4,7 +4,7 @@ AI와 함께 자소서를 쓰는 데스크톱 앱이에요 (Windows 10/11 · mac
 
 ## 설치
 
-**[최신 설치 파일 받기](https://brothrone.github.io/Essay/)** — Windows 는 `Essay-Setup-x.y.z.exe`, Mac 은 `Essay-x.y.z-mac-universal.dmg` (GitHub Releases 에도 같은 파일이 있어요)
+**[최신 설치 파일 받기](https://brothrone.github.io/Essay/)** — Windows 는 `Essay-Setup-x.y.z.exe`, Mac 은 `Essay-x.y.z-mac-arm64.dmg`(Apple Silicon) 또는 `-x64.dmg`(Intel) (GitHub Releases 에도 같은 파일이 있어요)
 
 **Windows**
 1. 받은 `Essay-Setup-x.y.z.exe` 를 더블클릭하세요.

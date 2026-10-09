@@ -1,7 +1,7 @@
 {
   "name": "essay",
   "private": true,
-  "version": "1.4.0",
+  "version": "1.4.1",
   "type": "module",
   "description": "자소서 · 스펙 관리 데스크톱 앱 (윈도우 · 맥)",
   "author": "brothrone",
@@ -66,13 +66,8 @@
         {
           "target": "dmg",
           "arch": [
-            "universal"
-          ]
-        },
-        {
-          "target": "zip",
-          "arch": [
-            "universal"
+            "arm64",
+            "x64"
           ]
         }
       ],
@@ -88,7 +83,13 @@
       "extendInfo": {
         "CFBundleDisplayName": "Essay",
         "NSHumanReadableCopyright": "© brothrone"
-      }
+      },
+      "electronLanguages": [
+        "ko",
+        "en",
+        "en_GB",
+        "en_US"
+      ]
     },
     "dmg": {
       "title": "Essay ${version}",
@@ -108,7 +109,8 @@
       "window": {
         "width": 540,
         "height": 380
-      }
+      },
+      "format": "UDBZ"
     },
     "win": {
       "target": [

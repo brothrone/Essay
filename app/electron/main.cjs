@@ -1782,7 +1782,9 @@ async function checkMacUpdate() {
     if (!r.ok) throw new Error(`GitHub ${r.status}`)
     const rel = await r.json()
     const version = String(rel.tag_name || '').replace(/^v/, '')
-    const dmg = (rel.assets || []).find((a) => /\.dmg$/i.test(a.name))
+    // 내 맥에 맞는 파일(arm64 = Apple Silicon, x64 = Intel)을 고르고, 없으면 아무 dmg 나
+    const dmgs = (rel.assets || []).filter((a) => /\.dmg$/i.test(a.name))
+    const dmg = dmgs.find((a) => a.name.includes(`-${process.arch}`)) || dmgs[0]
     if (version && newerThan(version, app.getVersion()))
       setUpdateStatus({ state: 'available', version, manual: true, url: dmg?.browser_download_url || rel.html_url || RELEASES_PAGE })
     else setUpdateStatus({ state: 'none', version: app.getVersion() })

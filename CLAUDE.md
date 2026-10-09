@@ -28,7 +28,7 @@ npx tsc -b                  # 타입 검사
 npx oxlint src electron     # 코드 검사
 npx vite build              # 화면 빌드
 ```
-- 배포: `package.json` version 올리기 → `scripts/release.sh`(맥에서 맥 + 윈도우 파일을 한 번에, `--mac-only` 가능) 또는 `scripts/release.ps1`(윈도우 파일만). GitHub Releases `brothrone/Essay` 의 **같은 태그 `v<버전>`** 에 윈도우(`Essay-Setup-<버전>.exe` · `.blockmap` · `latest.yml`) 와 맥(`Essay-<버전>-mac-universal.dmg` · `.zip` · `latest-mac.yml`) 파일이 함께 있어야 한다. `latest.yml` 이 없으면 윈도우 자동 업데이트가 멈춘다.
+- 배포: `package.json` version 올리기 → `scripts/release.sh`(맥에서 맥 + 윈도우 파일을 한 번에, `--mac-only` 가능) 또는 `scripts/release.ps1`(윈도우 파일만). GitHub Releases `brothrone/Essay` 의 **같은 태그 `v<버전>`** 에 윈도우(`Essay-Setup-<버전>.exe` · `.blockmap` · `latest.yml`) 와 맥(`Essay-<버전>-mac-arm64.dmg` · `-x64.dmg`) 파일이 함께 있어야 한다. `latest.yml` 이 없으면 윈도우 자동 업데이트가 멈춘다.
 - 맥은 애플 개발자 서명이 없어 ad-hoc 서명만 한다(`scripts/after-pack.cjs`). 그래서 맥 자동 업데이트(Squirrel)는 쓰지 않고 GitHub 최신 릴리스를 확인해 "새 버전 → 다운로드" 띠만 띄운다(`checkMacUpdate`). 처음 열 때 Gatekeeper 안내가 뜨는 건 정상(시스템 설정 → 개인정보 보호 및 보안 → 그래도 열기).
 - 토큰: `gh auth token`, 없으면 Git Credential Manager (`"protocol=https\nhost=github.com\n\n" | git credential-manager get`).
 
