@@ -13,3 +13,6 @@ app/release/
 *.log
 .DS_Store
 Thumbs.db
+
+# 맥북으로 옮길 작업본 (이 PC에서만 만드는 복사본)
+/mac/
