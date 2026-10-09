@@ -17,14 +17,15 @@ export function AuthCodeDialog() {
   const [open, setOpen] = useState(false)
   const [code, setCode] = useState('')
   const [sending, setSending] = useState(false)
-  const [sent, setSent] = useState(false)
+  // 보낸 코드. 칸의 코드가 이것과 같으면 버튼은 초록색 '코드 보냄'으로 잠긴다 (코드를 고치면 다시 보낼 수 있다)
+  const [sentCode, setSentCode] = useState('')
   const [elapsed, setElapsed] = useState(0)
   const [failed, setFailed] = useState('')
 
   useEffect(() => {
     const l = () => {
       setCode('')
-      setSent(false)
+      setSentCode('')
       setFailed('')
       setElapsed(0)
       setOpen(true)
@@ -49,6 +50,7 @@ export function AuthCodeDialog() {
         window.dispatchEvent(new Event('focus')) // 상태 카드가 다시 확인하도록
       } else if (s.result && !/^exit 0/.test(s.result)) {
         setFailed('로그인 창이 성공하지 못하고 끝났어요. [로그인]을 다시 눌러 새 창에서 시도해 주세요.')
+        setSentCode('')
       }
     }, 2000)
     return () => clearInterval(id)
@@ -56,15 +58,17 @@ export function AuthCodeDialog() {
 
   if (!open) return null
 
+  const sent = !!sentCode && sentCode === code.trim()
+
   const submit = async (e: FormEvent) => {
     e.preventDefault()
     const c = code.trim()
-    if (!c) return
+    if (!c || c === sentCode) return
     setSending(true)
     const r = await desktop.ai.sendAuthCode(c)
     setSending(false)
     if (r.ok) {
-      setSent(true)
+      setSentCode(c)
       toast('로그인 창에 코드를 입력했어요. 확인 중…')
     } else toast(r.error || '코드를 보내지 못했어요')
   }
@@ -76,7 +80,7 @@ export function AuthCodeDialog() {
       footer={
         <>
           <span className="muted small mr-auto">
-            {sent ? (
+            {sentCode ? (
               <>
                 <LoaderCircle size={12} className="spin" /> 로그인 확인 중… {elapsed}초
               </>
@@ -87,9 +91,15 @@ export function AuthCodeDialog() {
           <button type="button" className="btn ghost" onClick={() => setOpen(false)}>
             닫기
           </button>
-          <button type="submit" form="auth-code-form" className="btn primary" disabled={!code.trim() || sending}>
-            {sending ? <LoaderCircle size={16} className="spin" /> : <KeyRound size={16} />} 코드 보내기
-          </button>
+          {sent ? (
+            <button type="button" className="btn sent" disabled aria-label="코드를 보냈어요">
+              <Check size={16} strokeWidth={3} /> 코드 보냄
+            </button>
+          ) : (
+            <button type="submit" form="auth-code-form" className="btn primary" disabled={!code.trim() || sending}>
+              {sending ? <LoaderCircle size={16} className="spin" /> : <KeyRound size={16} />} {sentCode ? '다시 보내기' : '코드 보내기'}
+            </button>
+          )}
         </>
       }
     >
@@ -116,7 +126,7 @@ export function AuthCodeDialog() {
           autoComplete="off"
         />
       </form>
-      {sent && (
+      {sentCode && (
         <p className="import-ok" style={{ marginTop: 10 }}>
           <Check size={14} /> 보냈어요. 20초가 지나도 안 끝나면 작업 표시줄의 "Essay 로그인 창"을 열어 마우스 오른쪽 클릭(붙여넣기) → Enter 를 눌러 주세요.
         </p>

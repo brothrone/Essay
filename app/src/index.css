@@ -294,6 +294,16 @@ textarea:focus-visible {
   background: var(--primary-hover);
 }
 
+/* 끝난 동작 표시 (예: Gemini 로그인 '코드 보냄'): 눌리지 않지만 흐리게 하지 않는다 */
+.btn.sent,
+.btn.sent:disabled {
+  background: #16a34a;
+  border-color: #16a34a;
+  color: #fff;
+  opacity: 1;
+  cursor: default;
+}
+
 .btn.ghost {
   border-color: transparent;
   background: transparent;
