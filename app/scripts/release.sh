@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Essay 맥 버전 배포 (맥에서 실행): 맥 설치 파일(Apple Silicon · Intel dmg)을 만들어 GitHub Releases(brothrone/Essay) 에 올린다.
+# Essay 맥 버전 배포 (맥에서 실행): 맥 설치 파일(Apple Silicon dmg, Intel 맥은 지원 안 함)을 만들어 GitHub Releases(brothrone/Essay) 에 올린다.
 # 설치된 맥 앱은 새 dmg 를 스스로 받아 다시 시작할 때 바꾼다.
 # 윈도우 파일은 여기서 만들지 않는다 — 윈도우 PC 에서 scripts/release.ps1 로 같은 버전(태그 v<버전>)에 올린다.
 #
@@ -9,7 +9,7 @@
 #   3) ./scripts/release.sh                 # 맥 빌드 + 릴리스 업로드
 #      ./scripts/release.sh --no-publish    # 빌드만 (release/ 에 파일만)
 #   토큰: 환경변수 GH_TOKEN 이 없으면 `gh auth token` 에서 가져온다 (gh auth login 이 돼 있어야 함). 업로드는 gh 로 한다.
-#   끝나면 릴리스에 Essay-<버전>-mac-arm64.dmg · Essay-<버전>-mac-x64.dmg · latest-mac.yml(해시 확인용) 이 올라간다.
+#   끝나면 릴리스에 Essay-<버전>-mac-arm64.dmg · latest-mac.yml(해시 확인용) 이 올라간다.
 #   윈도우 PC 가 아직 같은 버전을 올리지 않았으면 그 사이 윈도우 앱의 업데이트 확인은 '확인 실패'가 될 수 있다(올리면 풀린다).
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -58,7 +58,7 @@ upload() {
   done
   return 1
 }
-# 맥 파일 (arch 는 package.json 의 build.mac 설정을 따른다 — Apple Silicon 용 arm64 와 Intel 용 x64 dmg 따로)
+# 맥 파일 (arch 는 package.json 의 build.mac 설정을 따른다 — Apple Silicon 용 arm64 dmg 만)
 npx electron-builder --mac --publish never
 upload release/Essay-"$VERSION"-mac-*.dmg release/Essay-"$VERSION"-mac-*.dmg.blockmap release/latest-mac.yml
 
