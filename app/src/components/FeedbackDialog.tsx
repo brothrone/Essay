@@ -38,8 +38,8 @@ const KINDS = [
 type Kind = (typeof KINDS)[number]['value']
 
 /**
- * 의견 보내기: Essay 서버가 켜져 있으면 [보내기]로 바로 보낸다(계정 없이, 공개되지 않음).
- * 서버가 없거나 원하면 GitHub 이슈(또는 설문지)를 내용이 채워진 채로 브라우저에서 연다
+ * 의견 보내기: Essay 서버가 켜져 있으면 [보내기]로만 보낸다(계정 없이, 공개되지 않음).
+ * 서버가 꺼져 있을 때만 GitHub 이슈(또는 설문지)를 내용이 채워진 채로 브라우저에서 연다
  */
 function FeedbackDialog({ onClose }: { onClose: () => void }) {
   const config = useAppConfig()
@@ -91,14 +91,16 @@ function FeedbackDialog({ onClose }: { onClose: () => void }) {
           <button type="button" className="btn ghost mr-auto" disabled={!text.trim()} onClick={copy}>
             <Copy size={16} /> 내용 복사
           </button>
-          {formUrl && (
+          {!direct && formUrl && (
             <button type="button" className="btn" disabled={!text.trim()} onClick={openForm}>
               <ExternalLink size={16} /> 설문지로 보내기
             </button>
           )}
-          <button type="button" className={direct ? 'btn' : 'btn primary'} disabled={!text.trim()} onClick={openIssue}>
-            <ExternalLink size={16} /> {direct ? 'GitHub에 올리기' : 'GitHub로 보내기'}
-          </button>
+          {!direct && (
+            <button type="button" className="btn primary" disabled={!text.trim()} onClick={openIssue}>
+              <ExternalLink size={16} /> GitHub로 보내기
+            </button>
+          )}
           {direct && (
             <button type="button" className="btn primary" disabled={!text.trim() || sending} onClick={send}>
               {sending ? <LoaderCircle size={16} className="spin" /> : <Send size={16} />} 보내기
@@ -146,7 +148,7 @@ function FeedbackDialog({ onClose }: { onClose: () => void }) {
         </label>
         {direct ? (
           <p className="muted small">
-            [보내기]는 계정 없이 개발자에게만 보내져요(공개되지 않아요). [GitHub에 올리기]는 GitHub 이슈 작성 화면을 내용이 채워진 채로 열어요(계정 필요, 글이 공개돼요).
+            계정 없이 개발자에게만 보내져요. 다른 사람에게는 공개되지 않아요.
           </p>
         ) : (
         <p className="muted small">
