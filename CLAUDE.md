@@ -1,0 +1,50 @@
+# Essay — Claude Code 작업 규칙
+
+자소서 · 스펙 관리 데스크톱 앱 (Electron 44 + React 19 + Vite 8 + TypeScript). 지금은 윈도우용으로 배포 중이고, 맥 버전은 맥북에서 만들 예정.
+AI 기능은 유료 API 없이 사용자 PC에 로그인된 CLI(Claude Code `claude`, Antigravity CLI `agy`, Gemini CLI `gemini`)를 실행한다.
+
+## 사용자와 일하는 방식
+- **답변은 한국어.**
+- 요청을 끝내면 묻지 말고 **커밋 → push → (앱을 바꿨으면) 버전 올려 릴리스**까지 한다. 강제 push · 릴리스 삭제 · 기록 지우기는 사용자가 직접 하라고 하기 전엔 하지 않는다.
+- 앱 · 사이트 문구는 **쉬운 말**로. 작은 회색 라벨, 녹색 강조, 명령어 · 코드 같은 어려운 표현처럼 "AI 티" 나는 장식은 넣지 않는다.
+- **개발자 표시는 `brothrone` 만.** 실명 · 블로그 · 이메일 · 개인 링크 · `C:\Users\…` 같은 사용자 경로를 앱 · 사이트 · 문서 · 스크린샷에 넣지 않는다.
+- 커밋 작성자: `brothrone <261971426+brothrone@users.noreply.github.com>` (각 저장소 `git config user.*` 로 설정).
+
+## 폴더
+- `app/electron/main.cjs` 메인 프로세스 (데이터 파일, AI 실행 `runAi`, 설치 · 로그인, 공고 확인 `checkPosting`, 자동 업데이트, 메뉴)
+- `app/electron/preload.cjs` 화면에 내보내는 `window.desktop` (타입은 `app/src/desktop.ts`)
+- `app/src/prompts.ts` 모든 AI 요청문 · 공고 결과 해석
+- `app/src/store.ts` · `StoreProvider.tsx` 데이터 모양 · 저장 · 예전 데이터 변환(`normalize`)
+- `app/src/JobSearchProvider.tsx` 맞춤 공고 찾기 (AI 후보 → 구글 중간 주소 풀기 → 공고 페이지 직접 확인 → 뺀 공고와 이유)
+- `app/src/PostingReaderProvider.tsx` 공고 읽기 (화면을 옮겨도 계속, 끝나면 자소서에 문항 · 메모 · 마감일 반영)
+- `docs/` 소개 사이트 (GitHub Pages: https://brothrone.github.io/Essay/)
+- `guides/` 개발 노트 · 사용자 설치 안내 · **맥 작업 안내**
+
+## 명령 (`app/` 에서)
+```bash
+npm install
+npm run dev                 # 개발 실행 (Vite + Electron)
+npx tsc -b                  # 타입 검사
+npx oxlint src electron     # 코드 검사
+npx vite build              # 화면 빌드
+```
+- 배포: `package.json` version 올리기 → `scripts/release.ps1`(윈도우) 또는 `scripts/release.sh`(맥). GitHub Releases `brothrone/Essay` 에 설치 파일 · `.blockmap` · `latest.yml`(맥은 `latest-mac.yml`)이 올라가야 자동 업데이트가 된다.
+- 토큰: `gh auth token`, 없으면 Git Credential Manager (`"protocol=https\nhost=github.com\n\n" | git credential-manager get`).
+
+## 검증할 때
+- 사용자 실제 데이터(문서/Essay/Essay-데이터.json)는 건드리지 않는다. 시험은 `ESSAY_DATA_DIR=<시험 폴더>` 와 별도 `--user-data-dir` 로 띄운다 (사용자 Essay 가 켜져 있어도 단일 실행 잠금에 안 걸림).
+- 화면 확인은 `--remote-debugging-port` + CDP 로 버튼을 누르고 캡처한다.
+- 사이트용 스크린샷에는 예시 데이터만, 사용자 경로가 보이지 않게(가짜 AI 도구 경로 등) 찍는다.
+
+## AI 도구에서 알아 둔 것
+- 유료 API 로 결제되지 않게 `ANTHROPIC_*`, `GEMINI_API_KEY` 등 키 환경 변수를 지우고 실행한다 (`aiEnv`).
+- Claude Code: 요청문은 stdin, `--output-format stream-json`. 웹 작업은 빠른 모델(Sonnet).
+- agy: 요청문은 인자(윈도우는 30,000자 제한), 파이프 stdin 을 읽지 않는다. 로그인 코드는 콘솔 입력으로만 받는다 (윈도우는 C# `WriteConsoleInputW` 로 해결, 맥은 미정). 검색 결과에 공고 주소가 안 보여서 맞춤 공고는 사람인 · 잡코리아 공고 주소 안 `site:` 검색으로 찾게 한다. 링크는 `vertexaisearch…/grounding-api-redirect/…` 중간 주소라 `net:resolve-urls` 로 실제 주소로 바꾼다. 결과의 `usage` 에 토큰 수가 있다.
+- 공고 마감 확인(`checkPosting`): 화면의 '마감일:' → 캐치 `ApplyEndDatetime` → 본문 "접수기간 ~" → `validThrough`(반년 넘게 남았으면 상시로 봄) 순.
+
+## 남은 일 (사용자가 나중에 다시 알려 달라고 한 것)
+1. 맥 버전 출시 — `guides/맥-작업-안내.md`
+2. 유료 판매(개당 990원): 사업자 등록, PG(나이스체크아웃 검토: 가입비 면제 프로모션, 수수료 1.9~3.4%, 코드 NICE27 시 2.7%, 결제 후 키 자동 발송 없음), 통신판매업 신고, 환불 제한 표시 + 체험판, 사이트 하단 사업자 정보 표시(익명 유지와 충돌하니 상호로)
+3. AI별 토큰 사용량 표시
+4. 요금제별 CLI 사용 가능 여부 주기적 재확인 (Claude 는 Pro · Max, Antigravity CLI 는 무료 Google 계정도 가능 — 2026-10 기준)
+5. 앱 안 피드백 보내기 (지금은 Web3Forms · Google 설문지, 유료 판매 땐 Cloudflare Workers 로 피드백 · 결제 확인 · 라이선스 키를 함께)

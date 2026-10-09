@@ -13,7 +13,7 @@ AI와 함께 자소서를 쓰는 윈도우 데스크톱 앱이에요. **추가 �
 
 AI 계정은 셋 중 하나만 있으면 돼요: **Google AI Pro·Ultra 구독**(Antigravity CLI), **Claude Pro·Max 구독**(Claude Code), 또는 **Google 계정만**(Gemini CLI, 무료 한도).
 
-- 자세한 설치 안내: [Essay-설치-가이드(처음-사용자용).md](Essay-설치-가이드(처음-사용자용).md)
+- 자세한 설치 안내: [guides/사용자-설치-가이드.md](guides/사용자-설치-가이드.md)
 - 막혔을 때: 앱에서 **F1**
 
 ## 왜 Essay인가
@@ -27,4 +27,23 @@ AI 계정은 셋 중 하나만 있으면 돼요: **Google AI Pro·Ultra 구독**
 
 ## 개발
 
-소스는 [`app/`](app/) 에 있어요 (Electron + React + Vite, 윈도우 전용). 빌드와 배포는 [app/README.md](app/README.md) 와 [윈도우-설치-가이드.md](윈도우-설치-가이드.md) 를 보세요. 새 버전 배포는 `app\scripts\release.ps1` 한 번이에요.
+```
+Essay/
+├─ app/                 앱 소스 (Electron + React + Vite)
+│  ├─ electron/         메인 프로세스(main.cjs) · 화면과의 다리(preload.cjs) · 창 아이콘
+│  ├─ src/              화면(React) · 요청문(prompts.ts) · 데이터(store.ts)
+│  ├─ build/            설치 파일용 아이콘(윈도우 icon.ico · 맥 icon.icns) · 설치 화면 그림
+│  ├─ scripts/          배포(release.ps1 · release.sh) · 아이콘 만들기 · 개발 실행
+│  └─ package.json      버전 · 빌드 설정(electron-builder)
+├─ docs/                소개 사이트 (GitHub Pages → https://brothrone.github.io/Essay/)
+├─ guides/
+│  ├─ 맥-작업-안내.md      맥북에서 이어서 작업하는 방법 · 맥 버전 만들 때 고칠 곳
+│  ├─ 개발-노트.md         구조 · 기능 · 검증 기록 (윈도우)
+│  └─ 사용자-설치-가이드.md  처음 쓰는 사람용 설치 안내
+├─ 예시-자소서/          [예전 자소서로 채우기] 시험용 예시 파일
+└─ CLAUDE.md            Claude Code 가 이 저장소에서 지킬 규칙
+```
+
+- 새 버전 배포: `app/package.json` 의 version 을 올리고 `app\scripts\release.ps1`(윈도우) 또는 `app/scripts/release.sh`(맥).
+- 맥북에서 작업: [guides/맥-작업-안내.md](guides/맥-작업-안내.md)
+- 자세한 구조와 검증 기록: [guides/개발-노트.md](guides/개발-노트.md) · [app/README.md](app/README.md)
