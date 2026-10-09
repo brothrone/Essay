@@ -149,6 +149,11 @@
   .stat span{color:var(--fg-2);font-size:.92rem}
   @media (max-width:900px){.stats{grid-template-columns:repeat(2,1fr)}}
 
+  .demo{padding-top:0}
+  .demo .vid{position:relative;max-width:1120px;margin:0 auto;border-radius:18px;overflow:hidden;border:1px solid var(--line);box-shadow:var(--shadow-lg);background:#0f1440;aspect-ratio:16/9}
+  .demo video{display:block;width:100%;height:100%;object-fit:cover;background:#0f1440}
+  .demo .vid-note{margin:14px 0 0;text-align:center;font-size:.9rem;color:var(--fg-muted)}
+
   .show{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,8fr);gap:28px;align-items:start}
   .tabs{display:flex;flex-direction:column;gap:6px}
   .tab{display:grid;grid-template-columns:36px minmax(0,1fr);gap:12px;align-items:start;text-align:left;padding:14px 16px;border-radius:14px;border:1px solid transparent;background:transparent;color:var(--fg);cursor:pointer;font:inherit;transition:background .15s,border-color .15s,transform .15s}
@@ -236,6 +241,7 @@
       Essay
     </a>
     <nav>
+      <a href="#demo">영상</a>
       <a href="#features">기능</a>
       <a href="#ai">AI · 요금</a>
       <a href="#install">설치</a>
@@ -299,6 +305,19 @@
     </div>
   </div>
 </header>
+
+<section id="demo" class="demo">
+  <div class="wrap">
+    <h2 class="rv d1" style="text-align:center">53초로 보는 Essay</h2>
+    <p class="sub rv d2" style="text-align:center;margin-left:auto;margin-right:auto">공고 링크를 붙여넣는 것부터 AI 초안, 글자수 맞추기, 마감 챙기기까지. 실제 앱 화면을 예시 데이터로 찍었습니다.</p>
+    <div class="vid rv d2">
+      <video id="demo-video" controls muted loop playsinline preload="metadata" poster="img/demo-poster.webp" aria-label="Essay 소개 영상 (53초, 소리 없음)">
+        <source src="video/essay-demo.mp4" type="video/mp4">
+      </video>
+    </div>
+    <p class="vid-note rv d3">소리 없는 영상입니다. 화면에 나오는 회사와 공고는 모두 예시입니다.</p>
+  </div>
+</section>
 
 <section id="features">
   <div class="wrap">
@@ -486,6 +505,13 @@
 
   var io = new IntersectionObserver(function (es) { es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }); }, { rootMargin: '0px 0px -8% 0px', threshold: 0.08 });
   document.querySelectorAll('.rv, #hero-shot').forEach(function (el) { io.observe(el); });
+
+
+  var vid = document.getElementById('demo-video');
+  if (vid && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    var vio = new IntersectionObserver(function (es) { es.forEach(function (e) { if (e.isIntersecting) { var p = vid.play(); if (p && p.catch) p.catch(function () {}); } else { vid.pause(); } }); }, { threshold: 0.4 });
+    vio.observe(vid);
+  }
 
   var hero = document.getElementById('hero-shot'), seg = document.querySelector('.seg'), userPicked = false;
   function setHero(mode) {
