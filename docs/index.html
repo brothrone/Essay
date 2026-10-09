@@ -150,7 +150,7 @@
   @media (max-width:900px){.stats{grid-template-columns:repeat(2,1fr)}}
 
   .show{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,8fr);gap:28px;align-items:start}
-  .tabs{display:flex;flex-direction:column;gap:6px;position:sticky;top:88px}
+  .tabs{display:flex;flex-direction:column;gap:6px}
   .tab{display:grid;grid-template-columns:36px minmax(0,1fr);gap:12px;align-items:start;text-align:left;padding:14px 16px;border-radius:14px;border:1px solid transparent;background:transparent;color:var(--fg);cursor:pointer;font:inherit;transition:background .15s,border-color .15s,transform .15s}
   .tab:hover{background:var(--bg-2);border-color:var(--line)}
   .tab.on{background:var(--bg-2);border-color:var(--line);box-shadow:var(--shadow);transform:translateX(4px)}
@@ -164,11 +164,11 @@
   .tab.on .bar i{animation:prog 7s linear forwards}
   .show.paused .tab.on .bar i{animation-play-state:paused}
   @keyframes prog{to{width:100%}}
-  .stage{position:relative;border-radius:18px;overflow:hidden;border:1px solid var(--line);box-shadow:var(--shadow-lg);background:var(--bg-2);aspect-ratio:2169/1355}
+  .stage{position:sticky;top:88px;border-radius:18px;overflow:hidden;border:1px solid var(--line);box-shadow:var(--shadow-lg);background:var(--bg-2);aspect-ratio:2176/1360}
   .stage img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transform:scale(1.02);transition:opacity .45s,transform .6s}
   .stage img.on{opacity:1;transform:none}
   .stage .cap{position:absolute;left:14px;bottom:14px;right:14px;padding:10px 14px;border-radius:12px;background:var(--glass);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid var(--line);font-size:.86rem;color:var(--fg-2)}
-  @media (max-width:900px){.show{grid-template-columns:1fr}.tabs{position:static;flex-direction:row;overflow-x:auto;padding-bottom:6px}.tab{min-width:230px}.tab .desc{display:none}.tab.on{transform:none}}
+  @media (max-width:900px){.show{grid-template-columns:1fr}.stage{position:relative;top:auto}.tabs{flex-direction:row;overflow-x:auto;padding-bottom:6px}.tab{min-width:230px}.tab .desc{display:none}.tab.on{transform:none}}
 
   .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
   .card{position:relative;padding:22px;border-radius:var(--r);background:var(--bg-2);border:1px solid var(--line);box-shadow:var(--shadow);transition:transform .2s,border-color .2s;overflow:hidden}
