@@ -7,6 +7,7 @@ import { newQuestion, useStore } from './store'
 import { toast } from './toast'
 import type { Project } from './types'
 import { fmtDate, toDateInput } from './utils'
+import { track } from './community'
 
 const isBlank = (q: Project['questions'][number]) => !q.prompt.trim() && !q.answer.trim()
 
@@ -130,17 +131,29 @@ export function PostingReaderProvider({ children }: { children: ReactNode }) {
       if (!tasksRef.current[key]) return // 그사이 닫음
 
       if (!r.ok) {
+        if (!r.cancelled) track('posting_read_fail')
         const t = commit(key, () => ({ status: r.cancelled ? 'cancelled' : 'error', error: r.cancelled ? '' : r.error }))
         if (!r.cancelled && t?.projectId) toast(`공고를 읽지 못했어요: ${r.error.slice(0, 80)}`)
         return
       }
       const info = parsePosting(r.text)
       if (!info) {
+        track('posting_read_fail')
         const t = commit(key, () => ({ status: 'error', error: '공고 내용을 읽지 못했어요. 잠시 뒤 다시 시도하거나 직접 적어 주세요.' }))
         if (t?.projectId) toast('공고 내용을 읽지 못했어요. [공고 정보]에서 다시 확인할 수 있어요')
         return
       }
       commit(key, () => ({ status: 'done', info }))
+      track('posting_read_ok')
+      // 공고 페이지에 적힌 문항이면 문항 모음에 보탠다 (사용자가 '문항 모음'에 동의했을 때만, 공고 본문은 보내지 않음)
+      if (info.questionsSource === '공고 페이지' && info.questions.length)
+        desktop.community.shareQuestions({
+          company: info.company || tasksRef.current[key]?.label || '',
+          position: info.position,
+          deadline: info.deadline,
+          url: info.url,
+          questions: info.questions.map((q) => ({ prompt: q.prompt, limit: q.limit ?? null })),
+        })
       applyIfReady(key)
     },
     [commit, applyIfReady],

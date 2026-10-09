@@ -17,6 +17,17 @@ contextBridge.exposeInMainWorld('desktop', {
   onHelp: on('app:help'),
   onFeedback: on('app:feedback'),
   appConfig: () => ipcRenderer.invoke('app:config'),
+  /** 개선 돕기: 의견 보내기 · 익명 통계 · 오류 보고 · 문항 모음 (서버 주소가 없거나 동의하지 않으면 보내지 않음) */
+  community: {
+    state: () => ipcRenderer.invoke('community:state'),
+    setConsent: (c) => ipcRenderer.invoke('community:set-consent', c),
+    track: (name) => ipcRenderer.send('community:track', name),
+    setContext: (ctx) => ipcRenderer.send('community:context', ctx),
+    reportError: (e) => ipcRenderer.send('community:error', e),
+    sendFeedback: (f) => ipcRenderer.invoke('community:feedback', f),
+    findQuestions: (q) => ipcRenderer.invoke('community:find-questions', q),
+    shareQuestions: (info) => ipcRenderer.send('community:share-questions', info),
+  },
   loadData: () => ipcRenderer.sendSync('data:load'),
   saveData: (json) => ipcRenderer.invoke('data:save', json),
   saveDataSync: (json) => ipcRenderer.sendSync('data:save-sync', json),

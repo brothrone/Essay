@@ -1,5 +1,6 @@
-import { Check, Copy, ExternalLink, MessageSquareHeart } from 'lucide-react'
+import { Check, Copy, ExternalLink, LoaderCircle, MessageSquareHeart, Send } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { useCommunity } from '../community'
 import { desktop } from '../desktop'
 import { OS_NAME } from '../platform'
 import { toast } from '../toast'
@@ -36,12 +37,19 @@ const KINDS = [
 ] as const
 type Kind = (typeof KINDS)[number]['value']
 
-/** 의견 보내기: 서버 없이, 개발자의 GitHub 이슈(또는 설문지)를 내용이 채워진 채로 브라우저에서 연다 */
+/**
+ * 의견 보내기: Essay 서버가 켜져 있으면 [보내기]로 바로 보낸다(계정 없이, 공개되지 않음).
+ * 서버가 없거나 원하면 GitHub 이슈(또는 설문지)를 내용이 채워진 채로 브라우저에서 연다
+ */
 function FeedbackDialog({ onClose }: { onClose: () => void }) {
   const config = useAppConfig()
   const [kind, setKind] = useState<Kind>('bug')
   const [text, setText] = useState('')
   const [withInfo, setWithInfo] = useState(true)
+  const [contact, setContact] = useState('')
+  const [sending, setSending] = useState(false)
+  const community = useCommunity()
+  const direct = !!community?.available
 
   const info = `Essay ${desktop.info.version} · ${OS_NAME} (${desktop.info.platform} ${desktop.info.arch}) · AI ${savedAiProvider()}`
   const kindLabel = KINDS.find((k) => k.value === kind)!.label
@@ -59,6 +67,15 @@ function FeedbackDialog({ onClose }: { onClose: () => void }) {
     await desktop.copyText(`${title}\n\n${body}`)
     window.open(formUrl, '_blank')
     toast('내용을 복사해 뒀어요. 설문지에 붙여넣어 주세요')
+  }
+  const send = async () => {
+    setSending(true)
+    const r = await desktop.community.sendFeedback({ kind, message: text.trim(), contact: contact.trim(), withInfo })
+    setSending(false)
+    if (r.ok) {
+      toast('보냈어요. 고마워요! 다음 버전에 반영할게요')
+      onClose()
+    } else toast(`보내지 못했어요: ${r.error || '잠시 뒤 다시 시도해 주세요'}`)
   }
   const copy = async () => {
     await desktop.copyText(`${title}\n\n${body}`)
@@ -79,9 +96,14 @@ function FeedbackDialog({ onClose }: { onClose: () => void }) {
               <ExternalLink size={16} /> 설문지로 보내기
             </button>
           )}
-          <button type="button" className="btn primary" disabled={!text.trim()} onClick={openIssue}>
-            <ExternalLink size={16} /> GitHub로 보내기
+          <button type="button" className={direct ? 'btn' : 'btn primary'} disabled={!text.trim()} onClick={openIssue}>
+            <ExternalLink size={16} /> {direct ? 'GitHub에 올리기' : 'GitHub로 보내기'}
           </button>
+          {direct && (
+            <button type="button" className="btn primary" disabled={!text.trim() || sending} onClick={send}>
+              {sending ? <LoaderCircle size={16} className="spin" /> : <Send size={16} />} 보내기
+            </button>
+          )}
         </>
       }
     >
@@ -107,16 +129,31 @@ function FeedbackDialog({ onClose }: { onClose: () => void }) {
               : '자유롭게 적어 주세요.'
           }
         />
+        {direct && (
+          <input
+            type="text"
+            value={contact}
+            onChange={(e) => setContact(e.target.value)}
+            placeholder="답장 받을 메일 (선택) · 적으면 개발자가 답장할 수 있어요"
+            maxLength={200}
+          />
+        )}
         <label className="check-row">
           <input type="checkbox" checked={withInfo} onChange={(e) => setWithInfo(e.target.checked)} />
           <span>
             앱 정보 함께 보내기 <span className="muted small">({info})</span>
           </span>
         </label>
+        {direct ? (
+          <p className="muted small">
+            [보내기]는 계정 없이 개발자에게만 보내져요(공개되지 않아요). [GitHub에 올리기]는 GitHub 이슈 작성 화면을 내용이 채워진 채로 열어요(계정 필요, 글이 공개돼요).
+          </p>
+        ) : (
         <p className="muted small">
           [GitHub로 보내기]는 브라우저에서 GitHub 이슈 작성 화면을 내용이 채워진 채로 열어요(GitHub 계정 필요, 글은 공개돼요).
           {formUrl ? ' 계정이 없으면 [설문지로 보내기]를 쓰세요.' : ' 계정이 없으면 [내용 복사]로 복사해 두세요.'}
         </p>
+        )}
       </div>
     </Modal>
   )

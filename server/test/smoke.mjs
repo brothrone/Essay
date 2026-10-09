@@ -37,5 +37,57 @@ let blocked = 0
 for (let i = 0; i < 8; i++) if ((await post('/v1/feedback', { kind: 'etc', message: `반복 ${i}` })).status === 429) blocked++
 check('같은 곳에서 연달아 보내면 막음', blocked > 0, `8번 중 ${blocked}번 막힘`)
 
+
+// ===== 익명 사용 통계
+const rnd = () => [...crypto.getRandomValues(new Uint8Array(16))].map((b) => b.toString(16).padStart(2, '0')).join('')
+const devA = rnd(), devB = rnd()
+const today = new Date().toISOString().slice(0, 10)
+const yesterday = new Date(Date.now() - 864e5).toISOString().slice(0, 10)
+const stat = (install, events, day = today) => post('/v1/stats', { install, days: [{ day, version: '1.8.0', os: 'macOS', arch: 'arm64', ai: 'gemini', events }] })
+check('통계 받기', (await stat(devA, { app_open: 1, ai_draft: 2 })).status === 200)
+check('같은 날 다시 보내면 덮어씀', (await stat(devA, { app_open: 2, ai_draft: 3 })).status === 200)
+await stat(devB, { app_open: 1, posting_read_ok: 1 })
+await stat(devA, { app_open: 1 }, yesterday)
+check('기기 번호 형식 아니면 거절', (await post('/v1/stats', { install: 'abc', days: [] })).status === 400)
+const old = await (await post('/v1/stats', { install: devA, days: [{ day: '2020-01-01', events: { app_open: 1 } }] })).json()
+check('너무 오래된 날짜는 안 받음', old.saved === 0)
+const sum = await (await fetch(BASE + '/v1/admin/summary?days=7', { headers: auth })).json()
+const todayRow = sum.daily.find((d) => d.day === today)
+const draft = sum.events.find((e) => e.name === 'ai_draft')
+check('요약: 오늘 사용자 수', todayRow && todayRow.users >= 2, `오늘 ${todayRow?.users}명`)
+check('요약: 덮어쓴 횟수(중복 없음)', draft && draft.count >= 3 && draft.count % 3 === 0, `ai_draft ${draft?.count}`)
+check('요약: 버전 분포', sum.versions.some((v) => v.version === '1.8.0'))
+
+// ===== 오류 보고
+const errItem = (n) => ({ source: 'renderer', message: `TypeError: Cannot read properties of undefined (reading 'x${n % 1}') at row 1${n}`, stack: `TypeError: boom\n    at render (file:///Users/kimchul/Essay.app/dist/assets/index-AbC12345.js:10:${n})\n    at x (index-AbC12345.js:2:3)` })
+check('오류 받기', (await post('/v1/errors', { install: devA, version: '1.8.0', os: 'macOS', items: [errItem(1)] })).status === 200)
+await post('/v1/errors', { install: devB, version: '1.8.0', os: 'Windows', items: [errItem(2)] })
+const errs = await (await fetch(BASE + '/v1/admin/errors', { headers: auth })).json()
+const e1 = errs.items.find((e) => e.message.includes('reading'))
+check('같은 오류는 한 줄로 묶음', e1 && e1.count >= 2 && e1.installs >= 2, `${e1?.count}번 · ${e1?.installs}대`)
+check('오류에서 사용자 경로 지움', e1 && !/kimchul/.test(e1.stack || ''))
+
+// ===== 회사별 문항 모음
+const qs = [{ prompt: '누리푸드에 지원한 이유와 입사 후 이루고 싶은 목표를 작성해 주세요.', limit: 700 }, { prompt: '데이터를 바탕으로 문제를 해결한 경험을 작성해 주세요.', limit: 800 }]
+const share = (install, extra = {}) => post('/v1/questions', { install, company: '(주)누리푸드', position: '디지털 마케팅 인턴', deadline: '2026-10-19', sourceHost: 'www.saramin.co.kr', questions: qs, ...extra })
+const s1 = await (await share(devA)).json()
+check('문항 보태기', s1.ok && s1.id > 0)
+const s2 = await (await share(devB)).json()
+check('같은 문항이면 같은 묶음', s2.id === s1.id)
+await share(devB) // 같은 기기가 또 보내도 사람 수는 그대로
+await share(devA, { position: '영업관리', questions: [{ prompt: '영업 직무에서 이루고 싶은 목표를 작성해 주세요.', limit: 500 }] })
+check('문항 없으면 거절', (await post('/v1/questions', { install: devA, company: '누리푸드', questions: [] })).status === 400)
+const look = await (await fetch(BASE + '/v1/questions?company=' + encodeURIComponent('누리 푸드') + '&position=' + encodeURIComponent('디지털 마케팅'))).json()
+check('회사 이름 표기가 달라도 찾음', look.ok && look.sets.length >= 2, `${look.sets?.length}묶음`)
+check('직무가 맞는 묶음이 먼저', look.sets[0]?.position === '디지털 마케팅 인턴' && look.sets[0].questions.length === 2)
+check('보탠 사람 수(중복 기기 제외)', look.sets[0]?.contributors === 2, `${look.sets[0]?.contributors}명`)
+check('시기 표시', look.sets[0]?.period === '2026 하반기')
+check('찾기 결과에 기기 정보 없음', !JSON.stringify(look).includes(devA))
+const aq = await (await fetch(BASE + '/v1/admin/questions', { headers: auth })).json()
+const hideId = aq.items.find((x) => x.position === '영업관리')?.id
+check('관리: 묶음 숨기기', (await post(`/v1/admin/questions/${hideId}/hide`, { hidden: true }, auth)).status === 200)
+const look2 = await (await fetch(BASE + '/v1/questions?company=' + encodeURIComponent('누리푸드'))).json()
+check('숨긴 묶음은 안 보임', !look2.sets.some((x) => x.id === hideId))
+
 console.log(failed ? `\n${failed}개 실패` : '\n모두 통과')
 process.exit(failed ? 1 : 0)

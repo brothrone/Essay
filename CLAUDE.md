@@ -20,7 +20,7 @@ AI 기능은 유료 API 없이 사용자 PC에 로그인된 CLI(Claude Code `cla
 - `app/src/PostingReaderProvider.tsx` 공고 읽기 (화면을 옮겨도 계속, 끝나면 자소서에 문항 · 메모 · 마감일 반영)
 - `docs/` 소개 사이트 (GitHub Pages: https://brothrone.github.io/Essay/). `docs/windows.html` · `docs/mac.html` 은 다운로드 버튼이 여는 안내 페이지(자동 다운로드 + SmartScreen / Gatekeeper 넘기는 법, 맥 `?arch=x64` 는 Intel)
 - `guides/` 개발 노트 · 사용자 설치 안내 · **맥 작업 안내**
-- `server/` 백엔드 (Cloudflare Workers + D1, 무료 요금제): 의견 받기 · 개발자용 의견 보기. 나중에 결제 확인 · 라이선스 키. 배포 · 도메인 · 결제 설계는 `guides/서버-안내.md`. 비밀 값은 `wrangler secret` 과 `server/.dev.vars`(저장소 밖)에만
+- `server/` 백엔드 (Cloudflare Workers + D1, 무료 요금제): 의견 받기 · 익명 사용 통계 · 오류 보고 · 회사별 자소서 문항 모음 · 개발자용 관리 주소. 나중에 결제 확인 · 라이선스 키. 앱 쪽은 `app/electron/community.cjs` · `app/src/community.ts` — 서버 주소는 `docs/app-config.json` 의 `api.baseUrl`(비면 아무것도 안 보냄), 통계 · 오류 · 문항은 사용자가 [개선 돕기]에서 고른 것만. 배포 · 도메인 · 결제 설계는 `guides/서버-안내.md`. 비밀 값은 `wrangler secret` 과 `server/.dev.vars`(저장소 밖)에만
 
 ## 명령 (`app/` 에서)
 ```bash
@@ -51,4 +51,4 @@ npx vite build              # 화면 빌드
 2. 유료 판매(개당 990원): 사업자 등록, PG(나이스체크아웃 검토: 가입비 면제 프로모션, 수수료 1.9~3.4%, 코드 NICE27 시 2.7%, 결제 후 키 자동 발송 없음), 통신판매업 신고, 환불 제한 표시 + 체험판, 사이트 하단 사업자 정보 표시(익명 유지와 충돌하니 상호로)
 3. (완료 1.6.0) AI별 토큰 사용량 표시 — `ai-usage.json`(userData), 설정의 [AI 사용량]
 4. 요금제별 CLI 사용 가능 여부 주기적 재확인 — 결과는 `docs/app-config.json`(앱이 하루 한 번 받아 설정 · 처음 안내에 표시, 기본값은 `app/electron/app-config-default.json`)만 고쳐 push 하면 앱 재배포 없이 바뀐다. 2026-10-09 기준: Claude Code 는 Pro · Max(무료 불가), Antigravity CLI 는 무료 Google 계정도 가능(한도 작음), Gemini CLI 는 2026-06-18부터 개인 계정 불가. agy 를 다른 앱에서 실행하는 것이 Antigravity 약관상 괜찮은지는 Google 공식 답이 없음
-5. (완료 1.6.0) 앱 안 의견 보내기 — 도움말 메뉴 · 설정 · F1 도움말. GitHub 이슈 작성 화면을 내용이 채워진 채로 열고, `app-config.json` 의 `feedback.formUrl` 에 Google 설문지 주소를 넣으면 [설문지로 보내기]도 생긴다. 유료 판매 땐 Cloudflare Workers 로 피드백 · 결제 확인 · 라이선스 키를 함께 → `server/` 에 의견 받기 서버를 만들어 배포함(2026-10-10, `essay-api.aaxel0713.workers.dev`, 운영 비밀 값은 맥의 `server/.prod.vars`). 앱 연결 전 — 주소에 개인 아이디(aaxel0713)가 보여 도메인 구입 또는 하위 도메인 변경 뒤 연결
+5. (완료 1.6.0) 앱 안 의견 보내기 — 도움말 메뉴 · 설정 · F1 도움말. GitHub 이슈 작성 화면을 내용이 채워진 채로 열고, `app-config.json` 의 `feedback.formUrl` 에 Google 설문지 주소를 넣으면 [설문지로 보내기]도 생긴다. 유료 판매 땐 Cloudflare Workers 로 피드백 · 결제 확인 · 라이선스 키를 함께 → `server/` 에 의견 받기 서버를 만들어 배포함(2026-10-10, `essay-api.aaxel0713.workers.dev`, 운영 비밀 값은 맥의 `server/.prod.vars`). 1.8.0 에 앱 쪽을 넣었지만 `api.baseUrl` 은 비워 둠 — 주소에 개인 아이디(aaxel0713)가 보여, 도메인을 사면 `api.<도메인>` 으로 바꾸고 app-config 에 넣어 켠다

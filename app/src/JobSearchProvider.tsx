@@ -9,6 +9,7 @@ import type { JobPosting, JobQuery } from './types'
 import { runWebTask } from './aiRun'
 import { savedAiProvider } from './useAiTask'
 import { toDateInput } from './utils'
+import { track } from './community'
 
 const IDLE: JobSearchState = { running: false, startedAt: 0, steps: [], error: '', lastAdded: null, lastDropped: 0, lastDroppedList: [] }
 
@@ -43,6 +44,7 @@ export function JobSearchProvider({ children }: { children: ReactNode }) {
       stopRef.current = false
       setJobQuery(query)
       setState({ ...IDLE, running: true, startedAt: Date.now() })
+      track('job_search')
       // 다른 AI 작업(공고 읽기 등)이 돌고 있으면 끝난 뒤 이어서 시작한다
       const r = await runWebTask(jobSearchPrompt(latest.current, query, toDateInput(new Date()), savedAiProvider()), {
         stopped: () => stopRef.current,

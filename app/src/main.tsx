@@ -4,6 +4,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { HashRouter } from 'react-router-dom'
 import App from './App'
+import { startCommunity } from './community'
 import { JobSearchProvider } from './JobSearchProvider'
 import { PostingReaderProvider } from './PostingReaderProvider'
 import { StoreProvider } from './StoreProvider'
@@ -22,6 +23,7 @@ if (!window.desktop) {
     </div>,
   )
 } else {
+  startCommunity()
   root.render(
     <StrictMode>
       <HashRouter>

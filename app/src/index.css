@@ -5051,3 +5051,54 @@ textarea:focus-visible {
   gap: 8px;
   font-size: 13.5px;
 }
+
+/* ---------- 개선 돕기 (동의 창 · 설정) ---------- */
+.consent-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.consent-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+.consent-item input {
+  margin-top: 3px;
+}
+
+.consent-item > span {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.consent-item strong {
+  font-size: 14px;
+}
+
+/* ---------- 새 자소서: 다른 지원자가 모은 문항 ---------- */
+.community-sets {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.community-set-head {
+  font-size: 12.5px;
+  margin-bottom: 6px;
+}
+
+.preset-limit {
+  margin-left: auto;
+  padding-left: 8px;
+  white-space: nowrap;
+  font-size: 12px;
+}

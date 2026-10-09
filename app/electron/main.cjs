@@ -1241,7 +1241,7 @@ const CONFIG_URL = 'https://brothrone.github.io/Essay/app-config.json'
 const CONFIG_CACHE = () => path.join(app.getPath('userData'), 'app-config.json')
 const CONFIG_DEFAULT = () => JSON.parse(fs.readFileSync(path.join(__dirname, 'app-config-default.json'), 'utf8'))
 const validConfig = (c) => c && typeof c === 'object' && c.plans && typeof c.plans === 'object' && c.feedback && typeof c.feedback === 'object'
-ipcMain.handle('app:config', async () => {
+async function loadAppConfig() {
   let cached = null
   try {
     cached = JSON.parse(fs.readFileSync(CONFIG_CACHE(), 'utf8'))
@@ -1260,7 +1260,10 @@ ipcMain.handle('app:config', async () => {
     /* 오프라인 등 */
   }
   return validConfig(cached?.config) ? cached.config : CONFIG_DEFAULT()
-})
+}
+ipcMain.handle('app:config', () => loadAppConfig())
+// 개선 돕기(의견 보내기 · 익명 통계 · 오류 보고 · 문항 모음). 서버 주소는 app-config 의 api.baseUrl — 비어 있으면 아무것도 보내지 않는다
+require('./community.cjs')({ app, ipcMain, getConfig: loadAppConfig, isMac: IS_MAC })
 
 ipcMain.handle('ai:usage-reset', () => {
   try {

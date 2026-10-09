@@ -9,6 +9,7 @@ import { toast } from '../toast'
 import { aiReady, useAiStatus } from '../useAiStatus'
 import { savedAiModel, savedAiProvider } from '../useAiTask'
 import { Modal } from './ui'
+import { track } from '../community'
 
 type Listener = () => void
 const listeners = new Set<Listener>()
@@ -83,6 +84,7 @@ function ImportModal({ onClose }: { onClose: () => void }) {
     const jobs = all.flatMap((d) => splitForAi(d.text).map((text, i, arr) => ({ doc: d, text, index: i, total: arr.length })))
     setPhase('running')
     setErrors([])
+    track('import_run')
     setProgress({ done: 0, total: jobs.length, name: jobs[0]?.doc.name ?? '', seconds: 0 })
     cancelled.current = false
     const parts: Extracted[] = []

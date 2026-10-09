@@ -15,6 +15,18 @@ export interface DesktopBridge {
   onFeedback: (fn: () => void) => () => void
   /** 요금제 안내 · 공지 · 의견 보내기 주소 (사이트에서 하루 한 번 갱신) */
   appConfig: () => Promise<AppConfig>
+  /** 개선 돕기: 서버 주소(app-config 의 api.baseUrl)가 없거나 사용자가 고르지 않은 것은 보내지 않는다 */
+  community: {
+    state: () => Promise<CommunityState>
+    setConsent: (c: Omit<CommunityConsent, 'at'>) => Promise<CommunityConsent>
+    /** 기능 사용 횟수 하나 올리기 (이름은 영어 소문자 · 숫자 · _ ) */
+    track: (name: string) => void
+    setContext: (ctx: { ai: AiProvider }) => void
+    reportError: (e: { message: string; stack?: string }) => void
+    sendFeedback: (f: { kind: 'bug' | 'idea' | 'etc'; message: string; contact?: string; withInfo: boolean }) => Promise<{ ok: boolean; error?: string }>
+    findQuestions: (q: { company: string; position?: string }) => Promise<{ ok: boolean; sets: CommunityQuestionSet[]; error?: string }>
+    shareQuestions: (info: { company: string; position: string; deadline: string; url: string; questions: { prompt: string; limit: number | null }[] }) => void
+  }
   loadData: () => string | null
   saveData: (json: string) => Promise<void>
   saveDataSync: (json: string) => boolean
@@ -83,6 +95,28 @@ export interface DesktopBridge {
   }
 }
 
+export interface CommunityConsent {
+  stats: boolean
+  errors: boolean
+  questions: boolean
+  at: string
+}
+export interface CommunityState {
+  /** 서버 주소가 있어 보낼 수 있는지 */
+  available: boolean
+  /** 아직 고르지 않았으면 null */
+  consent: CommunityConsent | null
+}
+export interface CommunityQuestionSet {
+  id: number
+  company: string
+  position: string
+  period: string
+  contributors: number
+  lastSeen: string
+  questions: { prompt: string; limit: number | null }[]
+}
+
 export interface PlanInfo {
   name: string
   need: string
@@ -95,6 +129,8 @@ export interface AppConfig {
   /** 앱 안에 띄울 공지 (비어 있으면 안 띄움) */
   notice: string
   feedback: { formUrl: string; issuesUrl: string }
+  /** Essay 서버 주소 (비어 있으면 의견 보내기 · 통계 · 오류 보고 · 문항 모음을 쓰지 않음) */
+  api?: { baseUrl: string }
 }
 
 export interface BackupFile {

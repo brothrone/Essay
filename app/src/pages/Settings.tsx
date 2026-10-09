@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { AboutContent } from '../components/AboutDialog'
 import { AiSetup } from '../components/AiSetup'
 import { AiUsageCard } from '../components/AiUsageCard'
+import { CommunitySettingsCard } from '../components/CommunityConsent'
 import { openFeedbackDialog } from '../components/FeedbackDialog'
 import { useAppConfig } from '../useAppConfig'
 import { openHelpDialog } from '../components/HelpDialog'
@@ -33,6 +34,8 @@ export function Settings() {
       <AiUsageCard />
 
       <UpdateCard />
+
+      <CommunitySettingsCard />
 
       <section className="card">
         <header className="card-head">

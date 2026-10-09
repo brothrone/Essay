@@ -40,6 +40,11 @@ export function saveAiProvider(p: AiProvider) {
   } catch {
     /* 저장 못 해도 이번 세션에는 적용됨 */
   }
+  try {
+    desktop.community.setContext({ ai: p }) // 익명 통계의 'AI 종류' (동의했을 때만 보냄)
+  } catch {
+    /* 무시 */
+  }
 }
 
 export function savedAiModel(provider: AiProvider = savedAiProvider()) {

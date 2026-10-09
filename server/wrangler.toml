@@ -8,6 +8,10 @@ compatibility_date = "2026-09-01"
 [observability]
 enabled = true
 
+# 매일 한 번 정리 (횟수 제한 기록 · 오래된 통계)
+[triggers]
+crons = ["17 18 * * *"]
+
 [[d1_databases]]
 binding = "DB"
 database_name = "essay"

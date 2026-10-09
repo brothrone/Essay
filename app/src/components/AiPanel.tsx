@@ -21,6 +21,7 @@ import type { Experience, Project, Question } from '../types'
 import { noteAiResult } from '../useAiStatus'
 import { AI_MODELS, AI_PROVIDERS, saveAiModel, saveAiProvider, savedAiModel, savedAiProvider } from '../useAiTask'
 import { copyText, countChars, fmtTokens } from '../utils'
+import { track } from '../community'
 
 type Kind = 'draft' | 'feedback' | 'fit' | 'revise' | 'interview' | 'gap'
 type Result = { kind: Kind; answer: string; note: string; seconds: number; model: string; tokens: number }
@@ -97,6 +98,7 @@ export function AiPanel({
     setError('')
     setResult(null)
     setLive(null)
+    track(`ai_${kind}`)
     const r = await ai.run(prompt, model || undefined, { provider })
     noteAiResult(provider, r)
     runningRef.current = false

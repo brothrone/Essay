@@ -11,6 +11,8 @@ import { toast } from '../toast'
 import { kbd } from '../platform'
 import { toDateInput, uid } from '../utils'
 import { AutoTextarea, Modal } from './ui'
+import { track, useCommunity } from '../community'
+import { desktop, type CommunityQuestionSet } from '../desktop'
 
 /** "saramin.co.kr/..." 처럼 프로토콜만 빠진 주소는 https:// 를 붙여 준다 */
 function normalizeUrl(raw: string) {
@@ -28,6 +30,11 @@ export function NewProjectModal({ onClose }: { onClose: () => void }) {
   const [presets, setPresets] = useState<number[]>([])
   const [imported, setImported] = useState<{ notes: string; questions: Question[]; source: string } | null>(null)
   const [importError, setImportError] = useState('')
+  // 다른 지원자가 공고 페이지에서 모은 이 회사 문항 (개선 돕기의 '문항 모음'을 켠 경우에만 찾는다)
+  const community = useCommunity()
+  const canFind = !!community?.available && !!community.consent?.questions
+  const [sets, setSets] = useState<CommunityQuestionSet[]>([])
+  const [picked, setPicked] = useState<string[]>([])
   // 공고 읽기는 앱 전체에서 관리한다 → [시작하기]를 먼저 눌러도 AI가 뒤에서 마저 읽고 새 자소서에 채운다
   const reader = usePostingReader()
   const [draftKey] = useState(() => `draft:${uid()}`)
@@ -113,14 +120,49 @@ export function NewProjectModal({ onClose }: { onClose: () => void }) {
     }
     importWith(companyLookupPrompt(form.company.trim(), form.position.trim(), toDateInput(new Date())), 'company')
   }
+  useEffect(() => {
+    const company = form.company.trim()
+    if (!canFind || company.length < 2) {
+      setSets([])
+      return
+    }
+    let alive = true
+    const timer = setTimeout(async () => {
+      const r = await desktop.community.findQuestions({ company, position: form.position.trim() })
+      if (!alive) return
+      const next = r.sets.slice(0, 3)
+      setSets(next)
+      setPicked((p) => p.filter((k) => next.some((x) => k.startsWith(`${x.id}:`))))
+    }, 600)
+    return () => {
+      alive = false
+      clearTimeout(timer)
+    }
+  }, [canFind, form.company, form.position])
+  const togglePick = (k: string) => setPicked((p) => (p.includes(k) ? p.filter((x) => x !== k) : [...p, k]))
+  const pickAll = (x: CommunityQuestionSet) =>
+    setPicked((p) => [...p.filter((k) => !k.startsWith(`${x.id}:`)), ...x.questions.map((_, i) => `${x.id}:${i}`)])
+
   const set = (k: keyof typeof form) => (e: { target: { value: string } }) =>
     setForm((f) => ({ ...f, [k]: e.target.value }))
 
   const submit = (e: FormEvent) => {
     e.preventDefault()
+    track('project_new')
     const presetQs = [...presets].sort((a, b) => a - b).map((i) => newQuestion(QUESTION_PRESETS[i]))
     const fromPosting = imported?.questions ?? []
-    const questions = fromPosting.length || presetQs.length ? [...fromPosting, ...presetQs] : [newQuestion()]
+    const have = new Set(fromPosting.map((q) => q.prompt.trim()))
+    const fromCommunity: Question[] = []
+    for (const k of picked) {
+      const [id, i] = k.split(':').map(Number)
+      const q = sets.find((x) => x.id === id)?.questions[i]
+      if (!q || have.has(q.prompt.trim())) continue
+      have.add(q.prompt.trim())
+      fromCommunity.push(newQuestion({ prompt: q.prompt, limit: q.limit }))
+    }
+    if (fromCommunity.length) track('questions_used')
+    const picks = [...fromPosting, ...fromCommunity, ...presetQs]
+    const questions = picks.length ? picks : [newQuestion()]
     const url = normalizeUrl(form.jobUrl)
     const project = newProject({
       ...form,
@@ -337,6 +379,36 @@ export function NewProjectModal({ onClose }: { onClose: () => void }) {
           </label>
           <input id="np-time" type="time" value={form.deadlineTime} onChange={set('deadlineTime')} />
         </div>
+        {canFind && sets.length > 0 && !imported?.questions.length && (
+          <div className="field full">
+            <span className="field-label">다른 지원자가 공고에서 모은 {form.company.trim()} 문항 (선택)</span>
+            <div className="community-sets">
+              {sets.map((x) => (
+                <div key={x.id}>
+                  <div className="community-set-head muted">
+                    {[x.position || '직무 표시 없음', x.period, `${x.contributors}명이 불러옴`].join(' · ')}{' '}
+                    <button type="button" className="link-btn" onClick={() => pickAll(x)}>
+                      모두 고르기
+                    </button>
+                  </div>
+                  <div className="preset-list">
+                    {x.questions.map((q, i) => {
+                      const k = `${x.id}:${i}`
+                      const on = picked.includes(k)
+                      return (
+                        <button type="button" key={k} className={'preset' + (on ? ' on' : '')} onClick={() => togglePick(k)} aria-pressed={on}>
+                          <span className="preset-check">{on && <Check size={12} strokeWidth={3} />}</span>
+                          {q.prompt}
+                          {q.limit ? <span className="muted preset-limit">{q.limit.toLocaleString()}자</span> : null}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
         <div className="field full">
           <span className="field-label">
             자주 나오는 문항 미리 넣기 (선택){imported?.questions.length ? <span className="muted"> · 불러온 문항 뒤에 추가돼요</span> : null}
