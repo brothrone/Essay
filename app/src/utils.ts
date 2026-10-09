@@ -57,6 +57,12 @@ export function fmtPeriod(start: string, end: string) {
   return `${fmtYm(start)} ~ ${end ? fmtYm(end) : '현재'}`
 }
 
+export function fmtDateTime(ts: number) {
+  const d = new Date(ts)
+  const p = (n: number) => String(n).padStart(2, '0')
+  return `${fmtDate(toDateInput(d))} ${p(d.getHours())}:${p(d.getMinutes())}`
+}
+
 export function fmtRelative(ts: number) {
   const diff = Date.now() - ts
   if (diff < 60_000) return '방금 전'

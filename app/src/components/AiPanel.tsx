@@ -41,7 +41,7 @@ export function AiPanel({
 }: {
   project: Project
   q: Question
-  onPatch: (p: Partial<Question>) => void
+  onPatch: (p: Partial<Question>, label?: string) => void
 }) {
   const { data } = useStore()
   const exps = q.experienceIds
@@ -113,7 +113,7 @@ export function AiPanel({
   const apply = () => {
     if (!result) return
     setUndo(q.answer)
-    onPatch({ answer: result.answer })
+    onPatch({ answer: result.answer }, 'AI 적용 전')
     setResult(null)
     toast('답변에 적용했어요')
   }
@@ -387,7 +387,7 @@ export function AiPanel({
                     type="button"
                     className="btn ghost small"
                     onClick={() => {
-                      onPatch({ answer: undo })
+                      onPatch({ answer: undo }, '되돌리기 전')
                       setUndo(null)
                       toast('적용 전 답변으로 되돌렸어요')
                     }}

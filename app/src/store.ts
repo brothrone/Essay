@@ -139,6 +139,7 @@ export function newQuestion(init: Partial<Question> = {}): Question {
     experienceIds: [],
     done: false,
     ...init,
+    history: [],
   }
 }
 
@@ -235,6 +236,10 @@ export function normalize(raw: unknown): AppData {
       memo: str(q.memo),
       experienceIds: strs(q.experienceIds),
       done: q.done === true,
+      history: objs(q.history)
+        .filter((h) => typeof h.answer === 'string' && typeof h.at === 'number')
+        .map((h) => ({ at: h.at as number, answer: h.answer as string, ...(typeof h.label === 'string' && h.label ? { label: h.label } : {}) }))
+        .slice(-30),
     })),
     createdAt: num(p.createdAt, now),
     updatedAt: num(p.updatedAt, now),

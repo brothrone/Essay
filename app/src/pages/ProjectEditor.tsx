@@ -7,6 +7,7 @@ import {
   ChevronUp,
   Copy,
   ExternalLink,
+  History,
   Lightbulb,
   LoaderCircle,
   PanelRight,
@@ -22,13 +23,14 @@ import { AiPanel } from '../components/AiPanel'
 import { PostingCheck } from '../components/PostingCheck'
 import { isActive, taskFor, useElapsed, usePostingReader } from '../postingReader'
 import { answerWarnings } from '../checks'
-import { AutoTextarea, Dday, Empty, StatusSelect } from '../components/ui'
+import { AutoTextarea, Dday, Empty, Modal, StatusSelect } from '../components/ui'
 import { COUNT_MODE_LABEL, QUESTION_PRESETS, STAR_FIELDS } from '../constants'
 import { desktop } from '../desktop'
 import { experienceToText, isHttpUrl, projectToText } from '../format'
+import { recordSnapshot } from '../history'
 import { newQuestion, useStore } from '../store'
 import type { CountMode, Experience, Project, Question } from '../types'
-import { copyText, countChars, fmtPeriod, fmtRelative, includesText, similarity } from '../utils'
+import { copyText, countChars, fmtDateTime, fmtPeriod, fmtRelative, includesText, similarity } from '../utils'
 
 type Panel = 'exp' | 'ai' | 'answers' | 'info'
 
@@ -78,8 +80,18 @@ export function ProjectEditor() {
 
   const update = (fn: (p: Project) => Project) => updateProject(project.id, fn)
   const patch = (p: Partial<Project>) => update((x) => ({ ...x, ...p }))
-  const patchQ = (qid: string, p: Partial<Question>) =>
-    update((x) => ({ ...x, questions: x.questions.map((q) => (q.id === qid ? { ...q, ...p } : q)) }))
+  // 답변이 바뀌면 바뀌기 직전 상태를 편집 기록에 남긴다 (label: AI 적용 전 · 되돌리기 전 등)
+  const patchQ = (qid: string, p: Partial<Question>, label?: string) =>
+    update((x) => ({
+      ...x,
+      questions: x.questions.map((q) => {
+        if (q.id !== qid) return q
+        const history = p.answer !== undefined && p.answer !== q.answer ? recordSnapshot(q, label) : q.history
+        return { ...q, ...p, history }
+      }),
+    }))
+  const snapshotQ = (qid: string, label: string) =>
+    update((x) => ({ ...x, questions: x.questions.map((q) => (q.id === qid ? { ...q, history: recordSnapshot(q, label) } : q)) }))
 
   const addQ = (preset?: Partial<Question>) => {
     const q = newQuestion(preset)
@@ -220,7 +232,8 @@ export function ProjectEditor() {
               q={active}
               index={index}
               total={questions.length}
-              onPatch={(p) => patchQ(active.id, p)}
+              onPatch={(p, label) => patchQ(active.id, p, label)}
+              onSnapshot={(label) => snapshotQ(active.id, label)}
               onRemove={() => removeQ(active)}
               onMove={(dir) => moveQ(active.id, dir)}
             />
@@ -267,7 +280,7 @@ export function ProjectEditor() {
                   <ExperiencePanel project={project} q={active} onPatch={(p) => patchQ(active.id, p)} />
                 </div>
                 <div hidden={panel !== 'ai'}>
-                  <AiPanel key={active.id} project={project} q={active} onPatch={(p) => patchQ(active.id, p)} />
+                  <AiPanel key={active.id} project={project} q={active} onPatch={(p, label) => patchQ(active.id, p, label)} />
                 </div>
                 <div hidden={panel !== 'answers'}>
                   <AnswersPanel q={active} />
@@ -283,6 +296,62 @@ export function ProjectEditor() {
   )
 }
 
+
+/** 편집 기록: 답변의 이전 상태를 보고 되돌린다 */
+function HistoryModal({
+  q,
+  onClose,
+  onSave,
+  onRestore,
+}: {
+  q: Question
+  onClose: () => void
+  onSave: () => void
+  onRestore: (answer: string) => void
+}) {
+  const items = [...q.history].reverse()
+  const canSave = !!q.answer.trim() && q.history[q.history.length - 1]?.answer !== q.answer
+  return (
+    <Modal
+      title="편집 기록"
+      onClose={onClose}
+      footer={
+        <>
+          <button type="button" className="btn ghost mr-auto" disabled={!canSave} onClick={onSave}>
+            <History size={16} /> 지금 버전 저장
+          </button>
+          <button type="button" className="btn" onClick={onClose}>
+            닫기
+          </button>
+        </>
+      }
+    >
+      <p className="muted small">
+        답변을 고칠 때마다 10분에 한 번, AI 적용·되돌리기 직전에는 항상 이전 상태를 남겨요 (최근 30개). 되돌리면 지금 답변도 기록에 남아요.
+      </p>
+      {items.length ? (
+        <ul className="history-list">
+          {items.map((h) => (
+            <li key={h.at} className="history-item">
+              <div className="history-meta">
+                <strong>{fmtDateTime(h.at)}</strong>
+                {h.label && <span className="badge tone-blue">{h.label}</span>}
+                <span className="muted small">{countChars(h.answer, 'with').toLocaleString()}자</span>
+                <button type="button" className="btn small" disabled={h.answer === q.answer} onClick={() => onRestore(h.answer)}>
+                  {h.answer === q.answer ? '지금 답변과 같음' : '이 버전으로 되돌리기'}
+                </button>
+              </div>
+              <p className="history-preview">{h.answer}</p>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <Empty title="아직 기록이 없어요" desc="답변을 고치거나 AI 결과를 적용하면 이전 상태가 쌓여요" />
+      )}
+    </Modal>
+  )
+}
+
 /* ---------- 가운데: 문항 · 답변 ---------- */
 
 function QuestionEditor({
@@ -291,6 +360,7 @@ function QuestionEditor({
   index,
   total,
   onPatch,
+  onSnapshot,
   onRemove,
   onMove,
 }: {
@@ -298,10 +368,12 @@ function QuestionEditor({
   q: Question
   index: number
   total: number
-  onPatch: (p: Partial<Question>) => void
+  onPatch: (p: Partial<Question>, label?: string) => void
+  onSnapshot: (label: string) => void
   onRemove: () => void
   onMove: (dir: -1 | 1) => void
 }) {
+  const [historyOpen, setHistoryOpen] = useState(false)
   const counts: Record<CountMode, number> = {
     with: countChars(q.answer, 'with'),
     without: countChars(q.answer, 'without'),
@@ -331,11 +403,31 @@ function QuestionEditor({
           >
             <ChevronDown size={16} />
           </button>
+          <button
+            type="button"
+            className="icon-btn"
+            onClick={() => setHistoryOpen(true)}
+            aria-label="편집 기록"
+            title={q.history.length ? `편집 기록 ${q.history.length}개` : '편집 기록'}
+          >
+            <History size={16} />
+          </button>
           <button type="button" className="icon-btn danger" onClick={onRemove} aria-label="문항 삭제">
             <Trash2 size={16} />
           </button>
         </div>
       </div>
+      {historyOpen && (
+        <HistoryModal
+          q={q}
+          onClose={() => setHistoryOpen(false)}
+          onSave={() => onSnapshot('직접 저장')}
+          onRestore={(answer) => {
+            onPatch({ answer }, '되돌리기 전')
+            setHistoryOpen(false)
+          }}
+        />
+      )}
 
       <AutoTextarea
         className="prompt-input"

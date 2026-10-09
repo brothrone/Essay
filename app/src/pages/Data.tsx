@@ -18,6 +18,7 @@ export function DataPage() {
       !(await desktop.confirm('예시 데이터로 바꿀까요?', { detail: `지금 데이터(${summary})는 사라져요.`, ok: '바꾸기', danger: true }))
     )
       return
+    await desktop.backups.snapshot('예시전')
     replaceAll(buildSample())
     toast('예시 데이터를 불러왔어요')
   }
@@ -26,6 +27,7 @@ export function DataPage() {
     if (!(await desktop.confirm(`모든 데이터(${summary})를 삭제할까요?`, { ok: '삭제', danger: true }))) return
     if (!(await desktop.confirm('정말 삭제할까요?', { detail: '백업 파일이 없으면 되돌릴 수 없어요.', ok: '모두 삭제', danger: true })))
       return
+    await desktop.backups.snapshot('삭제전')
     replaceAll(emptyData())
     toast('모든 데이터를 지웠어요')
   }
@@ -35,7 +37,7 @@ export function DataPage() {
       <header className="page-head">
         <div>
           <h1>데이터</h1>
-          <p className="muted">모든 데이터는 이 컴퓨터의 문서 폴더에 파일로 저장돼요. 인터넷으로 보내지 않아요.</p>
+          <p className="muted">모든 데이터는 이 컴퓨터의 문서 폴더에 파일로 저장돼요. 인터넷으로 보내지 않아요. 바꾸기 전 상태는 [백업]의 자동백업에 남아요.</p>
         </div>
       </header>
 

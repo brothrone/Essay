@@ -4762,3 +4762,173 @@ textarea:focus-visible {
   flex-basis: 100%;
   padding-left: 2px;
 }
+
+/* ---------- 편집 기록 ---------- */
+
+.history-list {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.history-item {
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.history-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+  font-size: 13px;
+}
+
+.history-meta .btn {
+  margin-left: auto;
+}
+
+.history-preview {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-2);
+  white-space: pre-wrap;
+}
+
+/* ---------- 자동백업 목록 ---------- */
+
+
+.backup-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.backup-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 0;
+  border-top: 1px solid var(--border);
+}
+
+.backup-list li:first-child {
+  border-top: 0;
+}
+
+.backup-list li > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+}
+
+
+/* ---------- 지원현황 보드 ---------- */
+
+.board {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(168px, 1fr));
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+}
+
+.board-col {
+  display: flex;
+  flex-direction: column;
+  min-height: 320px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface-2);
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.board-col.over {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+}
+
+.board-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 12px 8px;
+  font-size: 13.5px;
+}
+
+.board-count {
+  margin-left: auto;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-3);
+}
+
+.board-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+  padding: 0 8px 8px;
+}
+
+.board-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  cursor: grab;
+}
+
+.board-card.dragging {
+  opacity: 0.4;
+}
+
+.board-card-title {
+  display: flex;
+  flex-direction: column;
+}
+
+.board-card-title strong {
+  font-size: 14px;
+}
+
+.board-card-title span {
+  font-size: 12.5px;
+  color: var(--text-3);
+}
+
+.board-card-title:hover strong {
+  color: var(--primary-text);
+}
+
+.board-card-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.board-empty {
+  margin: auto 0;
+  padding: 20px 8px;
+  text-align: center;
+  font-size: 12.5px;
+  color: var(--text-3);
+  border: 1px dashed var(--border-strong);
+  border-radius: 10px;
+}

@@ -49,6 +49,13 @@ export interface Experience {
 
 export type CountMode = 'with' | 'without' | 'byte'
 
+/** 답변의 이전 상태 (편집 기록) */
+export interface AnswerSnapshot {
+  at: number
+  answer: string
+  label?: string // AI 적용 전 · 되돌리기 전 · 직접 저장 (없으면 자동)
+}
+
 export interface Question {
   id: ID
   prompt: string
@@ -58,6 +65,8 @@ export interface Question {
   memo: string
   experienceIds: ID[]
   done: boolean
+  /** 답변을 고치기 직전 상태들 (최근 30개) */
+  history: AnswerSnapshot[]
 }
 
 export type ProjectStatus = 'writing' | 'submitted' | 'docPass' | 'interview' | 'finalPass' | 'failed'

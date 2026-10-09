@@ -24,6 +24,11 @@ contextBridge.exposeInMainWorld('desktop', {
   confirm: (message, options = {}) => ipcRenderer.invoke('dialog:confirm', { message, ...options }),
   exportBackup: (json, filename) => ipcRenderer.invoke('backup:export', { json, filename }),
   importBackup: () => ipcRenderer.invoke('backup:import'),
+  backups: {
+    list: () => ipcRenderer.invoke('backup:list'),
+    read: (name) => ipcRenderer.invoke('backup:read', name),
+    snapshot: (label) => ipcRenderer.invoke('backup:snapshot', label),
+  },
   /** 화면이 준비됐을 때 한 번 호출 → 쌓여 있던 이동·새 자소서 명령을 받는다 */
   ready: () => ipcRenderer.send('app:ready'),
   relaunch: () => ipcRenderer.invoke('app:relaunch'),

@@ -1,9 +1,10 @@
-import { Download, FolderOpen, ShieldCheck, Upload } from 'lucide-react'
+import { Download, FolderOpen, History, ShieldCheck, Upload } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { APP_NAME } from '../constants'
-import { desktop } from '../desktop'
+import { desktop, type BackupFile } from '../desktop'
 import { normalize, useStore } from '../store'
 import { toast } from '../toast'
-import { toDateInput } from '../utils'
+import { fmtDateTime, toDateInput } from '../utils'
 
 /** 백업: 파일로 저장하고 되돌리기 */
 export function Backup() {
@@ -27,6 +28,7 @@ export function Backup() {
         danger: true,
       })
       if (!ok) return
+      await desktop.backups.snapshot('불러오기전')
       replaceAll(next)
       toast('백업을 불러왔어요')
     } catch (err) {
@@ -74,8 +76,8 @@ export function Backup() {
           <span className="muted small">따로 켤 필요 없어요</span>
         </header>
         <p className="muted small">
-          매일 처음 저장하기 직전 상태를 데이터 폴더 안 '자동백업'에 30일치 보관해요. 날짜가 붙은 파일을 [백업 불러오기]로 고르면 그날 상태로
-          돌아가요.
+          매일 처음 저장하기 직전 상태를 데이터 폴더 안 '자동백업'에 30일치 보관하고, 예시 데이터 · 백업 불러오기 · 전체 삭제 · 복원 직전에도 따로
+          남겨요. 아래에서 고르면 바로 그 상태로 돌아가요.
         </p>
         <div className="btn-row">
           <button type="button" className="btn small" onClick={() => desktop.openDataFolder()}>
@@ -83,6 +85,82 @@ export function Backup() {
           </button>
         </div>
       </section>
+
+      <BackupList summary={summary} />
     </div>
+  )
+}
+
+/** 자동백업 폴더의 파일 목록. 고르면 그 상태로 되돌린다 (지금 데이터는 '복원전' 스냅샷으로 남긴다) */
+function BackupList({ summary }: { summary: string }) {
+  const { replaceAll } = useStore()
+  const [files, setFiles] = useState<BackupFile[] | null>(null)
+  const [busy, setBusy] = useState('')
+
+  const refresh = () => desktop.backups.list().then(setFiles)
+  useEffect(() => {
+    let alive = true
+    desktop.backups.list().then((f) => alive && setFiles(f))
+    return () => {
+      alive = false
+    }
+  }, [])
+
+  const restore = async (f: BackupFile) => {
+    try {
+      const next = normalize(JSON.parse(await desktop.backups.read(f.name)))
+      const ok = await desktop.confirm(`${fmtDateTime(f.at)} 백업으로 되돌릴까요?`, {
+        detail: `백업 내용: 자소서 ${next.projects.length}개, 경험 ${next.experiences.length}개, 스펙 ${next.specs.length}개\n지금 데이터(${summary})는 '복원전' 스냅샷으로 남겨 둬요.`,
+        ok: '되돌리기',
+        danger: true,
+      })
+      if (!ok) return
+      setBusy(f.name)
+      await desktop.backups.snapshot('복원전')
+      replaceAll(next)
+      toast('백업으로 되돌렸어요')
+      await refresh()
+    } catch (err) {
+      toast(err instanceof Error && err.message.includes('백업') ? err.message : '백업 파일을 읽을 수 없어요')
+    } finally {
+      setBusy('')
+    }
+  }
+
+  const label = (name: string) => {
+    const m = /^\d{4}-\d{2}-\d{2}-\d{6}-(.+)\.json$/.exec(name)
+    if (m) return m[1]
+    return /^\d{4}-\d{2}-\d{2}\.json$/.test(name) ? '일별 자동' : name
+  }
+
+  return (
+    <section className="card">
+      <header className="card-head">
+        <h3>
+          <History size={18} /> 자동백업에서 복원
+        </h3>
+        <span className="muted small">최근 12개</span>
+      </header>
+      {!files ? (
+        <p className="muted small">불러오는 중…</p>
+      ) : files.length ? (
+        <ul className="backup-list">
+          {files.slice(0, 12).map((f) => (
+            <li key={f.name}>
+              <div>
+                <strong>{fmtDateTime(f.at)}</strong>
+                <span className="badge tone-gray">{label(f.name)}</span>
+                <span className="muted small">{Math.max(1, Math.round(f.size / 1024))}KB</span>
+              </div>
+              <button type="button" className="btn small" disabled={!!busy} onClick={() => restore(f)}>
+                {busy === f.name ? '복원 중…' : '이 백업으로 복원'}
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="muted small">아직 백업이 없어요. 데이터를 저장하면 내일부터 일별 백업이 생겨요.</p>
+      )}
+    </section>
   )
 }

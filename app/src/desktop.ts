@@ -23,6 +23,12 @@ export interface DesktopBridge {
   exportBackup: (json: string, filename: string) => Promise<{ ok: boolean; path?: string }>
   /** '열기' 대화 상자로 백업 파일을 고르고 내용을 읽는다 */
   importBackup: () => Promise<{ ok: boolean; path?: string; text?: string }>
+  /** 자동백업 폴더: 목록 보기 · 파일 읽기 · 데이터를 통째로 바꾸기 전 스냅샷 남기기 */
+  backups: {
+    list: () => Promise<BackupFile[]>
+    read: (name: string) => Promise<string>
+    snapshot: (label: string) => Promise<string | null>
+  }
   /** 리스너를 모두 붙인 뒤 한 번 호출. 그 전에 온 이동·새 자소서 명령은 메인 프로세스가 들고 있다 */
   ready: () => void
   /** 앱을 껐다가 다시 켠다 (Node.js 설치 뒤 새 PATH 를 읽을 때) */
@@ -68,6 +74,12 @@ export interface DesktopBridge {
     sendAuthCode: (code: string) => Promise<{ ok: boolean; error?: string }>
     onProgress: (fn: (p: AiProgress) => void) => () => void
   }
+}
+
+export interface BackupFile {
+  name: string
+  at: number
+  size: number
 }
 
 export type TerminalAction =

@@ -74,6 +74,48 @@ function dailyBackup() {
   for (const f of old) fs.rmSync(path.join(BACKUP_DIR, f))
 }
 
+/** 백업 폴더의 파일 목록 (자동 일별 + 교체전 스냅샷), 최신순 */
+function listBackups() {
+  try {
+    return fs
+      .readdirSync(BACKUP_DIR)
+      .filter((f) => f.endsWith('.json'))
+      .map((f) => {
+        const st = fs.statSync(path.join(BACKUP_DIR, f))
+        return { name: f, at: st.mtimeMs, size: st.size }
+      })
+      .sort((a, b) => b.at - a.at)
+  } catch {
+    return []
+  }
+}
+
+/** 데이터를 통째로 바꾸기 전(예시 데이터 · 백업 불러오기 · 복원 · 전체 삭제) 현재 파일을 스냅샷으로 남긴다. 최근 20개만 */
+function snapshotData(label) {
+  if (!fs.existsSync(DATA_FILE)) return null
+  fs.mkdirSync(BACKUP_DIR, { recursive: true })
+  const d = new Date()
+  const p = (n) => String(n).padStart(2, '0')
+  const safe = String(label || '스냅샷').replace(/[\\/:*?"<>|]/g, '').slice(0, 20)
+  const name = `${localDay()}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}-${safe}.json`
+  fs.copyFileSync(DATA_FILE, path.join(BACKUP_DIR, name))
+  const snaps = fs
+    .readdirSync(BACKUP_DIR)
+    .filter((f) => /^\d{4}-\d{2}-\d{2}-\d{6}-.*\.json$/.test(f))
+    .sort()
+  for (const f of snaps.slice(0, Math.max(0, snaps.length - 20))) fs.rmSync(path.join(BACKUP_DIR, f))
+  return name
+}
+
+ipcMain.handle('backup:list', () => listBackups())
+ipcMain.handle('backup:read', (_e, name) => {
+  if (typeof name !== 'string' || !/^[^/\\]+\.json$/.test(name)) throw new Error('잘못된 파일 이름')
+  const text = fs.readFileSync(path.join(BACKUP_DIR, name), 'utf8')
+  JSON.parse(text)
+  return text
+})
+ipcMain.handle('backup:snapshot', (_e, label) => snapshotData(label))
+
 function writeData(json) {
   JSON.parse(json) // 깨진 데이터는 저장하지 않음
   fs.mkdirSync(DATA_DIR, { recursive: true })
