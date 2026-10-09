@@ -108,7 +108,7 @@ export function AiSetup({
     const g = status?.gemini
     const gLogged = !!status && loggedInFor(status, 'gemini')
     steps.push({
-      title: g?.available ? `설치됨 · ${g.cli === 'agy' ? 'Antigravity CLI(agy)' : 'Gemini CLI(gemini)'}` : 'Gemini CLI 설치',
+      title: g?.available ? `설치됨 · ${g.cli === 'agy' ? 'Antigravity CLI(agy)' : 'Gemini CLI(gemini)'}` : 'Antigravity CLI 설치',
       done: !!g?.available,
       body: g?.available ? (
         <span className="muted small">{g.path}</span>

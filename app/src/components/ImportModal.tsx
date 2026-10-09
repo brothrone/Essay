@@ -231,7 +231,7 @@ function ImportModal({ onClose }: { onClose: () => void }) {
             )}
           </div>
           <p className="muted small">
-            이름·연락처·주소는 저장하지 않아요. 글은 이 컴퓨터의 {provider === 'claude' ? 'Claude Code' : 'Gemini CLI'}로만 보내고 인터넷 서버에 따로 올리지
+            이름·연락처·주소는 저장하지 않아요. 글은 이 컴퓨터의 {provider === 'claude' ? 'Claude Code' : 'Antigravity CLI'}로만 보내고 인터넷 서버에 따로 올리지
             않아요. 긴 글은 조각으로 나눠 여러 번 보내서 시간이 좀 걸려요(한 편당 30초~1분).
           </p>
         </div>
