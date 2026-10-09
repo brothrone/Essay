@@ -2979,6 +2979,10 @@ textarea:focus-visible {
     transform: none;
   }
 
+  .nav-scrim.panel-scrim {
+    display: block;
+  }
+
   .spec-summary {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
@@ -2997,6 +3001,11 @@ textarea:focus-visible {
   inset: var(--titlebar-h) 0 0;
   z-index: 50;
   background: rgb(15 23 42 / 30%);
+}
+
+/* 오른쪽 패널을 덮개로 펼칠 때의 회색 막은 좁은 창(위 1240px 이하)에서만. 넓은 창에서는 패널이 옆에 붙어 있어 막을 띄우지 않는다 */
+.panel-scrim {
+  display: none;
 }
 
 /* 창을 좁혔을 때 (최소 너비 960px) */
