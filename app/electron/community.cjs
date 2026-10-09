@@ -103,8 +103,15 @@ module.exports = function setupCommunity({ app, ipcMain, getConfig, isMac }) {
 
   // ---------- 오류 보고: 같은 오류는 한 번만, 한 번 실행에 최대 20개
   const home = os.homedir()
+  // 윈도우: 내 홈 경로가 / 나 \\(JSON) 로 적히거나 대소문자가 달라도 지운다.
+  // 사용자 폴더 이름에 빈칸이 있으면(예: C:\Users\Kim Min Su) 아래 정규식은 빈칸에서 멈춰 뒷부분이 남기 때문
+  const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const homeRe =
+    process.platform === 'win32' && home
+      ? new RegExp([home, home.replace(/\\/g, '/'), home.replace(/\\/g, '\\\\')].map(esc).join('|'), 'gi')
+      : null
   const scrub = (text) =>
-    String(text || '')
+    (homeRe ? String(text || '').replace(homeRe, '~') : String(text || ''))
       .split(home)
       .join('~')
       .replace(/\/Users\/[^/\s'"]+/g, '~')
