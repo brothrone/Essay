@@ -393,6 +393,12 @@ textarea:focus-visible {
   app-region: no-drag;
 }
 
+/* 맥: 왼쪽 위 신호등 버튼 자리를 비우고, 오른쪽은 비울 필요가 없다 */
+.titlebar.mac {
+  padding-left: 84px;
+  padding-right: 14px;
+}
+
 .titlebar-name {
   font-weight: 800;
   letter-spacing: -0.01em;

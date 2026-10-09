@@ -1,15 +1,21 @@
-# Essay · 자소서 & 스펙 관리 (윈도우)
+# Essay · 자소서 & 스펙 관리 (윈도우 · 맥)
 
-AI와 함께 자소서를 쓰는 윈도우 데스크톱 앱이에요. **추가 요금이 없어요.** 이미 쓰고 있는 AI 구독(Google AI 또는 Claude)에 로그인해서 그 사용량으로 돌아가요. 유료 API 키도, 월 요금도, 건당 결제도 없어요. 내 글은 내 PC의 파일로만 남아요.
+AI와 함께 자소서를 쓰는 데스크톱 앱이에요 (Windows 10/11 · macOS 12 이상). **추가 요금이 없어요.** 이미 쓰고 있는 AI 구독(Google AI 또는 Claude)에 로그인해서 그 사용량으로 돌아가요. 유료 API 키도, 월 요금도, 건당 결제도 없어요. 내 글은 내 PC의 파일로만 남아요.
 
 ## 설치
 
-**[최신 설치 파일 받기 (Essay-Setup-x.y.z.exe)](https://github.com/brothrone/Essay/releases/latest)**
+**[최신 설치 파일 받기](https://brothrone.github.io/Essay/)** — Windows 는 `Essay-Setup-x.y.z.exe`, Mac 은 `Essay-x.y.z-mac-universal.dmg` (GitHub Releases 에도 같은 파일이 있어요)
 
+**Windows**
 1. 받은 `Essay-Setup-x.y.z.exe` 를 더블클릭하세요.
 2. 파란 **"Windows의 PC 보호"** 창이 뜨면 **추가 정보 → 실행**. (아직 코드 서명이 없어서 뜨는 안내예요.)
 3. 작은 진행 창이 잠깐 떴다가 Essay가 바로 열려요. 처음 켜면 **환영 안내**가 AI 연결까지 단계별로 안내해요.
 4. 새 버전이 나오면 앱이 스스로 내려받고, 다시 시작할 때 적용돼요.
+
+**Mac**
+1. 받은 `.dmg` 를 열고 Essay 를 **응용 프로그램** 폴더로 끌어다 놓으세요.
+2. 처음 열 때 **"확인되지 않은 개발자"** 안내가 뜨면 **시스템 설정 → 개인정보 보호 및 보안 → [그래도 열기]**. (아직 애플 서명이 없어서 뜨는 안내예요. 한 번만 하면 돼요.)
+3. 기능은 윈도우와 같아요. 단축키는 Ctrl 대신 ⌘ 예요. 새 버전이 나오면 앱 안에 알림 띠가 떠요(받아서 덮어쓰면 돼요).
 
 AI 계정은 셋 중 하나만 있으면 돼요: **Google AI Pro·Ultra 구독**(Antigravity CLI), **Claude Pro·Max 구독**(Claude Code), 또는 **Google 계정만**(Gemini CLI, 무료 한도).
 
@@ -44,6 +50,6 @@ Essay/
 └─ CLAUDE.md            Claude Code 가 이 저장소에서 지킬 규칙
 ```
 
-- 새 버전 배포: `app/package.json` 의 version 을 올리고 `app\scripts\release.ps1`(윈도우) 또는 `app/scripts/release.sh`(맥).
+- 새 버전 배포: `app/package.json` 의 version 을 올리고 `app/scripts/release.sh`(맥에서 맥 + 윈도우 파일을 한 번에) 또는 `app\scripts\release.ps1`(윈도우 파일만).
 - 맥북에서 작업: [guides/맥-작업-안내.md](guides/맥-작업-안내.md)
 - 자세한 구조와 검증 기록: [guides/개발-노트.md](guides/개발-노트.md) · [app/README.md](app/README.md)

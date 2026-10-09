@@ -1,6 +1,7 @@
 import { Check, Download, ExternalLink, KeyRound, LoaderCircle, RefreshCw, Settings2, Sparkles, TerminalSquare } from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
 import { desktop, type AiProvider, type AiStatus, type TerminalAction } from '../desktop'
+import { IS_MAC, PASTE_HINT, TERMINAL } from '../platform'
 import { toast } from '../toast'
 import { aiReady, loggedInFor, setLoginConfirmed, useAiStatus } from '../useAiStatus'
 import { openGeminiLoginDialog } from './AuthCodeDialog'
@@ -54,7 +55,7 @@ export function AiSetup({
   const open = async (action: TerminalAction) => {
     setBusy(action)
     await desktop.ai.openTerminal(action)
-    toast('PowerShell 창이 열렸어요. 끝나면 Essay로 돌아오세요')
+    toast(`${TERMINAL} 창이 열렸어요. 끝나면 Essay로 돌아오세요`)
     setTimeout(() => setBusy(null), 1500)
   }
   const allowWeb = async () => {
@@ -148,7 +149,7 @@ export function AiSetup({
             loginGuide([
               '브라우저가 열리면 Google 계정으로 로그인.',
               '화면에 뜨는 인증 코드를 [Copy to Clipboard]로 복사.',
-              'Essay 창에 붙여넣고 [코드 보내기].',
+              IS_MAC ? 'Essay 창에 ⌘V 로 붙여넣고 [코드 보내기].' : 'Essay 창에 붙여넣고 [코드 보내기].',
             ])
           )}
           {g?.available && (
@@ -204,7 +205,7 @@ export function AiSetup({
           {c?.available ? (
             loginGuide([
               '브라우저가 열리면 Claude 구독 계정으로 로그인. (Anthropic Console 계정은 API 요금이 나가요.)',
-              '인증 코드를 복사해 열린 창에 붙여넣고(마우스 오른쪽 클릭) Enter.',
+              `인증 코드를 복사해 열린 창에 붙여넣고(${PASTE_HINT}) Enter.`,
               '완료 메시지가 뜨면 창을 닫으세요.',
             ])
           ) : (

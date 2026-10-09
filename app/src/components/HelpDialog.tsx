@@ -1,6 +1,7 @@
 import { Copy, FileText, TerminalSquare } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { desktop } from '../desktop'
+import { IS_MAC, PASTE_HINT, TERMINAL } from '../platform'
 import { toast } from '../toast'
 import { Modal } from './ui'
 
@@ -37,17 +38,28 @@ const GROUPS: Group[] = [
   {
     title: '설치가 안 돼요',
     items: [
+      IS_MAC
+        ? {
+            q: '"확인되지 않은 개발자" 또는 "손상되었기 때문에 열 수 없습니다" 라고 떠요',
+            a: (
+              <>
+                Essay가 아직 애플 서명을 받지 않아서 뜨는 안내예요. <b>시스템 설정 → 개인정보 보호 및 보안</b>으로 가서 아래쪽 Essay 항목의{' '}
+                <b>[그래도 열기]</b>를 누르세요. 한 번만 하면 돼요. 그래도 안 되면 터미널에서{' '}
+                <code>xattr -cr /Applications/Essay.app</code> 을 실행한 뒤 다시 여세요.
+              </>
+            ),
+          }
+        : {
+            q: '"Windows의 PC 보호" 파란 창에 실행 버튼이 없어요',
+            a: (
+              <>
+                창 가운데 작은 글씨 <b>"추가 정보"</b>를 먼저 누르세요. 그러면 아래에 <b>[실행]</b> 버튼이 나타나요. Essay가 아직 마이크로소프트 서명을
+                받지 않아서 뜨는 안내일 뿐이에요.
+              </>
+            ),
+          },
       {
-        q: '"Windows의 PC 보호" 파란 창에 실행 버튼이 없어요',
-        a: (
-          <>
-            창 가운데 작은 글씨 <b>"추가 정보"</b>를 먼저 누르세요. 그러면 아래에 <b>[실행]</b> 버튼이 나타나요. Essay가 아직 마이크로소프트 서명을 받지
-            않아서 뜨는 안내일 뿐이에요.
-          </>
-        ),
-      },
-      {
-        q: '설치 버튼을 눌렀는데 검은 창이 바로 닫히거나 빨간 글씨가 떠요',
+        q: '설치 버튼을 눌렀는데 창이 바로 닫히거나 빨간 글씨가 떠요',
         a: (
           <>
             인터넷 연결을 확인하고 다시 눌러 보세요. 회사 PC라면 보안 프로그램이나 프록시가 다운로드를 막을 수 있어요. 그땐 관리자에게{' '}
@@ -136,21 +148,23 @@ const COMMANDS: { title: string; lines: { cmd: string; note?: string }[] }[] = [
   {
     title: 'Gemini (Antigravity CLI) 설치 → 로그인',
     lines: [
-      { cmd: 'irm https://antigravity.google/cli/install.ps1 | iex', note: '설치' },
+      { cmd: IS_MAC ? 'curl -fsSL https://antigravity.google/cli/install.sh | bash' : 'irm https://antigravity.google/cli/install.ps1 | iex', note: '설치' },
       { cmd: 'agy', note: '실행하면 브라우저가 열려요. 로그인 → 인증 코드 복사 → 창에 붙여넣고 Enter' },
     ],
   },
   {
     title: 'Claude Code 설치 → 로그인',
     lines: [
-      { cmd: 'irm https://claude.ai/install.ps1 | iex', note: '설치' },
+      { cmd: IS_MAC ? 'curl -fsSL https://claude.ai/install.sh | bash' : 'irm https://claude.ai/install.ps1 | iex', note: '설치' },
       { cmd: 'claude auth login --claudeai', note: '브라우저에서 Claude 구독 계정으로 로그인' },
     ],
   },
   {
     title: 'Gemini 무료 (Gemini CLI) · Node.js가 먼저 필요',
     lines: [
-      { cmd: 'winget install --id OpenJS.NodeJS.LTS -e', note: 'Node.js 설치 (끝나면 창을 새로 여세요)' },
+      IS_MAC
+        ? { cmd: 'brew install node', note: 'Node.js 설치 (Homebrew 가 없으면 nodejs.org 에서 받으세요)' }
+        : { cmd: 'winget install --id OpenJS.NodeJS.LTS -e', note: 'Node.js 설치 (끝나면 창을 새로 여세요)' },
       { cmd: 'npm install -g @google/gemini-cli', note: '설치' },
       { cmd: 'gemini', note: '"Login with Google" 선택 → 브라우저 로그인 → /quit' },
     ],
@@ -167,7 +181,7 @@ const COMMANDS: { title: string; lines: { cmd: string; note?: string }[] }[] = [
 export function HelpContent() {
   const copy = async (cmd: string) => {
     await desktop.copyText(cmd)
-    toast('복사했어요. PowerShell 창에서 마우스 오른쪽 클릭으로 붙여넣고 Enter')
+    toast(`복사했어요. ${TERMINAL} 창에서 ${PASTE_HINT}으로 붙여넣고 Enter`)
   }
   return (
     <div className="help">
@@ -185,10 +199,10 @@ export function HelpContent() {
 
       <section className="help-group">
         <h3>직접 명령어로 하기 (버튼이 안 될 때만)</h3>
-        <p className="muted small">PowerShell 창을 열고, 명령을 복사해 마우스 오른쪽 클릭으로 붙여넣은 뒤 Enter. 한 줄씩.</p>
+        <p className="muted small">{TERMINAL} 창을 열고, 명령을 복사해 {PASTE_HINT}으로 붙여넣은 뒤 Enter. 한 줄씩.</p>
         <div className="btn-row">
           <button type="button" className="btn small" onClick={() => desktop.ai.openTerminal('open-shell')}>
-            <TerminalSquare size={14} /> PowerShell 열기
+            <TerminalSquare size={14} /> {TERMINAL} 열기
           </button>
         </div>
         {COMMANDS.map((c) => (

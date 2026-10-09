@@ -10,6 +10,7 @@ import { type AiProvider, type ThemeSource } from '../desktop'
 import { toast } from '../toast'
 import { AI_PROVIDERS, saveAiProvider, savedAiProvider } from '../useAiTask'
 import { useTheme } from '../useTheme'
+import { IS_MAC } from '../platform'
 
 /** 설정: 화면 테마 · AI · 업데이트 · Essay 정보 */
 export function Settings() {
@@ -41,7 +42,7 @@ export function Settings() {
 }
 
 const THEMES: { value: ThemeSource; label: string; icon: React.ReactNode }[] = [
-  { value: 'system', label: '윈도우 설정 따라가기', icon: <Monitor size={14} /> },
+  { value: 'system', label: IS_MAC ? '시스템 설정 따라가기' : '윈도우 설정 따라가기', icon: <Monitor size={14} /> },
   { value: 'light', label: '밝게', icon: <Sun size={14} /> },
   { value: 'dark', label: '어둡게', icon: <Moon size={14} /> },
 ]
@@ -52,7 +53,7 @@ function ThemeSettings() {
     <section className="card">
       <header className="card-head">
         <h3>화면 테마</h3>
-        <span className="muted small">{theme.source === 'system' ? `지금은 윈도우 설정대로 ${theme.dark ? '어둡게' : '밝게'}` : ''}</span>
+        <span className="muted small">{theme.source === 'system' ? `지금은 ${IS_MAC ? '시스템' : '윈도우'} 설정대로 ${theme.dark ? '어둡게' : '밝게'}` : ''}</span>
       </header>
       <div className="segmented">
         {THEMES.map((t) => (

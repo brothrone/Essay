@@ -1,4 +1,5 @@
 import { Check, ClipboardPaste, LoaderCircle, RefreshCw } from 'lucide-react'
+import { kbd } from '../platform'
 import { useState } from 'react'
 import { postingRequest } from '../aiRun'
 import { isHttpUrl } from '../format'
@@ -68,7 +69,7 @@ export function PostingCheck({ project, onPatch }: { project: Project; onPatch: 
             maxLength={15000}
             value={pasted}
             onChange={(e) => setPasted(e.target.value)}
-            placeholder="채용 페이지에서 Ctrl+A → Ctrl+C 로 복사한 내용을 그대로 붙여넣으세요"
+            placeholder={`채용 페이지에서 ${kbd('A')} → ${kbd('C')} 로 복사한 내용을 그대로 붙여넣으세요`}
             aria-label="공고 본문"
           />
           <button type="button" className="btn primary small" disabled={pasted.trim().length < 40} onClick={readPasted}>

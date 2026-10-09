@@ -1,6 +1,7 @@
 import { Download, LoaderCircle, RefreshCw, RotateCcw, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { desktop, type UpdateStatus } from '../desktop'
+import { IS_MAC } from '../platform'
 
 /** 자동 업데이트 상태. 앱이 켜지면 메인 프로세스가 GitHub Releases 를 확인하고 새 버전을 조용히 내려받는다 */
 export function useUpdateStatus() {
@@ -12,19 +13,19 @@ export function useUpdateStatus() {
   return status
 }
 
-/** 새 버전을 다 받았을 때 화면 아래에 조용히 뜨는 띠. [지금 다시 시작] 또는 닫기(다음에 끌 때 적용) */
+/** 새 버전을 다 받았을 때 화면 아래에 조용히 뜨는 띠. [지금 다시 시작] 또는 닫기(다음에 끌 때 적용).
+ *  맥은 앱이 직접 바꿔 끼우지 못해 "새 버전이 나왔어요 → 다운로드" 로 안내한다 */
 export function UpdateBanner() {
   const status = useUpdateStatus()
   const [hidden, setHidden] = useState('')
-  if (status.state !== 'ready' || hidden === status.version) return null
+  const manual = status.state === 'available' && status.manual
+  if ((status.state !== 'ready' && !manual) || hidden === status.version) return null
   return (
     <div className="update-banner" role="status">
       <Download size={16} />
-      <span>
-        새 버전 {status.version} 준비됨. 다시 시작하면 적용돼요.
-      </span>
+      <span>{manual ? `새 버전 ${status.version}이 나왔어요. 받아서 응용 프로그램 폴더에 덮어쓰면 돼요.` : `새 버전 ${status.version} 준비됨. 다시 시작하면 적용돼요.`}</span>
       <button type="button" className="btn small primary" onClick={() => desktop.update.install()}>
-        <RotateCcw size={14} /> 다시 시작
+        {manual ? <Download size={14} /> : <RotateCcw size={14} />} {manual ? '다운로드' : '다시 시작'}
       </button>
       <button type="button" className="icon-btn" aria-label="나중에" onClick={() => setHidden(status.version || '')}>
         <X size={16} />
@@ -50,7 +51,7 @@ export function UpdateCard() {
       case 'checking':
         return '확인 중…'
       case 'available':
-        return `${status.version} 내려받기 시작`
+        return status.manual ? `새 버전 ${status.version}이 나왔어요. 받아서 응용 프로그램 폴더에 덮어쓰면 돼요.` : `${status.version} 내려받기 시작`
       case 'downloading':
         return `${status.version} 내려받는 중 · ${status.percent ?? 0}%`
       case 'ready':
@@ -60,7 +61,7 @@ export function UpdateCard() {
       case 'error':
         return `확인 실패 (${status.message})`
       default:
-        return '켤 때와 6시간마다 자동으로 확인해요.'
+        return IS_MAC ? '켤 때와 6시간마다 새 버전이 나왔는지 확인해요.' : '켤 때와 6시간마다 자동으로 확인해요.'
     }
   })()
   return (
@@ -78,6 +79,10 @@ export function UpdateCard() {
         {status.state === 'ready' ? (
           <button type="button" className="btn primary" onClick={() => desktop.update.install()}>
             <RotateCcw size={16} /> 다시 시작하고 적용
+          </button>
+        ) : status.state === 'available' && status.manual ? (
+          <button type="button" className="btn primary" onClick={() => desktop.update.install()}>
+            <Download size={16} /> {status.version} 다운로드
           </button>
         ) : (
           <button type="button" className="btn" onClick={check} disabled={checking || status.state === 'downloading' || status.state === 'checking'}>

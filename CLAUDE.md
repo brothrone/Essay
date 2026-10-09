@@ -1,6 +1,6 @@
 # Essay — Claude Code 작업 규칙
 
-자소서 · 스펙 관리 데스크톱 앱 (Electron 44 + React 19 + Vite 8 + TypeScript). 지금은 윈도우용으로 배포 중이고, 맥 버전은 맥북에서 만들 예정.
+자소서 · 스펙 관리 데스크톱 앱 (Electron 44 + React 19 + Vite 8 + TypeScript). 윈도우 · 맥 둘 다 같은 코드로 배포한다 (1.4.0 부터 맥 포함). 운영체제별 동작은 `main.cjs` 의 `IS_MAC`, 화면은 `src/platform.ts` 로 나눈다.
 AI 기능은 유료 API 없이 사용자 PC에 로그인된 CLI(Claude Code `claude`, Antigravity CLI `agy`, Gemini CLI `gemini`)를 실행한다.
 
 ## 사용자와 일하는 방식
@@ -28,7 +28,8 @@ npx tsc -b                  # 타입 검사
 npx oxlint src electron     # 코드 검사
 npx vite build              # 화면 빌드
 ```
-- 배포: `package.json` version 올리기 → `scripts/release.ps1`(윈도우) 또는 `scripts/release.sh`(맥). GitHub Releases `brothrone/Essay` 에 설치 파일 · `.blockmap` · `latest.yml`(맥은 `latest-mac.yml`)이 올라가야 자동 업데이트가 된다.
+- 배포: `package.json` version 올리기 → `scripts/release.sh`(맥에서 맥 + 윈도우 파일을 한 번에, `--mac-only` 가능) 또는 `scripts/release.ps1`(윈도우 파일만). GitHub Releases `brothrone/Essay` 의 **같은 태그 `v<버전>`** 에 윈도우(`Essay-Setup-<버전>.exe` · `.blockmap` · `latest.yml`) 와 맥(`Essay-<버전>-mac-universal.dmg` · `.zip` · `latest-mac.yml`) 파일이 함께 있어야 한다. `latest.yml` 이 없으면 윈도우 자동 업데이트가 멈춘다.
+- 맥은 애플 개발자 서명이 없어 ad-hoc 서명만 한다(`scripts/after-pack.cjs`). 그래서 맥 자동 업데이트(Squirrel)는 쓰지 않고 GitHub 최신 릴리스를 확인해 "새 버전 → 다운로드" 띠만 띄운다(`checkMacUpdate`). 처음 열 때 Gatekeeper 안내가 뜨는 건 정상(시스템 설정 → 개인정보 보호 및 보안 → 그래도 열기).
 - 토큰: `gh auth token`, 없으면 Git Credential Manager (`"protocol=https\nhost=github.com\n\n" | git credential-manager get`).
 
 ## 검증할 때
@@ -39,11 +40,12 @@ npx vite build              # 화면 빌드
 ## AI 도구에서 알아 둔 것
 - 유료 API 로 결제되지 않게 `ANTHROPIC_*`, `GEMINI_API_KEY` 등 키 환경 변수를 지우고 실행한다 (`aiEnv`).
 - Claude Code: 요청문은 stdin, `--output-format stream-json`. 웹 작업은 빠른 모델(Sonnet).
-- agy: 요청문은 인자(윈도우는 30,000자 제한), 파이프 stdin 을 읽지 않는다. 로그인 코드는 콘솔 입력으로만 받는다 (윈도우는 C# `WriteConsoleInputW` 로 해결, 맥은 미정). 검색 결과에 공고 주소가 안 보여서 맞춤 공고는 사람인 · 잡코리아 공고 주소 안 `site:` 검색으로 찾게 한다. 링크는 `vertexaisearch…/grounding-api-redirect/…` 중간 주소라 `net:resolve-urls` 로 실제 주소로 바꾼다. 결과의 `usage` 에 토큰 수가 있다.
+- agy: 요청문은 인자(윈도우는 30,000자 제한, 맥은 200,000자), 파이프 stdin 을 읽지 않는다. 로그인 코드는 콘솔 입력으로만 받는다 (윈도우는 C# `WriteConsoleInputW`, 맥은 `/usr/bin/expect` 가상 터미널로 agy 를 띄우고 Essay 가 파이프로 넣은 줄을 터미널 입력으로 넘긴다 — `startGeminiLoginMac`. macOS 의 `script` 는 stdin 이 파이프면 실패해서 못 쓴다). 검색 결과에 공고 주소가 안 보여서 맞춤 공고는 사람인 · 잡코리아 공고 주소 안 `site:` 검색으로 찾게 한다. 링크는 `vertexaisearch…/grounding-api-redirect/…` 중간 주소라 `net:resolve-urls` 로 실제 주소로 바꾼다. 결과의 `usage` 에 토큰 수가 있다.
+- 맥에서 CLI 찾기: 앱은 터미널 PATH 를 못 받으므로 `zsh -lc` 로 로그인 셸 PATH 를 한 번 읽어(`loginShellPath`) `~/.local/bin` · `/opt/homebrew/bin` 등과 함께 쓴다. 자식 프로세스는 `detached: true` 로 띄워 `process.kill(-pid)` 로 묶음 종료한다. 설치 · 터미널 작업은 `.command` 파일을 만들어 터미널 앱으로 연다.
 - 공고 마감 확인(`checkPosting`): 화면의 '마감일:' → 캐치 `ApplyEndDatetime` → 본문 "접수기간 ~" → `validThrough`(반년 넘게 남았으면 상시로 봄) 순.
 
 ## 남은 일 (사용자가 나중에 다시 알려 달라고 한 것)
-1. 맥 버전 출시 — `guides/맥-작업-안내.md`
+1. 맥 서명 · 공증 (Apple Developer Program 가입 뒤 — 그러면 Gatekeeper 안내가 사라지고 맥 자동 업데이트도 켤 수 있다) — `guides/맥-작업-안내.md`
 2. 유료 판매(개당 990원): 사업자 등록, PG(나이스체크아웃 검토: 가입비 면제 프로모션, 수수료 1.9~3.4%, 코드 NICE27 시 2.7%, 결제 후 키 자동 발송 없음), 통신판매업 신고, 환불 제한 표시 + 체험판, 사이트 하단 사업자 정보 표시(익명 유지와 충돌하니 상호로)
 3. AI별 토큰 사용량 표시
 4. 요금제별 CLI 사용 가능 여부 주기적 재확인 (Claude 는 Pro · Max, Antigravity CLI 는 무료 Google 계정도 가능 — 2026-10 기준)

@@ -1,12 +1,15 @@
-// Essay 윈도우 데스크톱 앱: 창을 띄우고, 데이터를 '문서\Essay' 폴더의 JSON 파일로 저장한다.
+// Essay 데스크톱 앱(윈도우 · 맥): 창을 띄우고, 데이터를 '문서/Essay' 폴더의 JSON 파일로 저장한다.
 const { app, BrowserWindow, Menu, dialog, ipcMain, nativeTheme, shell, clipboard, Notification } = require('electron')
 const { spawn, execFileSync } = require('node:child_process')
 const os = require('node:os')
 const path = require('node:path')
 const fs = require('node:fs')
 
+// 맥이면 true. 윈도우 동작은 그대로 두고 맥에서만 다르게 할 곳을 이 값으로 나눈다
+const IS_MAC = process.platform === 'darwin'
+
 // 윈도우 알림·작업 표시줄 묶음에 쓰이는 앱 ID (NSIS 바로가기와 같은 값)
-app.setAppUserModelId('com.brothrone.essay')
+if (!IS_MAC) app.setAppUserModelId('com.brothrone.essay')
 
 const APP_NAME = 'Essay'
 const ICON_ICO = path.join(__dirname, 'icon.ico')
@@ -97,7 +100,14 @@ ipcMain.on('app:data-path', (e) => {
   e.returnValue = DATA_FILE
 })
 ipcMain.on('app:info', (e) => {
-  e.returnValue = { version: app.getVersion(), electron: process.versions.electron, chrome: process.versions.chrome, node: process.versions.node }
+  e.returnValue = {
+    version: app.getVersion(),
+    electron: process.versions.electron,
+    chrome: process.versions.chrome,
+    node: process.versions.node,
+    platform: process.platform,
+    arch: process.arch,
+  }
 })
 ipcMain.handle('app:open-data-folder', async () => {
   fs.mkdirSync(DATA_DIR, { recursive: true })
@@ -246,6 +256,8 @@ const AGY_LOGIN_CODE = () => path.join(app.getPath('userData'), 'agy-login-code.
 const AGY_LOGIN_WINDOW = 'Essay 로그인 창 - Gemini'
 // 윈도우 명령줄 길이 한도(32,767자) 안에서 agy에 요청문을 인자로 넘길 수 있는 최대 길이
 const WIN_ARG_LIMIT = 30000
+// 맥은 인자 하나가 256KB 까지라 넉넉하다
+const MAC_ARG_LIMIT = 200000
 
 let aiChild = null
 let aiChildKind = ''
@@ -253,8 +265,34 @@ let aiCancelled = false
 
 const firstExisting = (list) => list.filter(Boolean).find((p) => fs.existsSync(p)) || null
 
-// where.exe 로 PATH에서 찾는다 (.exe 와 .cmd 둘 다 나올 수 있어 첫 번째 것을 쓴다)
+// 맥: 앱은 터미널의 PATH 를 못 받으므로 로그인 셸(zsh)의 PATH 를 한 번 읽어 둔다
+let loginPathCache = null
+function loginShellPath() {
+  if (loginPathCache !== null) return loginPathCache
+  try {
+    const out = execFileSync('/bin/zsh', ['-lc', 'printf %s "$PATH"'], { encoding: 'utf8', timeout: 8000, stdio: ['ignore', 'pipe', 'ignore'] })
+    loginPathCache = out.split(':').filter(Boolean)
+  } catch {
+    loginPathCache = []
+  }
+  return loginPathCache
+}
+const MAC_EXTRA_PATH = () => [path.join(HOME, '.local', 'bin'), '/opt/homebrew/bin', '/usr/local/bin']
+
+// PATH 에서 명령어 위치를 찾는다 (윈도우: where.exe, 맥: 로그인 셸 PATH 의 폴더를 직접 확인)
 function whereBin(name) {
+  if (IS_MAC) {
+    for (const dir of [...MAC_EXTRA_PATH(), ...loginShellPath(), '/usr/bin', '/bin']) {
+      const p = path.join(dir, name)
+      try {
+        fs.accessSync(p, fs.constants.X_OK)
+        if (fs.statSync(p).isFile()) return p
+      } catch {
+        /* 없음 */
+      }
+    }
+    return null
+  }
   try {
     const out = execFileSync('where.exe', [name], { encoding: 'utf8', timeout: 5000, windowsHide: true, stdio: ['ignore', 'pipe', 'ignore'] })
     const p = out
@@ -270,19 +308,23 @@ function whereBin(name) {
 // Gemini는 두 CLI 중 설치된 것을 쓴다: Antigravity CLI(agy, 구독 로그인) → 없으면 Gemini CLI(gemini, Google 로그인)
 function findGemini() {
   const agy =
-    firstExisting([
-      process.env.ESSAY_AGY_PATH,
-      path.join(LOCALAPPDATA, 'agy', 'bin', 'agy.exe'),
-      path.join(HOME, '.local', 'bin', 'agy.exe'),
-      path.join(APPDATA, 'npm', 'agy.cmd'),
-    ]) || whereBin('agy')
+    firstExisting(
+      IS_MAC
+        ? [process.env.ESSAY_AGY_PATH, path.join(HOME, '.local', 'bin', 'agy'), '/opt/homebrew/bin/agy', '/usr/local/bin/agy']
+        : [
+            process.env.ESSAY_AGY_PATH,
+            path.join(LOCALAPPDATA, 'agy', 'bin', 'agy.exe'),
+            path.join(HOME, '.local', 'bin', 'agy.exe'),
+            path.join(APPDATA, 'npm', 'agy.cmd'),
+          ],
+    ) || whereBin('agy')
   if (agy) return { bin: agy, cli: 'agy' }
   const gemini =
-    firstExisting([
-      process.env.ESSAY_GEMINI_PATH,
-      path.join(APPDATA, 'npm', 'gemini.cmd'),
-      path.join(LOCALAPPDATA, 'Programs', 'gemini', 'gemini.exe'),
-    ]) || whereBin('gemini')
+    firstExisting(
+      IS_MAC
+        ? [process.env.ESSAY_GEMINI_PATH, '/opt/homebrew/bin/gemini', '/usr/local/bin/gemini', path.join(HOME, '.npm-global', 'bin', 'gemini')]
+        : [process.env.ESSAY_GEMINI_PATH, path.join(APPDATA, 'npm', 'gemini.cmd'), path.join(LOCALAPPDATA, 'Programs', 'gemini', 'gemini.exe')],
+    ) || whereBin('gemini')
   if (gemini) return { bin: gemini, cli: 'gemini' }
   return null
 }
@@ -290,13 +332,23 @@ function findGemini() {
 function findCli(provider) {
   if (provider === 'gemini') return findGemini()
   const found =
-    firstExisting([
-      process.env.ESSAY_CLAUDE_PATH,
-      path.join(HOME, '.local', 'bin', 'claude.exe'),
-      path.join(HOME, '.claude', 'local', 'claude.exe'),
-      path.join(LOCALAPPDATA, 'Programs', 'claude', 'claude.exe'),
-      path.join(APPDATA, 'npm', 'claude.cmd'),
-    ]) || whereBin('claude')
+    firstExisting(
+      IS_MAC
+        ? [
+            process.env.ESSAY_CLAUDE_PATH,
+            path.join(HOME, '.local', 'bin', 'claude'),
+            path.join(HOME, '.claude', 'local', 'claude'),
+            '/opt/homebrew/bin/claude',
+            '/usr/local/bin/claude',
+          ]
+        : [
+            process.env.ESSAY_CLAUDE_PATH,
+            path.join(HOME, '.local', 'bin', 'claude.exe'),
+            path.join(HOME, '.claude', 'local', 'claude.exe'),
+            path.join(LOCALAPPDATA, 'Programs', 'claude', 'claude.exe'),
+            path.join(APPDATA, 'npm', 'claude.cmd'),
+          ],
+    ) || whereBin('claude')
   return found ? { bin: found, cli: 'claude' } : null
 }
 
@@ -308,6 +360,11 @@ function aiEnv(provider) {
       : /^(ANTHROPIC_|CLAUDE_|CLAUDECODE|USE_LOCAL_OAUTH|USE_STAGING_OAUTH|ELECTRON_)/i
   const env = {}
   for (const [k, v] of Object.entries(process.env)) if (!drop.test(k)) env[k] = v
+  if (IS_MAC) {
+    // 맥: 앱이 Finder 에서 켜지면 터미널 PATH 가 없으므로 로그인 셸 PATH 와 흔한 설치 폴더를 앞에 붙인다
+    env.PATH = [...new Set([...MAC_EXTRA_PATH(), ...loginShellPath(), ...(env.PATH || '').split(':')])].filter(Boolean).join(':')
+    return env
+  }
   // 윈도우 환경변수 이름은 대소문자를 구분하지 않으므로 기존 키 이름을 그대로 쓴다
   const key = Object.keys(env).find((k) => k.toLowerCase() === 'path') || 'Path'
   env[key] = [path.join(HOME, '.local', 'bin'), path.join(LOCALAPPDATA, 'agy', 'bin'), path.join(APPDATA, 'npm'), env[key] || '']
@@ -319,6 +376,19 @@ function aiEnv(provider) {
 // 윈도우에서는 .cmd 래퍼로 띄운 자식까지 함께 끝내야 하므로 프로세스 트리를 통째로 종료한다
 function killTree(child) {
   if (!child || child.pid === undefined || child.exitCode !== null) return
+  if (IS_MAC) {
+    // 맥: detached 로 띄운 자식은 자기 프로세스 그룹의 우두머리라 그룹 전체(-pid)를 끝낼 수 있다
+    try {
+      process.kill(-child.pid, 'SIGKILL')
+    } catch {
+      try {
+        child.kill('SIGKILL')
+      } catch {
+        /* 이미 끝남 */
+      }
+    }
+    return
+  }
   try {
     spawn('taskkill', ['/pid', String(child.pid), '/T', '/F'], { windowsHide: true, stdio: 'ignore' })
   } catch {
@@ -334,9 +404,9 @@ function claudeErrorMessage(d) {
   const status = d.api_error_status
   const text = String(d.result || '')
   if (status === 401 || /authenticat|OAuth|log ?in/i.test(text))
-    return 'Claude 로그인이 필요해요. PowerShell에서 claude auth login --claudeai 를 실행해 주세요.'
+    return `Claude 로그인이 필요해요. ${IS_MAC ? '터미널' : 'PowerShell'}에서 claude auth login --claudeai 를 실행해 주세요.`
   if (/claude_code_version_too_old|version .* or newer is required/i.test(text))
-    return 'Claude Code가 오래돼서 이 모델을 쓸 수 없어요. 모델을 "기본"으로 바꾸거나, PowerShell에서 claude update 를 실행해 주세요.'
+    return `Claude Code가 오래돼서 이 모델을 쓸 수 없어요. 모델을 "기본"으로 바꾸거나, ${IS_MAC ? '터미널' : 'PowerShell'}에서 claude update 를 실행해 주세요.`
   if (status === 429 || /rate.?limit|usage limit|limit reached/i.test(text))
     return 'Claude 사용량 한도에 도달했어요. 한도가 초기화된 뒤 다시 시도해 주세요.'
   return text.slice(0, 400) || '알 수 없는 오류가 났어요.'
@@ -540,6 +610,72 @@ const TERMINAL_ACTIONS = {
     ],
   },
 }
+// 맥: 같은 일을 터미널 앱(zsh)에서 한다. 설치는 공식 설치 스크립트, 로그인은 CLI 가 띄우는 브라우저로
+const TERMINAL_ACTIONS_MAC = {
+  'open-shell': {
+    title: '터미널',
+    cmd: '',
+    provider: 'claude',
+    hint: ['Essay 도움말 창에서 [복사]한 명령을 이 창에 ⌘V 로 붙여넣고 Enter 를 누르세요.', '한 줄씩 차례로 하세요. 끝나면 이 창을 닫고 Essay 로 돌아가 [연결 확인] 을 누르세요.'],
+  },
+  'install-agy': {
+    title: 'Antigravity CLI 설치',
+    cmd: 'curl -fsSL https://antigravity.google/cli/install.sh | bash',
+    provider: 'gemini',
+    hint: ['설치가 끝나면 이 창을 닫고 Essay로 돌아가세요. 2단계 [로그인]을 누르면 돼요.'],
+  },
+  // 맥에서 로그인은 보통 Essay 안에서 끝난다(가상 터미널로 agy 를 띄우고 코드를 대신 입력). 이건 그게 안 될 때 쓰는 직접 방식
+  'login-agy': {
+    title: 'Gemini 로그인 (Antigravity CLI)',
+    cmd: 'agy -p "ok라고만 답하세요" --output-format text --print-timeout 120s',
+    provider: 'gemini',
+    hint: [
+      '1) 잠시 뒤 브라우저가 열리면 Google 계정으로 로그인하세요.',
+      '2) 로그인 후 브라우저에 "Paste this code into your application" 과 긴 인증 코드가 떠요. [Copy to Clipboard] 를 누르세요.',
+      '3) 이 창을 클릭하고 ⌘V 로 붙여넣은 뒤 Enter. 60초 안에 넣어야 해요.',
+      '4) 아래에 ok 가 나오면 끝이에요. 이 창을 닫고 Essay 로 돌아가 [연결 확인] 을 누르세요.',
+    ],
+  },
+  'install-gemini': {
+    title: 'Gemini CLI 설치',
+    cmd: 'npm install -g @google/gemini-cli',
+    provider: 'gemini',
+    hint: ['설치가 끝나면 이 창을 닫고 Essay로 돌아가세요.'],
+  },
+  'login-gemini': {
+    title: 'Gemini 로그인 (Gemini CLI)',
+    cmd: 'gemini',
+    provider: 'gemini',
+    hint: [
+      '1) 로그인 방법을 물으면 방향키로 "Login with Google" 을 고르고 Enter.',
+      '2) 브라우저가 열리면 Google 계정으로 로그인하세요. 성공 메시지가 뜨면 브라우저를 닫아도 돼요.',
+      '3) 이 창에서 /quit 를 입력해 gemini 를 끝내고 창을 닫은 뒤 Essay 로 돌아오세요.',
+    ],
+  },
+  'install-node': {
+    title: 'Node.js 설치',
+    cmd: 'brew install node',
+    provider: 'gemini',
+    hint: ['Homebrew 로 Node.js 를 설치해요. 끝나면 이 창을 닫고 Essay 를 완전히 종료했다가 다시 실행하세요.'],
+  },
+  'install-claude': {
+    title: 'Claude Code 설치',
+    cmd: 'curl -fsSL https://claude.ai/install.sh | bash',
+    provider: 'claude',
+    hint: ['설치가 끝나면 이 창을 닫고 Essay로 돌아가세요.'],
+  },
+  'login-claude': {
+    title: 'Claude 로그인',
+    cmd: 'claude auth login --claudeai',
+    provider: 'claude',
+    hint: [
+      '1) 브라우저가 열리면 Claude 구독 계정(Pro·Max)으로 로그인하세요. Anthropic Console 계정은 API 요금이 나가요.',
+      '2) 브라우저에 인증 코드가 뜨면 복사해서 이 창에 붙여넣고(⌘V) Enter.',
+      '3) 완료 메시지가 나오면 이 창을 닫고 Essay 로 돌아오세요.',
+    ],
+  },
+}
+const terminalAction = (action) => (IS_MAC ? TERMINAL_ACTIONS_MAC : TERMINAL_ACTIONS)[action]
 ipcMain.handle('ai:open-terminal', (_e, action) => openTerminal(action))
 
 // 설치는 창 없이 조용히 돌리고 진행 상황만 화면에 흘려보낸다 (실패하면 화면에서 PowerShell 창 방식으로 넘어갈 수 있다)
@@ -548,7 +684,7 @@ const INSTALL_ACTIONS = new Set(['install-agy', 'install-claude', 'install-gemin
 const ANSI_RE = new RegExp(String.fromCharCode(27) + '\\[[0-9;?]*[A-Za-z]', 'g')
 let installChild = null
 ipcMain.handle('ai:install', (e, action) => {
-  const a = TERMINAL_ACTIONS[action]
+  const a = terminalAction(action)
   if (!a || !INSTALL_ACTIONS.has(action)) return { ok: false, error: '허용되지 않은 설치예요' }
   if (installChild) return { ok: false, error: '다른 설치가 진행 중이에요' }
   const wc = e.sender
@@ -557,20 +693,29 @@ ipcMain.handle('ai:install', (e, action) => {
     const text = String(line).replace(ANSI_RE, '').trim()
     if (text && !wc.isDestroyed()) wc.send('ai:install-progress', { action, line: text })
   }
+  if (IS_MAC && action === 'install-node' && !whereBin('brew')) {
+    // 맥에서 Node.js 는 Homebrew 로 설치한다. Homebrew 가 없으면 설치 페이지를 열어 준다
+    shell.openExternal('https://nodejs.org/ko/download')
+    emit('Homebrew 가 없어 nodejs.org 다운로드 페이지를 열었어요. 설치한 뒤 Essay 를 다시 켜 주세요.')
+    if (!wc.isDestroyed()) wc.send('ai:install-done', { action, code: 1, seconds: 0 })
+    return { ok: true }
+  }
   try {
-    const child = spawn(
-      'powershell.exe',
-      [
-        '-NoLogo',
-        '-NoProfile',
-        '-NonInteractive',
-        '-ExecutionPolicy',
-        'Bypass',
-        '-Command',
-        `[Console]::OutputEncoding = [Text.Encoding]::UTF8; $ProgressPreference = 'SilentlyContinue'; ${a.cmd}; exit $LASTEXITCODE`,
-      ],
-      { windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'], env: aiEnv(a.provider) },
-    )
+    const child = IS_MAC
+      ? spawn('/bin/zsh', ['-lc', a.cmd], { stdio: ['ignore', 'pipe', 'pipe'], env: aiEnv(a.provider), detached: true })
+      : spawn(
+          'powershell.exe',
+          [
+            '-NoLogo',
+            '-NoProfile',
+            '-NonInteractive',
+            '-ExecutionPolicy',
+            'Bypass',
+            '-Command',
+            `[Console]::OutputEncoding = [Text.Encoding]::UTF8; $ProgressPreference = 'SilentlyContinue'; ${a.cmd}; exit $LASTEXITCODE`,
+          ],
+          { windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'], env: aiEnv(a.provider) },
+        )
     installChild = child
     let buf = ''
     const onData = (d) => {
@@ -610,9 +755,41 @@ ipcMain.handle('app:relaunch', () => {
   app.exit(0)
 })
 
+// 맥: 안내와 명령을 적은 .command 파일을 만들어 터미널 앱으로 연다
+function openTerminalMac(a, action) {
+  const dir = path.join(app.getPath('temp'), 'essay-ai')
+  fs.mkdirSync(dir, { recursive: true })
+  const file = path.join(dir, `${action}.command`)
+  const q = (s) => `'${String(s).replace(/'/g, `'\\''`)}'`
+  const env = aiEnv(a.provider)
+  const script = [
+    '#!/bin/zsh',
+    `export PATH=${q(env.PATH)}`,
+    `printf '\\033]0;%s\\007' ${q(`Essay · ${a.title}`)}`,
+    'clear',
+    `echo ${q(`— Essay: ${a.title} —`)}`,
+    'echo',
+    ...(a.hint || []).map((h) => `echo ${q(h)}`),
+    'echo',
+    a.cmd,
+    'echo',
+    `echo ${q('끝났으면 이 창을 닫고 Essay 로 돌아가세요.')}`,
+  ].join('\n')
+  fs.writeFileSync(file, script + '\n', { encoding: 'utf8', mode: 0o755 })
+  fs.chmodSync(file, 0o755)
+  try {
+    const child = spawn('/usr/bin/open', ['-a', 'Terminal', file], { stdio: 'ignore' })
+    child.unref()
+    return true
+  } catch {
+    return false
+  }
+}
+
 function openTerminal(action) {
-  const a = TERMINAL_ACTIONS[action]
+  const a = terminalAction(action)
   if (!a) return false
+  if (IS_MAC) return openTerminalMac(a, action)
   const cmd = typeof a.cmd === 'function' ? a.cmd() : a.cmd
   const windowTitle = a.windowTitle || `Essay · ${a.title}`
   // 스크립트 파일로 저장한 뒤 cmd 의 start 로 새 콘솔 창을 연다
@@ -825,18 +1002,93 @@ ipcMain.handle('ai:cancel', () => {
 // cmd.exe 를 거치는 .cmd/.bat 래퍼일 때 인자를 따옴표로 감싼다 (안쪽 따옴표 · 끝 역슬래시 처리)
 const quoteArg = (a) => `"${String(a).replace(/(\\*)"/g, '$1$1\\"').replace(/(\\+)$/, '$1$1')}"`
 
-// 브라우저에서 받은 인증 코드를 로그인 콘솔 창에 넘긴다 (창이 파일을 읽어 자기 콘솔 입력에 넣는다)
+// 맥: agy 는 파이프 stdin 을 읽지 않으므로 expect(맥 기본 포함)로 가상 터미널을 만들어 그 안에서 띄우고,
+// 우리가 파이프로 넣는 줄을 expect 가 터미널 입력으로 넘긴다. 창은 뜨지 않고 Essay 안내 창만 보인다.
+const RELAY_EXPECT = `set timeout -1
+spawn -noecho {*}$argv
+fileevent stdin readable {
+  if {[gets stdin line] >= 0} { send -- "$line\\r" } else { fileevent stdin readable {} }
+}
+expect eof
+catch wait result
+exit [lindex $result 3]
+`
+let loginChild = null
+function startGeminiLoginMac(bin) {
+  for (const f of [AGY_LOGIN_MARK(), AGY_LOGIN_RESULT(), AGY_LOGIN_CODE()]) fs.rmSync(f, { force: true })
+  if (loginChild && loginChild.exitCode === null) killTree(loginChild)
+  const dir = path.join(app.getPath('temp'), 'essay-ai')
+  fs.mkdirSync(dir, { recursive: true })
+  const relay = path.join(dir, 'relay.exp')
+  fs.writeFileSync(relay, RELAY_EXPECT, 'utf8')
+  try {
+    const child = spawn('/usr/bin/expect', ['-f', relay, bin, '-p', 'ok라고만 답하세요', '--output-format', 'text', '--print-timeout', '120s'], {
+      cwd: dir,
+      env: aiEnv('gemini'),
+      stdio: ['pipe', 'pipe', 'pipe'],
+      detached: true,
+    })
+    loginChild = child
+    let out = ''
+    const onData = (d) => {
+      out += d
+    }
+    child.stdout.setEncoding('utf8')
+    child.stderr.setEncoding('utf8')
+    child.stdout.on('data', onData)
+    child.stderr.on('data', onData)
+    child.stdin.on('error', () => {})
+    const timer = setTimeout(() => killTree(child), 150000)
+    child.on('close', (code) => {
+      clearTimeout(timer)
+      if (loginChild === child) loginChild = null
+      const text = out.replace(ANSI_RE, '')
+      const ok = code === 0 && !/authentication failed|timed out/i.test(text)
+      try {
+        fs.writeFileSync(AGY_LOGIN_RESULT(), `exit ${ok ? 0 : code || 1}`)
+        if (ok) fs.writeFileSync(AGY_LOGIN_MARK(), new Date().toISOString())
+      } catch {
+        /* 무시 */
+      }
+      writeAiLog({ provider: 'gemini', bin, login: true, code, output: text.slice(-1500) })
+    })
+    child.on('error', () => {
+      if (loginChild === child) loginChild = null
+      try {
+        fs.writeFileSync(AGY_LOGIN_RESULT(), 'exit 1')
+      } catch {
+        /* 무시 */
+      }
+    })
+    return true
+  } catch {
+    return false
+  }
+}
+
+// 브라우저에서 받은 인증 코드를 로그인 콘솔 창에 넘긴다 (윈도우: 창이 파일을 읽어 자기 콘솔 입력에 넣는다 · 맥: 가상 터미널에 바로 입력)
 ipcMain.handle('ai:auth-code', (_e, code) => {
-  if (!String(code || '').trim()) return { ok: false, error: '코드가 비어 있어요.' }
+  const c = String(code || '').trim()
+  if (!c) return { ok: false, error: '코드가 비어 있어요.' }
   if (readLoginResult()) return { ok: false, error: '로그인 창이 이미 끝났어요. [로그인]을 다시 눌러 새 창에서 시도해 주세요.' }
-  return handOverLoginCode(code) ? { ok: true } : { ok: false, error: '코드를 넘기지 못했어요. 로그인 창에 직접 붙여넣어 주세요.' }
+  if (IS_MAC) {
+    if (!loginChild || loginChild.exitCode !== null) return { ok: false, error: '로그인이 아직 시작되지 않았거나 이미 끝났어요. [로그인]을 다시 눌러 주세요.' }
+    try {
+      loginChild.stdin.write(c + '\n')
+      return { ok: true }
+    } catch {
+      return { ok: false, error: '코드를 넘기지 못했어요. [로그인]을 다시 눌러 주세요.' }
+    }
+  }
+  return handOverLoginCode(c) ? { ok: true } : { ok: false, error: '코드를 넘기지 못했어요. 로그인 창에 직접 붙여넣어 주세요.' }
 })
 
-// Antigravity CLI 로그인: 콘솔 창에서 agy 를 돌리고(브라우저 로그인 → 코드 입력), 성공하면 기록 파일이 생긴다
+// Antigravity CLI 로그인: agy 를 돌리고(브라우저 로그인 → 코드 입력), 성공하면 기록 파일이 생긴다
 ipcMain.handle('ai:gemini-login', () => {
   const found = findGemini()
   if (!found) return { ok: false, error: 'Gemini CLI를 찾지 못했어요. 먼저 설치해 주세요.' }
   if (found.cli !== 'agy') return { ok: false, error: 'Gemini CLI(gemini)는 [로그인 창 열기]로 로그인해 주세요.' }
+  if (IS_MAC) return { ok: startGeminiLoginMac(found.bin), terminal: false }
   return { ok: openTerminal('login-agy'), terminal: true }
 })
 
@@ -873,7 +1125,7 @@ function runAi(sender, { prompt, model, web, provider }) {
     if (cli === 'agy') {
       // agy는 시스템 프롬프트 옵션과 stdin 입력이 없어 요청문 앞에 붙여 인자로 넘긴다
       const full = `${system}\n\n${prompt}`
-      if (full.length > WIN_ARG_LIMIT)
+      if (full.length > (IS_MAC ? MAC_ARG_LIMIT : WIN_ARG_LIMIT))
         return resolve({
           ok: false,
           error: `요청문이 너무 길어서(${full.length.toLocaleString()}자) Antigravity CLI에 넘길 수 없어요. 연결한 경험이나 공고 메모를 줄이거나 Claude로 바꿔 보세요.`,
@@ -901,7 +1153,7 @@ function runAi(sender, { prompt, model, web, provider }) {
     aiCancelled = false
     const started = Date.now()
     const viaCmd = /\.(cmd|bat)$/i.test(bin)
-    const opts = { cwd, env, stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true }
+    const opts = { cwd, env, stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true, detached: IS_MAC }
     let child
     try {
       child = viaCmd ? spawn(quoteArg(bin), args.map(quoteArg), { ...opts, shell: true }) : spawn(bin, args, opts)
@@ -1232,7 +1484,7 @@ function applyThemeToWindows() {
   const c = THEME_COLORS[nativeTheme.shouldUseDarkColors ? 'dark' : 'light']
   for (const win of BrowserWindow.getAllWindows()) {
     try {
-      win.setTitleBarOverlay({ color: c.bar, symbolColor: c.symbol, height: TITLEBAR_HEIGHT })
+      if (!IS_MAC) win.setTitleBarOverlay({ color: c.bar, symbolColor: c.symbol, height: TITLEBAR_HEIGHT })
       win.setBackgroundColor(c.bg)
     } catch {
       /* 창이 닫히는 중 */
@@ -1303,10 +1555,11 @@ function createWindow() {
     title: APP_NAME,
     backgroundColor: colors.bg,
     show: false,
-    icon: ICON_ICO,
     // 윈도우 11 식 커스텀 제목 표시줄: 앱이 그린 띠 위에 기본 최소화·최대화·닫기 버튼만 얹는다
-    titleBarStyle: 'hidden',
-    titleBarOverlay: { color: colors.bar, symbolColor: colors.symbol, height: TITLEBAR_HEIGHT },
+    // 맥: 신호등 버튼만 왼쪽에 두고 나머지는 앱이 그린다
+    ...(IS_MAC
+      ? { titleBarStyle: 'hiddenInset', trafficLightPosition: { x: 14, y: 13 } }
+      : { icon: ICON_ICO, titleBarStyle: 'hidden', titleBarOverlay: { color: colors.bar, symbolColor: colors.symbol, height: TITLEBAR_HEIGHT } }),
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,
@@ -1361,6 +1614,27 @@ function createWindow() {
 function buildMenu() {
   const send = (channel, payload) => () => sendWhenReady(focusWindow(), channel, payload)
   const template = [
+    // 맥은 맨 앞에 앱 이름 메뉴가 있어야 하고(⌘, 설정 · ⌘Q 종료), 편집 메뉴가 있어야 ⌘C · ⌘V 가 동작한다
+    ...(IS_MAC
+      ? [
+          {
+            label: APP_NAME,
+            submenu: [
+              { label: 'Essay 정보', click: send('app:about') },
+              { type: 'separator' },
+              { label: '설정…', accelerator: 'Cmd+,', click: send('app:navigate', '/settings') },
+              { type: 'separator' },
+              { role: 'services', label: '서비스' },
+              { type: 'separator' },
+              { role: 'hide', label: 'Essay 가리기' },
+              { role: 'hideOthers', label: '다른 앱 가리기' },
+              { role: 'unhide', label: '모두 보기' },
+              { type: 'separator' },
+              { role: 'quit', label: 'Essay 종료' },
+            ],
+          },
+        ]
+      : []),
     {
       label: '파일(&F)',
       submenu: [
@@ -1374,11 +1648,11 @@ function buildMenu() {
         { label: '마감 달력', accelerator: 'CmdOrCtrl+8', click: send('app:navigate', '/calendar') },
         { label: '백업', accelerator: 'CmdOrCtrl+6', click: send('app:navigate', '/backup') },
         { label: '데이터', accelerator: 'CmdOrCtrl+7', click: send('app:navigate', '/data') },
-        { label: '설정', accelerator: 'CmdOrCtrl+,', click: send('app:navigate', '/settings') },
+        ...(IS_MAC ? [] : [{ label: '설정', accelerator: 'CmdOrCtrl+,', click: send('app:navigate', '/settings') }]),
         { type: 'separator' },
         { label: '데이터 폴더 열기', click: () => shell.openPath(DATA_DIR) },
         { type: 'separator' },
-        { label: '종료', role: 'quit' },
+        ...(IS_MAC ? [{ role: 'close', label: '창 닫기' }] : [{ label: '종료', role: 'quit' }]),
       ],
     },
     {
@@ -1404,10 +1678,27 @@ function buildMenu() {
         { role: 'toggleDevTools', label: '개발자 도구' },
       ],
     },
+    ...(IS_MAC
+      ? [
+          {
+            label: '윈도우',
+            role: 'window',
+            submenu: [
+              { role: 'minimize', label: '최소화' },
+              { role: 'zoom', label: '확대/축소' },
+              { type: 'separator' },
+              { role: 'front', label: '모두 앞으로 가져오기' },
+            ],
+          },
+        ]
+      : []),
     {
       label: '도움말(&H)',
+      ...(IS_MAC ? { role: 'help' } : {}),
       submenu: [
-        { label: '도움말', accelerator: 'F1', click: send('app:help') },
+        // 맥 키보드의 F1 은 화면 밝기 키라 ⌘/ 를 쓴다 (F1 도 보이지 않게 남겨 둔다)
+        { label: '도움말', accelerator: IS_MAC ? 'Cmd+/' : 'F1', click: send('app:help') },
+        ...(IS_MAC ? [{ label: '도움말 (F1)', accelerator: 'F1', visible: false, click: send('app:help') }] : []),
         { label: '처음 설정 안내', click: send('app:welcome') },
         { type: 'separator' },
         { label: '예전 자소서 불러오기', click: send('app:import') },
@@ -1422,6 +1713,20 @@ function buildMenu() {
 
 // 작업 표시줄 아이콘 오른쪽 클릭 메뉴(점프 목록)
 function setJumpList() {
+  if (IS_MAC) {
+    // 맥: Dock 아이콘을 오른쪽 클릭하면 나오는 메뉴
+    try {
+      app.dock?.setMenu(
+        Menu.buildFromTemplate([
+          { label: '새 자소서 시작하기', click: () => sendWhenReady(focusWindow(), 'app:new-project') },
+          { label: '맞춤 공고 보기', click: () => focusAndNavigate('/jobs') },
+        ]),
+      )
+    } catch {
+      /* 무시 */
+    }
+    return
+  }
   try {
     app.setUserTasks([
       {
@@ -1461,8 +1766,35 @@ function setUpdateStatus(s) {
   updateStatus = s
   for (const w of BrowserWindow.getAllWindows()) if (!w.isDestroyed()) w.webContents.send('update:status', s)
 }
+// 맥: 애플 서명이 없어 앱이 스스로 바꿔 끼우지는 못한다 → GitHub Releases 에 새 버전이 있으면 알려 주고 다운로드로 보낸다
+const RELEASES_API = 'https://api.github.com/repos/brothrone/Essay/releases/latest'
+const RELEASES_PAGE = 'https://brothrone.github.io/Essay/'
+const newerThan = (a, b) => {
+  const pa = String(a).split('.').map(Number)
+  const pb = String(b).split('.').map(Number)
+  for (let i = 0; i < 3; i++) if ((pa[i] || 0) !== (pb[i] || 0)) return (pa[i] || 0) > (pb[i] || 0)
+  return false
+}
+async function checkMacUpdate() {
+  setUpdateStatus({ state: 'checking' })
+  try {
+    const r = await fetch(RELEASES_API, { headers: { Accept: 'application/vnd.github+json' }, signal: AbortSignal.timeout(10000) })
+    if (!r.ok) throw new Error(`GitHub ${r.status}`)
+    const rel = await r.json()
+    const version = String(rel.tag_name || '').replace(/^v/, '')
+    const dmg = (rel.assets || []).find((a) => /\.dmg$/i.test(a.name))
+    if (version && newerThan(version, app.getVersion()))
+      setUpdateStatus({ state: 'available', version, manual: true, url: dmg?.browser_download_url || rel.html_url || RELEASES_PAGE })
+    else setUpdateStatus({ state: 'none', version: app.getVersion() })
+    return { ok: true, version }
+  } catch (err) {
+    setUpdateStatus({ state: 'error', message: (err?.message || String(err)).slice(0, 160) })
+    return { ok: false, error: err?.message || String(err) }
+  }
+}
 ipcMain.handle('update:status', () => updateStatus)
 ipcMain.handle('update:check', async () => {
+  if (IS_MAC) return checkMacUpdate()
   if (!autoUpdater) return { ok: false, error: '설치한 Essay 에서만 업데이트를 확인해요' }
   try {
     const r = await autoUpdater.checkForUpdates()
@@ -1472,12 +1804,21 @@ ipcMain.handle('update:check', async () => {
   }
 })
 ipcMain.handle('update:install', () => {
+  if (IS_MAC) {
+    if (updateStatus.url) shell.openExternal(updateStatus.url)
+    return
+  }
   if (!autoUpdater) return
   killTree(aiChild)
   autoUpdater.quitAndInstall(false, true)
 })
 function setupAutoUpdate() {
   if (!app.isPackaged) return
+  if (IS_MAC) {
+    setTimeout(() => checkMacUpdate(), 8000)
+    setInterval(() => checkMacUpdate(), 6 * 60 * 60 * 1000)
+    return
+  }
   try {
     autoUpdater = require('electron-updater').autoUpdater
   } catch {
@@ -1516,6 +1857,15 @@ if (!app.requestSingleInstanceLock()) {
     setInterval(() => checkDeadlines(), 30 * 60 * 1000)
     setupAutoUpdate()
   })
-  app.on('window-all-closed', () => app.quit())
-  app.on('before-quit', () => killTree(aiChild))
+  // 맥은 창을 닫아도 앱이 Dock 에 남고(⌘Q 로 종료), Dock 아이콘을 누르면 창을 다시 연다
+  app.on('window-all-closed', () => {
+    if (!IS_MAC) app.quit()
+  })
+  app.on('activate', () => {
+    if (BrowserWindow.getAllWindows().length === 0) createWindow()
+  })
+  app.on('before-quit', () => {
+    killTree(aiChild)
+    killTree(loginChild)
+  })
 }

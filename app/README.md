@@ -1,6 +1,6 @@
-# Essay · 자소서 & 스펙 관리 (윈도우)
+# Essay · 자소서 & 스펙 관리 (윈도우 · 맥)
 
-개인용 자소서/스펙 관리 **윈도우 데스크톱 앱**입니다.
+개인용 자소서/스펙 관리 **데스크톱 앱**입니다 (Windows 10/11 · macOS 12 이상, 같은 코드).
 데이터는 이 PC의 파일로만 저장됩니다. 유료 API를 쓰지 않습니다(AI는 이 PC에 로그인된 Claude Code 또는 Gemini CLI로 실행).
 
 ## 설치 · 실행
@@ -14,6 +14,17 @@
 
 - 앱은 켜질 때와 6시간마다 GitHub Releases(`brothrone/Essay`)에서 새 버전을 확인하고(electron-updater), 조용히 내려받은 뒤 화면 아래 띠에서 **[지금 다시 시작]** 또는 다음에 끌 때 적용합니다. **설정 → 업데이트**에서 직접 확인할 수도 있습니다.
 - 새 버전 올리기: `package.json` 의 `version` 을 올리고 `app\` 에서 `.\scripts\release.ps1`. 빌드 후 `Essay-Setup-<버전>.exe` · `latest.yml` · `.blockmap` 을 릴리스 `v<버전>` 에 올립니다. GitHub 토큰은 `GH_TOKEN` 또는 Git Credential Manager 에 저장된 로그인을 씁니다.
+
+## 맥에서 다른 점
+
+| | 내용 |
+| --- | --- |
+| 창 | 신호등 버튼이 왼쪽에 있는 `hiddenInset` 제목 표시줄, 창을 닫아도 앱은 Dock 에 남음(⌘Q 종료), Dock 메뉴(새 자소서 · 맞춤 공고), Dock 배지 |
+| 메뉴 · 단축키 | 앱 메뉴(⌘, 설정 · ⌘Q) · 편집 메뉴(⌘C · ⌘V) · 윈도우 메뉴. 단축키 표시는 `src/platform.ts` 의 `kbd()` 로 ⌘N · ⌘1~8. 도움말은 ⌘/ (F1 도 됨) |
+| AI 도구 찾기 | `zsh -lc` 로 읽은 로그인 셸 PATH + `~/.local/bin` · `/opt/homebrew/bin` · `/usr/local/bin` |
+| 설치 · 로그인 | 설치는 공식 셸 스크립트(`curl … \| bash`)를 앱 안에서 실행, 터미널 작업은 `.command` 파일을 터미널 앱으로 열기. Gemini(agy) 로그인은 `/usr/bin/expect` 가상 터미널로 agy 를 띄우고 Essay 창에 붙여넣은 코드를 그 터미널에 입력 |
+| 업데이트 | 애플 서명이 없어 자동 교체는 안 됨. GitHub 최신 릴리스를 확인해 새 버전이 있으면 "다운로드" 띠를 띄움 |
+| 빌드 | `npm run app:build:mac` → `release/Essay-<버전>-mac-universal.dmg` · `.zip` (Apple Silicon · Intel 공용, ad-hoc 서명) |
 
 ## 윈도우 전용으로 되어 있는 것
 
@@ -77,6 +88,8 @@ npm run dev              # Vite 개발 서버 + Electron 창 (저장하면 바�
 npm run start            # 빌드 후 Electron으로 실행
 npm run app:build        # release\Essay-Setup-<버전>.exe (NSIS 설치 파일)
 npm run app:build:dir    # release\win-unpacked\Essay.exe (설치 없이 실행 확인용)
+npm run app:build:mac    # 맥: release/Essay-<버전>-mac-universal.dmg · .zip
+npm run app:build:mac:dir   # 맥: release/mac-universal/Essay.app (실행 확인용)
 npm run installer:art    # 설치 화면 그림(build\installerSidebar.bmp, installerHeader.bmp) 다시 그리기
 ```
 

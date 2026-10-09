@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { APP_NAME, AUTHOR } from '../constants'
 import { desktop } from '../desktop'
+import { DATA_FOLDER, OS_NAME } from '../platform'
 import { Logo } from './Logo'
 import { Modal } from './ui'
 
@@ -41,7 +42,7 @@ export function AboutContent() {
           <h2>
             {APP_NAME} <span className="muted small">v{info.version}</span>
           </h2>
-          <p className="muted">자소서 · 스펙 관리 윈도우 앱</p>
+          <p className="muted">자소서 · 스펙 관리 {OS_NAME} 앱</p>
         </div>
       </div>
       <dl className="about-list">
@@ -52,7 +53,7 @@ export function AboutContent() {
         <dt>무엇을 하나요</dt>
         <dd>지원할 공고별로 자소서 문항과 답변을 쓰고, 내 경험을 STAR로 정리해 꺼내 쓰고, 스펙을 한곳에 모아 두는 개인용 도구예요.</dd>
         <dt>데이터</dt>
-        <dd>모두 이 PC의 문서\Essay 폴더에만 저장돼요. 인터넷 서버로 보내지 않아요.</dd>
+        <dd>모두 이 컴퓨터의 {DATA_FOLDER} 폴더에만 저장돼요. 인터넷 서버로 보내지 않아요.</dd>
         <dt>AI</dt>
         <dd>API 키 없이 이 PC에 로그인된 Claude Code 또는 Gemini(Antigravity CLI)를 실행해요. 요청문에는 이름·연락처를 넣지 않아요.</dd>
         <dt>만든 재료</dt>

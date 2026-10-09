@@ -8,6 +8,7 @@ import { companyLookupPrompt, postingPrompt, postingTextPrompt } from '../prompt
 import { newProject, newQuestion, useStore } from '../store'
 import type { Question } from '../types'
 import { toast } from '../toast'
+import { kbd } from '../platform'
 import { toDateInput, uid } from '../utils'
 import { AutoTextarea, Modal } from './ui'
 
@@ -100,7 +101,7 @@ export function NewProjectModal({ onClose }: { onClose: () => void }) {
   // 로그인해야 보이는 공고 등: 복사한 공고 본문을 정리한다
   const importFromText = () => {
     if (pasted.trim().length < 40) {
-      setImportError('공고 본문을 조금 더 붙여넣어 주세요. 채용 페이지에서 Ctrl+A → Ctrl+C 로 통째로 복사해도 돼요.')
+      setImportError(`공고 본문을 조금 더 붙여넣어 주세요. 채용 페이지에서 ${kbd('A')} → ${kbd('C')} 로 통째로 복사해도 돼요.`)
       return
     }
     importWith(postingTextPrompt(pasted, toDateInput(new Date())), 'text')
@@ -233,7 +234,7 @@ export function NewProjectModal({ onClose }: { onClose: () => void }) {
                   setPasted(e.target.value)
                   if (importError) setImportError('')
                 }}
-                placeholder="채용 페이지에서 Ctrl+A → Ctrl+C 로 복사한 내용을 그대로 붙여넣으세요"
+                placeholder={`채용 페이지에서 ${kbd('A')} → ${kbd('C')} 로 복사한 내용을 그대로 붙여넣으세요`}
                 aria-label="공고 본문"
               />
               <div className="np-paste-foot">

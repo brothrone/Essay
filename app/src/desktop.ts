@@ -1,7 +1,8 @@
-/** 윈도우 앱(Electron)에서 preload가 넣어 주는 기능. 화면 코드는 이 객체로만 바깥세상과 통한다 */
+/** 데스크톱 앱(Electron · 윈도우/맥)에서 preload가 넣어 주는 기능. 화면 코드는 이 객체로만 바깥세상과 통한다 */
 export interface DesktopBridge {
   dataPath: string
-  info: { version: string; electron: string; chrome: string; node: string }
+  /** platform: 'win32' | 'darwin' (src/platform.ts 의 IS_MAC 이 이 값을 본다) */
+  info: { version: string; electron: string; chrome: string; node: string; platform: string; arch: string }
   /** 예전 자소서 파일(.txt · .md · .docx)을 골라 본문을 읽어 온다 */
   pickImportFiles: () => Promise<{ name: string; text: string; error?: string }[]>
   onAbout: (fn: () => void) => () => void
@@ -16,7 +17,7 @@ export interface DesktopBridge {
   copyText: (text: string) => Promise<void>
   openDataFolder: () => Promise<string>
   openLogsFolder: () => Promise<string>
-  /** 윈도우 메시지 상자. 확인 버튼을 누르면 true */
+  /** 운영체제 기본 메시지 상자. 확인 버튼을 누르면 true */
   confirm: (message: string, options?: ConfirmOptions) => Promise<boolean>
   /** '다른 이름으로 저장' 대화 상자로 백업 파일을 쓴다 */
   exportBackup: (json: string, filename: string) => Promise<{ ok: boolean; path?: string }>
@@ -50,7 +51,7 @@ export interface DesktopBridge {
     resolveUrls: (urls: string[]) => Promise<string[]>
     /** 공고 페이지를 직접 열어 접수 중인지 · 마감일을 확인한다 (closed 면 목록에서 뺀다) */
     checkPostings: (urls: string[], today: string) => Promise<{ status: 'open' | 'closed' | 'unknown'; deadline: string }[]>
-    /** 설치·로그인 명령을 사용자가 보는 PowerShell 창에서 실행 */
+    /** 설치·로그인 명령을 사용자가 보는 PowerShell(맥: 터미널) 창에서 실행 */
     openTerminal: (action: TerminalAction) => Promise<boolean>
     /** 설치를 창 없이 조용히 실행. 진행 줄은 onInstallProgress, 끝은 onInstallDone 으로 온다 */
     install: (action: InstallAction) => Promise<{ ok: boolean; error?: string }>
@@ -75,7 +76,7 @@ export type TerminalAction =
   | 'install-node'
   | 'install-claude'
   | 'login-claude'
-  /** 명령 없이 안내만 적힌 PowerShell 창 (도움말의 '직접 명령어로 하기') */
+  /** 명령 없이 안내만 적힌 PowerShell · 터미널 창 (도움말의 '직접 명령어로 하기') */
   | 'open-shell'
 
 export type InstallAction = 'install-agy' | 'install-claude' | 'install-gemini' | 'install-node'
@@ -96,9 +97,12 @@ export type UpdateStatus = {
   version?: string
   percent?: number
   message?: string
+  /** 맥: 앱이 직접 바꿔 끼우지 못해 다운로드 페이지로 안내한다 (install 을 부르면 url 을 연다) */
+  manual?: boolean
+  url?: string
 }
 
-/** system = 윈도우 설정(개인 설정 → 색)을 따라감 */
+/** system = 운영체제 설정(윈도우: 개인 설정 → 색, 맥: 시스템 설정 → 화면 모드)을 따라감 */
 export type ThemeSource = 'system' | 'light' | 'dark'
 export interface ThemeInfo {
   source: ThemeSource
@@ -136,5 +140,5 @@ declare global {
   }
 }
 
-/** 이 앱은 윈도우 데스크톱 앱으로만 실행된다. 브라우저에서 열면 main.tsx가 안내 화면을 띄운다 */
+/** 이 앱은 데스크톱 앱으로만 실행된다. 브라우저에서 열면 main.tsx가 안내 화면을 띄운다 */
 export const desktop: DesktopBridge = window.desktop!

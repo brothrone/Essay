@@ -1,19 +1,26 @@
 #!/usr/bin/env bash
-# Essay 새 버전 배포 (맥/리눅스용): 빌드 → GitHub Releases(brothrone/Essay) 업로드 → 설치된 윈도우 앱들이 자동 업데이트.
+# Essay 새 버전 배포 (맥에서 실행): 맥 · 윈도우 설치 파일을 만들어 GitHub Releases(brothrone/Essay) 에 올린다.
+# 설치된 윈도우 앱은 자동 업데이트되고, 맥 앱은 새 버전이 나왔다고 알려 준다.
 #
 # 쓰는 법 (app 폴더에서):
 #   1) package.json 의 "version" 을 올린다 (같은 버전은 업데이트로 안 잡힌다).
 #   2) npm install   (처음 한 번)
-#   3) ./scripts/release.sh          # 빌드 + 릴리스 업로드
-#      ./scripts/release.sh --no-publish   # 빌드만 (release/ 에 파일만)
+#   3) ./scripts/release.sh                 # 맥 + 윈도우 빌드 + 릴리스 업로드
+#      ./scripts/release.sh --no-publish    # 빌드만 (release/ 에 파일만)
+#      ./scripts/release.sh --mac-only      # 맥 파일만 (윈도우는 윈도우 PC 의 release.ps1 로 같은 버전에 올린다)
 #   토큰: 환경변수 GH_TOKEN 이 없으면 `gh auth token` 에서 가져온다 (gh auth login 이 돼 있어야 함).
 #   맥에서 윈도우용 NSIS 설치 파일을 만드는 데 wine 은 필요 없다 (electron-builder 24+).
-#   끝나면 https://github.com/brothrone/Essay/releases 에 Essay-Setup-<버전>.exe · latest.yml · .blockmap 이 올라간다. latest.yml 을 지우면 안 된다.
+#   끝나면 릴리스에 Essay-Setup-<버전>.exe · latest.yml · .blockmap(윈도우) 과 Essay-<버전>-mac-universal.dmg · .zip · latest-mac.yml(맥) 이 올라간다.
+#   latest.yml 을 지우면 윈도우 자동 업데이트가 멈춘다.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
 PUBLISH=always
-[[ "${1:-}" == "--no-publish" ]] && PUBLISH=never
+MAC_ONLY=0
+for arg in "$@"; do
+  [[ "$arg" == "--no-publish" ]] && PUBLISH=never
+  [[ "$arg" == "--mac-only" ]] && MAC_ONLY=1
+done
 
 VERSION=$(node -p "require('./package.json').version")
 echo "Essay $VERSION 빌드"
@@ -42,10 +49,18 @@ if [[ "$PUBLISH" == "always" ]]; then
       -d "{\"tag_name\":\"v$VERSION\",\"name\":\"Essay $VERSION\",\"draft\":false,\"prerelease\":false}" >/dev/null || true
   fi
 fi
-npx electron-builder --win --x64 --publish "$PUBLISH"
+# 맥 파일 (arch 는 package.json 의 build.mac 설정을 따른다 — universal)
+npx electron-builder --mac --publish "$PUBLISH"
+# 윈도우 파일
+if [[ "$MAC_ONLY" == "0" ]]; then
+  npx electron-builder --win --x64 --publish "$PUBLISH"
+fi
 
-EXE="release/Essay-Setup-$VERSION.exe"
 echo
-echo "완료: $EXE"
-shasum -a 256 "$EXE" | awk '{print "SHA-256: " toupper($1)}'
+echo "완료:"
+for f in release/Essay-"$VERSION"-mac-*.dmg release/Essay-"$VERSION"-mac-*.zip release/Essay-Setup-"$VERSION".exe; do
+  [[ -f "$f" ]] || continue
+  echo "  $f"
+  shasum -a 256 "$f" | awk '{print "    SHA-256: " toupper($1)}'
+done
 [[ "$PUBLISH" == "always" ]] && echo "릴리스: https://github.com/brothrone/Essay/releases/tag/v$VERSION"

@@ -1,6 +1,7 @@
 import { Check, ChevronDown, ChevronUp, LoaderCircle, RotateCcw, TerminalSquare, X } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { desktop, type InstallAction } from '../desktop'
+import { TERMINAL } from '../platform'
 import { toast } from '../toast'
 
 export const INSTALL_ACTIONS: InstallAction[] = ['install-agy', 'install-claude', 'install-gemini', 'install-node']
@@ -61,7 +62,7 @@ export function useInstaller(onDone: (ok: boolean, action: InstallAction) => voi
   return { state, running: !!state && !state.done, start, cancel, dismiss }
 }
 
-/** 설치 진행 카드: 진행 막대 + 마지막 줄, 펼치면 전체 로그. 실패하면 다시 시도 · PowerShell 창으로 */
+/** 설치 진행 카드: 진행 막대 + 마지막 줄, 펼치면 전체 로그. 실패하면 다시 시도 · PowerShell(맥: 터미널) 창으로 */
 export function InstallPanel({ installer }: { installer: Installer }) {
   const { state } = installer
   const [open, setOpen] = useState(false)
@@ -102,7 +103,7 @@ export function InstallPanel({ installer }: { installer: Installer }) {
               : `${name} ${phase}…`}
           </strong>
           <span className="muted small">
-            {state.done ? (ok ? `${state.done.seconds}초` : '다시 시도하거나 PowerShell 창에서 설치하세요') : `${elapsed}초`}
+            {state.done ? (ok ? `${state.done.seconds}초` : `다시 시도하거나 ${TERMINAL} 창에서 설치하세요`) : `${elapsed}초`}
           </span>
         </div>
         {!state.done && (
@@ -142,7 +143,7 @@ export function InstallPanel({ installer }: { installer: Installer }) {
                 <RotateCcw size={14} /> 다시 시도
               </button>
               <button type="button" className="btn small" onClick={() => desktop.ai.openTerminal(state.action)}>
-                <TerminalSquare size={14} /> PowerShell 창에서 설치
+                <TerminalSquare size={14} /> {TERMINAL} 창에서 설치
               </button>
               <button type="button" className="btn small ghost" onClick={installer.dismiss}>
                 닫기
