@@ -127,6 +127,19 @@
   .faq details[open] summary::after{content:'−'}
   .faq p{margin:10px 0 0;color:var(--fg-2);font-size:.95rem}
   footer{padding:36px 0 72px;color:var(--fg-3);font-size:.9rem}
+
+  /* 다운로드가 시작되면 브라우저 오른쪽 위 다운로드 버튼을 가리키는 말풍선 */
+  .dl-tip{position:fixed;top:14px;right:84px;z-index:100;width:300px;padding:14px 40px 14px 16px;border-radius:14px;background:#3854db;color:#fff;box-shadow:var(--shadow-lg);font-size:.93rem;line-height:1.55;animation:tip-in .35s ease-out both,tip-nudge 1.8s ease-in-out .4s infinite}
+  .dl-tip[hidden]{display:none}
+  .dl-tip::before{content:'';position:absolute;top:-7px;right:30px;width:16px;height:16px;background:#3854db;transform:rotate(45deg);border-radius:3px 0 0 0}
+  .dl-tip strong{display:block;font-size:1rem;margin-bottom:2px}
+  .dl-tip b{font-weight:700}
+  .dl-tip button{position:absolute;top:8px;right:8px;width:26px;height:26px;border:0;border-radius:8px;background:rgb(255 255 255/.16);color:#fff;font:inherit;font-size:1rem;line-height:1;cursor:pointer}
+  .dl-tip button:hover{background:rgb(255 255 255/.28)}
+  @keyframes tip-in{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:none}}
+  @keyframes tip-nudge{0%,100%{translate:0 0}50%{translate:0 -6px}}
+  @media (prefers-reduced-motion:reduce){.dl-tip{animation:none}}
+  @media (max-width:720px){.dl-tip{display:none}}
 </style>
 </head>
 <body>
@@ -206,10 +219,21 @@
 
 <footer><div class="wrap">© 2026 brothrone · <a href="./">Essay 소개 페이지</a></div></footer>
 
+<div class="dl-tip" id="dltip" role="status" hidden>
+  <strong>받은 파일은 여기 있어요</strong>
+  브라우저 오른쪽 위 <b>다운로드</b> 버튼을 누르고 <b id="tipname">Essay-Setup.exe</b> 를 클릭하면 설치가 시작돼요.
+  <button type="button" id="tipclose" aria-label="닫기">×</button>
+</div>
+
 <script>
 (function () {
   var state = document.getElementById('state'), fname = document.getElementById('fname'), fsize = document.getElementById('fsize');
   var again = document.getElementById('again');
+  var tip = document.getElementById('dltip'), tipname = document.getElementById('tipname');
+  // 다운로드가 시작되면 브라우저의 다운로드 버튼 쪽을 가리키는 말풍선을 띄운다 (닫기 전까지 남음)
+  function showTip() { tip.hidden = false; }
+  document.getElementById('tipclose').addEventListener('click', function () { tip.hidden = true; });
+  again.addEventListener('click', function () { setTimeout(showTip, 300); });
   // 윈도우와 맥이 따로 릴리스되므로, 각 운영체제 파일이 있는 가장 새 릴리스에서 파일을 모은다
   function mergeReleases(list) {
     var out = { tag_name: '', winVer: '', macVer: '', assets: [] };
@@ -230,9 +254,10 @@
       var asset = (rel && rel.assets || []).filter(function (a) { return /\.exe$/i.test(a.name); })[0];
       if (!asset) { state.textContent = '파일을 찾지 못했어요. 아래 버튼으로 받아 주세요.'; return; }
       fname.textContent = asset.name; fsize.textContent = '· ' + (asset.size / 1048576).toFixed(0) + 'MB';
+      tipname.textContent = asset.name;
       again.href = asset.browser_download_url;
       // 안내를 읽을 시간을 주고 자동으로 내려받기 시작
-      setTimeout(function () { location.href = asset.browser_download_url; state.textContent = '다운로드가 시작됐어요. 끝나면 아래 순서대로 설치해 주세요.'; }, 1200);
+      setTimeout(function () { location.href = asset.browser_download_url; state.textContent = '다운로드가 시작됐어요. 끝나면 아래 순서대로 설치해 주세요.'; setTimeout(showTip, 800); }, 1200);
     })
     .catch(function () { state.textContent = '아래 버튼으로 받아 주세요.'; });
 })();
