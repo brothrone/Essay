@@ -1951,33 +1951,163 @@ function setUpdateStatus(s) {
   updateStatus = s
   for (const w of BrowserWindow.getAllWindows()) if (!w.isDestroyed()) w.webContents.send('update:status', s)
 }
-// 맥: 애플 서명이 없어 앱이 스스로 바꿔 끼우지는 못한다 → GitHub Releases 에 새 버전이 있으면 알려 주고 다운로드로 보낸다
-const RELEASES_API = 'https://api.github.com/repos/brothrone/Essay/releases/latest'
-const RELEASES_PAGE = 'https://brothrone.github.io/Essay/'
+// 맥: 애플 개발자 서명이 없으면 electron-updater(Squirrel.Mac)가 새 버전을 거부한다.
+// 그래서 Essay 가 직접 한다: GitHub 릴리스에서 내 맥(arm64 · x64)용 dmg 를 내려받아 해시를 확인해 두고,
+// 다시 시작할 때(또는 끌 때) 작은 셸 스크립트가 Essay 가 꺼지기를 기다렸다가 응용 프로그램 폴더의 Essay.app 을 새 것으로 바꾼다.
+// 앱이 직접 받은 파일에는 '인터넷에서 받음' 표시가 붙지 않아서 바꾼 뒤에 Gatekeeper 창이 다시 뜨지 않는다.
+const RELEASES_LIST = process.env.ESSAY_UPDATE_FEED || 'https://api.github.com/repos/brothrone/Essay/releases?per_page=15'
+const RELEASES_PAGE = 'https://brothrone.github.io/Essay/mac.html'
+const UPDATE_DIR = () => path.join(app.getPath('userData'), 'update')
 const newerThan = (a, b) => {
   const pa = String(a).split('.').map(Number)
   const pb = String(b).split('.').map(Number)
   for (let i = 0; i < 3; i++) if ((pa[i] || 0) !== (pb[i] || 0)) return (pa[i] || 0) > (pb[i] || 0)
   return false
 }
+// 지금 실행 중인 Essay.app 의 위치. 응용 프로그램 폴더처럼 쓸 수 있는 곳에 있을 때만 스스로 바꿀 수 있다
+function macAppBundle() {
+  const bundle = path.resolve(process.execPath, '..', '..', '..')
+  if (!app.isPackaged || !bundle.endsWith('.app') || bundle.startsWith('/Volumes/') || bundle.includes('/AppTranslocation/')) return null
+  try {
+    fs.accessSync(path.dirname(bundle), fs.constants.W_OK)
+    fs.accessSync(bundle, fs.constants.W_OK)
+    return bundle
+  } catch {
+    return null
+  }
+}
+let macUpdate = null // { version, file } 내려받아 확인까지 끝난 새 버전
+let macDownloading = false
+let macInstalling = false
+async function fileSha512(file) {
+  const crypto = require('node:crypto')
+  return new Promise((resolve, reject) => {
+    const h = crypto.createHash('sha512')
+    fs.createReadStream(file).on('data', (d) => h.update(d)).on('end', () => resolve(h.digest('base64'))).on('error', reject)
+  })
+}
+// latest-mac.yml 에서 파일 이름에 맞는 sha512 를 찾는다 (없으면 null → 크기만 확인)
+async function expectedSha512(rel, name) {
+  const yml = (rel.assets || []).find((a) => a.name === 'latest-mac.yml')
+  if (!yml) return null
+  try {
+    const text = await (await fetch(yml.browser_download_url, { signal: AbortSignal.timeout(15000) })).text()
+    const lines = text.split(/\r?\n/)
+    for (let i = 0; i < lines.length; i++) {
+      if (lines[i].includes(`url: ${name}`)) {
+        for (let j = i + 1; j < Math.min(lines.length, i + 4); j++) {
+          const m = lines[j].match(/sha512:\s*(\S+)/)
+          if (m) return m[1]
+        }
+      }
+    }
+  } catch {
+    /* 확인 못 함 */
+  }
+  return null
+}
+async function downloadMacUpdate(rel, asset, version) {
+  macDownloading = true
+  try {
+    fs.mkdirSync(UPDATE_DIR(), { recursive: true })
+    for (const f of fs.readdirSync(UPDATE_DIR())) fs.rmSync(path.join(UPDATE_DIR(), f), { recursive: true, force: true })
+    const file = path.join(UPDATE_DIR(), asset.name)
+    const r = await fetch(asset.browser_download_url, { signal: AbortSignal.timeout(30 * 60 * 1000) })
+    if (!r.ok || !r.body) throw new Error(`내려받기 실패 (${r.status})`)
+    const total = Number(r.headers.get('content-length')) || asset.size || 0
+    const out = fs.createWriteStream(file)
+    let got = 0
+    let lastPct = -1
+    for await (const chunk of r.body) {
+      got += chunk.length
+      if (!out.write(chunk)) await new Promise((res) => out.once('drain', res))
+      const pct = total ? Math.floor((got / total) * 100) : 0
+      if (pct !== lastPct) {
+        lastPct = pct
+        setUpdateStatus({ state: 'downloading', version, percent: pct })
+      }
+    }
+    await new Promise((res, rej) => out.end((e) => (e ? rej(e) : res())))
+    if (asset.size && fs.statSync(file).size !== asset.size) throw new Error('받은 파일 크기가 달라요')
+    const want = await expectedSha512(rel, asset.name)
+    if (want && (await fileSha512(file)) !== want) throw new Error('받은 파일이 손상됐어요 (해시 불일치)')
+    macUpdate = { version, file }
+    setUpdateStatus({ state: 'ready', version })
+  } catch (err) {
+    macUpdate = null
+    setUpdateStatus({ state: 'available', version, manual: true, url: asset.browser_download_url, message: err?.message })
+  } finally {
+    macDownloading = false
+  }
+}
 async function checkMacUpdate() {
+  if (macDownloading || macInstalling) return { ok: true, version: updateStatus.version }
+  if (macUpdate) {
+    setUpdateStatus({ state: 'ready', version: macUpdate.version })
+    return { ok: true, version: macUpdate.version }
+  }
   setUpdateStatus({ state: 'checking' })
   try {
-    const r = await fetch(RELEASES_API, { headers: { Accept: 'application/vnd.github+json' }, signal: AbortSignal.timeout(10000) })
+    const r = await fetch(RELEASES_LIST, { headers: { Accept: 'application/vnd.github+json' }, signal: AbortSignal.timeout(10000) })
     if (!r.ok) throw new Error(`GitHub ${r.status}`)
-    const rel = await r.json()
-    const version = String(rel.tag_name || '').replace(/^v/, '')
-    // 내 맥에 맞는 파일(arm64 = Apple Silicon, x64 = Intel)을 고르고, 없으면 아무 dmg 나
-    const dmgs = (rel.assets || []).filter((a) => /\.dmg$/i.test(a.name))
-    const dmg = dmgs.find((a) => a.name.includes(`-${process.arch}`)) || dmgs[0]
-    if (version && newerThan(version, app.getVersion()))
-      setUpdateStatus({ state: 'available', version, manual: true, url: dmg?.browser_download_url || rel.html_url || RELEASES_PAGE })
-    else setUpdateStatus({ state: 'none', version: app.getVersion() })
-    return { ok: true, version }
+    const list = await r.json()
+    // 윈도우 파일만 있는 릴리스도 있으므로, 내 맥용 dmg 가 있는 가장 새 릴리스를 고른다
+    const wanted = (a) => /\.dmg$/i.test(a.name) && a.name.includes(`-mac-${process.arch}.`)
+    const found = (Array.isArray(list) ? list : [list])
+      .filter((rel) => rel && !rel.draft && !rel.prerelease && (rel.assets || []).some(wanted))
+      .map((rel) => ({ rel, version: String(rel.tag_name || '').replace(/^v/, ''), asset: rel.assets.find(wanted) }))
+      .sort((a, b) => (newerThan(a.version, b.version) ? -1 : newerThan(b.version, a.version) ? 1 : 0))[0]
+    if (!found || !newerThan(found.version, app.getVersion())) {
+      setUpdateStatus({ state: 'none', version: app.getVersion() })
+      return { ok: true, version: found?.version || app.getVersion() }
+    }
+    if (!macAppBundle()) {
+      // 응용 프로그램 폴더에 쓸 수 없거나 dmg 안에서 실행 중 → 직접 받아 덮어쓰도록 안내
+      setUpdateStatus({ state: 'available', version: found.version, manual: true, url: found.asset.browser_download_url || RELEASES_PAGE })
+      return { ok: true, version: found.version }
+    }
+    setUpdateStatus({ state: 'available', version: found.version })
+    downloadMacUpdate(found.rel, found.asset, found.version)
+    return { ok: true, version: found.version }
   } catch (err) {
     setUpdateStatus({ state: 'error', message: (err?.message || String(err)).slice(0, 160) })
     return { ok: false, error: err?.message || String(err) }
   }
+}
+// Essay 가 꺼진 뒤 Essay.app 을 바꾸는 스크립트를 띄운다 (실패하면 원래 앱을 되돌려 놓는다)
+const MAC_SWAP_SCRIPT = `#!/bin/bash
+PID="$1"; DMG="$2"; APP="$3"; RELAUNCH="$4"
+for i in $(seq 1 300); do kill -0 "$PID" 2>/dev/null || break; sleep 0.2; done
+MNT="$(mktemp -d /tmp/essay-update.XXXXXX)"
+hdiutil attach -nobrowse -readonly -noautoopen -mountpoint "$MNT" "$DMG" >/dev/null || { echo "mount failed"; [ "$RELAUNCH" = 1 ] && open "$APP"; exit 1; }
+SRC="$(ls -d "$MNT"/*.app | head -1)"
+NEW="$APP.new-$$"
+ditto "$SRC" "$NEW"; rc=$?
+hdiutil detach "$MNT" -quiet -force; rmdir "$MNT" 2>/dev/null
+if [ $rc -ne 0 ]; then rm -rf "$NEW"; echo "copy failed"; [ "$RELAUNCH" = 1 ] && open "$APP"; exit 1; fi
+xattr -dr com.apple.quarantine "$NEW" 2>/dev/null
+OLD="$APP.old-$$"
+if mv "$APP" "$OLD" && mv "$NEW" "$APP"; then
+  rm -rf "$OLD" "$DMG"; echo "updated"
+else
+  [ -d "$OLD" ] && [ ! -d "$APP" ] && mv "$OLD" "$APP"; rm -rf "$NEW"; echo "swap failed"
+fi
+[ "$RELAUNCH" = 1 ] && open "$APP"
+exit 0
+`
+function installMacUpdate(relaunch) {
+  const bundle = macAppBundle()
+  if (!macUpdate || !bundle || macInstalling) return false
+  macInstalling = true
+  const script = path.join(UPDATE_DIR(), 'swap.sh')
+  fs.writeFileSync(script, MAC_SWAP_SCRIPT, { mode: 0o755 })
+  const log = fs.openSync(path.join(app.getPath('logs'), 'update-last.log'), 'w')
+  const child = spawn('/bin/bash', [script, String(process.pid), macUpdate.file, bundle, relaunch ? '1' : '0'], {
+    detached: true,
+    stdio: ['ignore', log, log],
+  })
+  child.unref()
+  return true
 }
 ipcMain.handle('update:status', () => updateStatus)
 ipcMain.handle('update:check', async () => {
@@ -1992,7 +2122,11 @@ ipcMain.handle('update:check', async () => {
 })
 ipcMain.handle('update:install', () => {
   if (IS_MAC) {
-    if (updateStatus.url) shell.openExternal(updateStatus.url)
+    // 내려받아 둔 새 버전이 있으면 바꿔 끼우고 다시 켠다. 스스로 못 바꾸는 경우만 다운로드 페이지로
+    if (macUpdate && installMacUpdate(true)) {
+      killTree(aiChild)
+      setTimeout(() => app.quit(), 200)
+    } else if (updateStatus.url) shell.openExternal(updateStatus.url)
     return
   }
   if (!autoUpdater) return
@@ -2054,5 +2188,7 @@ if (!app.requestSingleInstanceLock()) {
   app.on('before-quit', () => {
     killTree(aiChild)
     killTree(loginChild)
+    // 맥: 받아 둔 새 버전이 있으면 끌 때 조용히 바꿔 둔다 (윈도우의 autoInstallOnAppQuit 과 같은 동작, 다시 켜지는 않음)
+    if (IS_MAC && macUpdate && !macInstalling) installMacUpdate(false)
   })
 }

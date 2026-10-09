@@ -28,8 +28,8 @@ npx tsc -b                  # 타입 검사
 npx oxlint src electron     # 코드 검사
 npx vite build              # 화면 빌드
 ```
-- 배포: `package.json` version 올리기 → `scripts/release.sh`(맥에서 맥 + 윈도우 파일을 한 번에, `--mac-only` 가능) 또는 `scripts/release.ps1`(윈도우 파일만). GitHub Releases `brothrone/Essay` 의 **같은 태그 `v<버전>`** 에 윈도우(`Essay-Setup-<버전>.exe` · `.blockmap` · `latest.yml`) 와 맥(`Essay-<버전>-mac-arm64.dmg` · `-x64.dmg`) 파일이 함께 있어야 한다. `latest.yml` 이 없으면 윈도우 자동 업데이트가 멈춘다.
-- 맥은 애플 개발자 서명이 없어 ad-hoc 서명만 한다(`scripts/after-pack.cjs`). 그래서 맥 자동 업데이트(Squirrel)는 쓰지 않고 GitHub 최신 릴리스를 확인해 "새 버전 → 다운로드" 띠만 띄운다(`checkMacUpdate`). 처음 열 때 Gatekeeper 안내가 뜨는 건 정상(시스템 설정 → 개인정보 보호 및 보안 → 그래도 열기).
+- 배포는 **운영체제별로 따로** 한다(사용자 결정, 2026-10-09): 맥 파일은 맥북에서 `scripts/release.sh`, 윈도우 파일은 **윈도우 PC에서만** `scripts/release.ps1`. 맥북에서 윈도우 exe 를 만들어 올리지 않는다. 버전은 `package.json` 하나를 같이 쓰므로 배포 전 `git pull`, 같은 버전이면 같은 태그 `v<버전>` 에 각자 파일을 올린다. 윈도우는 `Essay-Setup-<버전>.exe` · `.blockmap` · `latest.yml`, 맥은 `Essay-<버전>-mac-arm64.dmg` · `-x64.dmg` · `latest-mac.yml`. 한쪽만 올라간 최신 릴리스가 있으면 다른 쪽 업데이트 확인은 잠시 '확인 실패'가 될 수 있다. 사이트 다운로드 버튼과 맥 업데이트는 그 운영체제 파일이 있는 가장 새 릴리스를 찾는다.
+- 맥은 애플 개발자 서명이 없어 ad-hoc 서명만 한다(`scripts/after-pack.cjs`). electron-updater(Squirrel.Mac)는 서명이 없으면 업데이트를 거부하므로 맥은 직접 업데이트한다(1.7.0): `checkMacUpdate` 가 릴리스 목록에서 내 아키텍처 dmg 를 찾아 `userData/update` 로 받고 `latest-mac.yml` 의 sha512 로 확인 → [다시 시작] 또는 앱 종료 때 `MAC_SWAP_SCRIPT` 가 Essay 종료를 기다렸다가 dmg 를 마운트해 `Essay.app` 을 통째로 바꾼다(실패하면 원래 앱 복구, 로그 `logs/update-last.log`). 앱이 받은 파일엔 quarantine 이 없어 Gatekeeper 창이 다시 안 뜬다. 응용 프로그램 폴더에 쓸 수 없으면 다운로드 안내로. 시험은 `ESSAY_UPDATE_FEED=<릴리스 JSON 주소>` 로 로컬 피드를 줄 수 있다. 처음 열 때 Gatekeeper 안내가 뜨는 건 정상(시스템 설정 → 개인정보 보호 및 보안 → 그래도 열기).
 - 토큰: `gh auth token`, 없으면 Git Credential Manager (`"protocol=https\nhost=github.com\n\n" | git credential-manager get`).
 
 ## 검증할 때

@@ -210,8 +210,22 @@
 (function () {
   var state = document.getElementById('state'), fname = document.getElementById('fname'), fsize = document.getElementById('fsize');
   var again = document.getElementById('again');
-  fetch('https://api.github.com/repos/brothrone/Essay/releases/latest', { headers: { Accept: 'application/vnd.github+json' } })
+  // 윈도우와 맥이 따로 릴리스되므로, 각 운영체제 파일이 있는 가장 새 릴리스에서 파일을 모은다
+  function mergeReleases(list) {
+    var out = { tag_name: '', winVer: '', macVer: '', assets: [] };
+    (Array.isArray(list) ? list : []).filter(function (r) { return r && !r.draft && !r.prerelease; }).forEach(function (r) {
+      var v = (r.tag_name || '').replace(/^v/, '');
+      var exe = (r.assets || []).filter(function (a) { return /\.exe$/i.test(a.name); });
+      var dmg = (r.assets || []).filter(function (a) { return /\.dmg$/i.test(a.name); });
+      if (exe.length && !out.winVer) { out.winVer = v; out.assets = out.assets.concat(exe); }
+      if (dmg.length && !out.macVer) { out.macVer = v; out.assets = out.assets.concat(dmg); }
+    });
+    out.tag_name = 'v' + (out.macVer || out.winVer);
+    return out;
+  }
+  fetch('https://api.github.com/repos/brothrone/Essay/releases?per_page=15', { headers: { Accept: 'application/vnd.github+json' } })
     .then(function (r) { return r.ok ? r.json() : null; })
+    .then(mergeReleases)
     .then(function (rel) {
       var asset = (rel && rel.assets || []).filter(function (a) { return /\.exe$/i.test(a.name); })[0];
       if (!asset) { state.textContent = '파일을 찾지 못했어요. 아래 버튼으로 받아 주세요.'; return; }

@@ -197,7 +197,7 @@
 <section><div class="wrap faq">
   <h2>궁금한 것</h2>
   <details><summary>왜 이런 창이 뜨나요? 위험한 앱인가요?</summary><p>Mac 은 Apple 개발자 프로그램(연 99달러)으로 서명한 앱만 바로 열어 줘요. Essay 는 개인이 무료로 배포하는 앱이라 아직 서명을 받지 않았고, 그래서 "확인할 수 없음" 이라고 뜨는 거예요. 앱이 하는 일은 <a href="./#ai">소개 페이지</a>에 그대로 적혀 있고, 데이터는 내 Mac 의 문서 폴더 밖으로 나가지 않아요. 코드도 <a href="https://github.com/brothrone/Essay" rel="noopener">GitHub 에 공개</a>돼 있어요.</p></details>
-  <details><summary>매번 해야 하나요?</summary><p>아니요. 처음 한 번만 허용하면 그 뒤로는 바로 열려요. 새 버전을 받아 덮어쓴 뒤에는 한 번 더 뜰 수 있어요. 그때도 같은 순서예요.</p></details>
+  <details><summary>매번 해야 하나요?</summary><p>아니요. 처음 한 번만 허용하면 그 뒤로는 바로 열려요. 새 버전은 Essay 가 스스로 받아 다시 켤 때 바꿔 끼우기 때문에 이 창이 다시 뜨지 않아요(1.7.0부터). 직접 새 dmg 를 받아 덮어썼을 때만 한 번 더 뜰 수 있어요.</p></details>
   <details><summary>Apple Silicon 인지 Intel 인지 어떻게 아나요?</summary><p>왼쪽 위  메뉴 → <strong>이 Mac에 관하여</strong>. "칩"에 Apple M1 · M2 · M3 · M4… 가 보이면 Apple Silicon, "프로세서"에 Intel 이 보이면 Intel 이에요. 2020년 말 이후에 나온 Mac 은 거의 Apple Silicon 이에요.</p></details>
   <details><summary>Essay 를 지우고 싶어요</summary><p>응용 프로그램 폴더에서 Essay 를 휴지통으로 옮기면 돼요. 내 글이 든 파일(문서/Essay)은 지워지지 않아요.</p></details>
 </div></section>
@@ -213,8 +213,22 @@
   document.getElementById('copy').addEventListener('click', function () {
     navigator.clipboard.writeText('xattr -cr /Applications/Essay.app').then(function () { this.textContent = '복사됨'; }.bind(this));
   });
-  fetch('https://api.github.com/repos/brothrone/Essay/releases/latest', { headers: { Accept: 'application/vnd.github+json' } })
+  // 윈도우와 맥이 따로 릴리스되므로, 각 운영체제 파일이 있는 가장 새 릴리스에서 파일을 모은다
+  function mergeReleases(list) {
+    var out = { tag_name: '', winVer: '', macVer: '', assets: [] };
+    (Array.isArray(list) ? list : []).filter(function (r) { return r && !r.draft && !r.prerelease; }).forEach(function (r) {
+      var v = (r.tag_name || '').replace(/^v/, '');
+      var exe = (r.assets || []).filter(function (a) { return /\.exe$/i.test(a.name); });
+      var dmg = (r.assets || []).filter(function (a) { return /\.dmg$/i.test(a.name); });
+      if (exe.length && !out.winVer) { out.winVer = v; out.assets = out.assets.concat(exe); }
+      if (dmg.length && !out.macVer) { out.macVer = v; out.assets = out.assets.concat(dmg); }
+    });
+    out.tag_name = 'v' + (out.macVer || out.winVer);
+    return out;
+  }
+  fetch('https://api.github.com/repos/brothrone/Essay/releases?per_page=15', { headers: { Accept: 'application/vnd.github+json' } })
     .then(function (r) { return r.ok ? r.json() : null; })
+    .then(mergeReleases)
     .then(function (rel) {
       var dmgs = (rel && rel.assets || []).filter(function (a) { return /\.dmg$/i.test(a.name); });
       var asset = dmgs.filter(function (a) { return a.name.indexOf('-' + arch) >= 0; })[0] || dmgs[0];

@@ -1,7 +1,6 @@
 import { Download, LoaderCircle, RefreshCw, RotateCcw, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { desktop, type UpdateStatus } from '../desktop'
-import { IS_MAC } from '../platform'
 
 /** 자동 업데이트 상태. 앱이 켜지면 메인 프로세스가 GitHub Releases 를 확인하고 새 버전을 조용히 내려받는다 */
 export function useUpdateStatus() {
@@ -61,7 +60,7 @@ export function UpdateCard() {
       case 'error':
         return `확인 실패 (${status.message})`
       default:
-        return IS_MAC ? '켤 때와 6시간마다 새 버전이 나왔는지 확인해요.' : '켤 때와 6시간마다 자동으로 확인해요.'
+        return '켤 때와 6시간마다 자동으로 확인하고, 새 버전은 조용히 받아 다시 시작할 때 적용해요.'
     }
   })()
   return (

@@ -379,7 +379,7 @@
       <div class="card rv d2"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 2 7l10 5 10-5-10-5Z"/><path d="m2 17 10 5 10-5"/><path d="m2 12 10 5 10-5"/></svg></div><h3>최신 모델 그대로</h3><p>서비스용 저가 모델이 아니라 내가 고른 Claude · Gemini 최신 모델로 씁니다. 모델은 앱에서 고릅니다.</p></div>
       <div class="card rv d3"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg></div><h3>제출 전 검사</h3><p>다른 회사 이름이 섞였는지, 다른 자소서와 거의 같은지, AI가 남긴 '(확인 필요)'와 상투어가 있는지 바로 잡아 줍니다.</p></div>
       <div class="card rv d4"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg></div><h3>마감은 앱이 챙깁니다</h3><p>작성 중인 자소서의 D-3 · D-1 · 당일에 알림이 뜨고, 작업 표시줄 · Dock 아이콘에 남은 마감 개수가 표시됩니다.</p></div>
-      <div class="card rv d4"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.2-8.6"/><path d="M21 3v6h-6"/></svg></div><h3>자동 업데이트</h3><p>한 번만 설치하면 됩니다. Windows는 새 버전을 앱이 조용히 내려받아 다음에 켤 때 적용하고, Mac은 새 버전이 나오면 앱 안에서 알려 줍니다.</p></div>
+      <div class="card rv d4"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.2-8.6"/><path d="M21 3v6h-6"/></svg></div><h3>자동 업데이트</h3><p>한 번만 설치하면 됩니다. Windows · Mac 모두 새 버전을 앱이 조용히 내려받아 두었다가 다시 켤 때 적용합니다.</p></div>
     </div>
   </div>
 </section>
@@ -423,7 +423,7 @@
       <div class="rv d2">
         <div class="shot-sm"><img src="img/settings.webp" alt="설정 화면 — 화면 테마, AI 설정" width="2176" height="1360" loading="lazy"></div>
         <div class="note"><strong>데이터는 어디에?</strong> 내 PC의 문서 폴더 안 Essay 폴더에 파일 하나로 저장됩니다. 매일 자동으로 백업해 30일치를 보관하고, 백업 파일로 다른 PC에 옮길 수 있습니다.</div>
-        <div class="note"><strong>업데이트는?</strong> Windows는 앱이 켜질 때와 6시간마다 새 버전을 확인해 조용히 내려받고, 다음에 켤 때 적용합니다. Mac은 새 버전이 나오면 앱 안에 알림 띠가 뜨고, 받아서 응용 프로그램 폴더에 덮어쓰면 됩니다. 데이터는 그대로 이어집니다.</div>
+        <div class="note"><strong>업데이트는?</strong> 앱이 켜질 때와 6시간마다 새 버전을 확인해 조용히 내려받고, 다시 켤 때 적용합니다(Windows · Mac 같음). 다시 다운로드할 필요가 없고 데이터는 그대로 이어집니다.</div>
       </div>
     </div>
   </div>
@@ -528,8 +528,22 @@
       sub.textContent = (kind === 'win' ? '.exe · Windows 10 / 11' : '.dmg · Apple Silicon (M1 이후)') + ' · ' + (asset.size / 1048576).toFixed(0) + 'MB';
     });
   }
-  fetch('https://api.github.com/repos/brothrone/Essay/releases/latest', { headers: { Accept: 'application/vnd.github+json' } })
+  // 윈도우와 맥이 따로 릴리스되므로, 각 운영체제 파일이 있는 가장 새 릴리스에서 파일을 모은다
+  function mergeReleases(list) {
+    var out = { tag_name: '', winVer: '', macVer: '', assets: [] };
+    (Array.isArray(list) ? list : []).filter(function (r) { return r && !r.draft && !r.prerelease; }).forEach(function (r) {
+      var v = (r.tag_name || '').replace(/^v/, '');
+      var exe = (r.assets || []).filter(function (a) { return /\.exe$/i.test(a.name); });
+      var dmg = (r.assets || []).filter(function (a) { return /\.dmg$/i.test(a.name); });
+      if (exe.length && !out.winVer) { out.winVer = v; out.assets = out.assets.concat(exe); }
+      if (dmg.length && !out.macVer) { out.macVer = v; out.assets = out.assets.concat(dmg); }
+    });
+    out.tag_name = 'v' + (out.macVer || out.winVer);
+    return out;
+  }
+  fetch('https://api.github.com/repos/brothrone/Essay/releases?per_page=15', { headers: { Accept: 'application/vnd.github+json' } })
     .then(function (r) { return r.ok ? r.json() : null; })
+    .then(mergeReleases)
     .then(function (rel) {
       var assets = rel && rel.assets || [];
       var exe = assets.filter(function (a) { return /\.exe$/i.test(a.name); })[0];
@@ -539,7 +553,7 @@
       var ver = (rel && rel.tag_name || '').replace(/^v/, '');
       fill('win', exe, ver); fill('mac', arm, ver);
       var ix = document.getElementById('dl-mac-x64'); if (x64) ix.textContent = 'Intel용 .dmg (' + (x64.size / 1048576).toFixed(0) + 'MB)';
-      verEl.textContent = ver ? '최신 버전 ' + ver : '최신 버전';
+      verEl.textContent = rel.winVer && rel.macVer && rel.winVer !== rel.macVer ? '최신 버전 Windows ' + rel.winVer + ' · Mac ' + rel.macVer : ver ? '최신 버전 ' + ver : '최신 버전';
     })
     .catch(function () { verEl.textContent = 'GitHub에서 받기'; });
 })();

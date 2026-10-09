@@ -15,7 +15,7 @@ AI와 함께 자소서를 쓰는 데스크톱 앱이에요 (Windows 10/11 · mac
 **Mac**
 1. 받은 `.dmg` 를 열고 Essay 를 **응용 프로그램** 폴더로 끌어다 놓으세요.
 2. 처음 열 때 **"Apple이 확인할 수 없음"** 창이 뜨면 **완료**를 누르고 **시스템 설정 → 개인정보 보호 및 보안 → [그래도 열기]**. (아직 애플 서명이 없어서 뜨는 안내예요. 한 번만 하면 돼요. 그림 안내: https://brothrone.github.io/Essay/mac.html)
-3. 기능은 윈도우와 같아요. 단축키는 Ctrl 대신 ⌘ 예요. 새 버전이 나오면 앱 안에 알림 띠가 떠요(받아서 덮어쓰면 돼요).
+3. 기능은 윈도우와 같아요. 단축키는 Ctrl 대신 ⌘ 예요. 새 버전은 앱이 스스로 받아 두었다가 다시 켤 때 적용해요(1.7.0부터).
 
 AI 계정은 셋 중 하나만 있으면 돼요: **Google AI Pro·Ultra 구독**(Antigravity CLI), **Claude Pro·Max 구독**(Claude Code), 또는 **무료 Google 계정**(Antigravity CLI, 작은 무료 한도).
 
@@ -50,6 +50,6 @@ Essay/
 └─ CLAUDE.md            Claude Code 가 이 저장소에서 지킬 규칙
 ```
 
-- 새 버전 배포: `app/package.json` 의 version 을 올리고 `app/scripts/release.sh`(맥에서 맥 + 윈도우 파일을 한 번에) 또는 `app\scripts\release.ps1`(윈도우 파일만).
+- 새 버전 배포: `app/package.json` 의 version 을 올리고 맥은 맥북에서 `app/scripts/release.sh`, 윈도우는 윈도우 PC에서 `app\scripts\release.ps1`. 각자 자기 운영체제 파일만 올린다(배포 전에 `git pull`).
 - 맥북에서 작업: [guides/맥-작업-안내.md](guides/맥-작업-안내.md)
 - 자세한 구조와 검증 기록: [guides/개발-노트.md](guides/개발-노트.md) · [app/README.md](app/README.md)
