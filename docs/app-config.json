@@ -23,6 +23,6 @@
     "issuesUrl": "https://github.com/brothrone/Essay/issues/new"
   },
   "api": {
-    "baseUrl": ""
+    "baseUrl": "https://api.essay.win"
   }
 }

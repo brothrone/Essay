@@ -2,8 +2,11 @@
 name = "essay-api"
 main = "src/index.ts"
 compatibility_date = "2026-09-01"
-# 도메인을 사면 아래 주석을 풀고 "api.<도메인>" 으로 바꾼다 (그 도메인이 이 Cloudflare 계정에 있어야 함)
-# routes = [{ pattern = "api.example.com", custom_domain = true }]
+# 주소: https://api.essay.win (essay.win 은 이 Cloudflare 계정에서 산 도메인)
+routes = [{ pattern = "api.essay.win", custom_domain = true }]
+# 계정 이름이 들어가는 *.workers.dev 주소와 미리보기 주소는 쓰지 않는다
+workers_dev = false
+preview_urls = false
 
 [observability]
 enabled = true
