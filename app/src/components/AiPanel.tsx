@@ -20,6 +20,7 @@ import { toast } from '../toast'
 import type { Experience, Project, Question } from '../types'
 import { noteAiResult } from '../useAiStatus'
 import { AI_MODELS, AI_PROVIDERS, saveAiModel, saveAiProvider, savedAiModel, savedAiProvider } from '../useAiTask'
+import { ProviderMenu } from './ProviderMenu'
 import { copyText, countChars, fmtTokens } from '../utils'
 import { track } from '../community'
 import { fitToLimit, lengthMiss } from '../fitLength'
@@ -220,24 +221,16 @@ export function AiPanel({
           </header>
 
           <div className="ai-selects">
-            <select
+            <ProviderMenu
               value={provider}
-              aria-label="AI 종류"
+              status={status}
               disabled={!!running}
-              onChange={(e) => {
-                const p = e.target.value as AiProvider
+              onChange={(p) => {
                 setProvider(p)
                 saveAiProvider(p)
                 setModel(savedAiModel(p))
               }}
-            >
-              {AI_PROVIDERS.map((x) => (
-                <option key={x.value} value={x.value}>
-                  {x.label}
-                  {status && !status[x.value].available ? ' — 설치 안 됨' : ''}
-                </option>
-              ))}
-            </select>
+            />
             <select
               value={model}
               aria-label="AI 모델"

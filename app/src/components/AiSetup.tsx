@@ -7,6 +7,7 @@ import { aiReady, loggedInFor, setLoginConfirmed, useAiStatus } from '../useAiSt
 import { openGeminiLoginDialog } from './AuthCodeDialog'
 import { openHelpDialog } from './HelpDialog'
 import { InstallPanel, isInstallAction, useInstaller } from './InstallProgress'
+import { AiLogo } from './AiLogo'
 import { AI_MODELS, AI_PREFS_EVENT, AI_PROVIDERS, AI_TABS, saveAiModel, saveAiProvider, savedAiModel, savedAiProvider } from '../useAiTask'
 
 type Step = { title: string; done: boolean; unknown?: boolean; body: ReactNode }
@@ -328,7 +329,7 @@ export function AiSetup({
         <div className="segmented ai-setup-pick">
           {AI_TABS.map((x) => (
             <button type="button" key={x.value} className={provider === x.value ? 'on' : ''} onClick={() => onProvider(x.value)}>
-              {x.name} ({x.account})
+              <AiLogo provider={x.value} size={14} /> {x.name} ({x.account})
               {status && aiReady(status, x.value) && <Check size={12} />}
             </button>
           ))}
@@ -420,7 +421,7 @@ export function HomeAi() {
           <div className="segmented">
             {AI_TABS.map((x) => (
               <button type="button" key={x.value} className={provider === x.value ? 'on' : ''} onClick={() => pick(x.value)}>
-                {x.name}
+                <AiLogo provider={x.value} size={14} /> {x.name}
                 {status && aiReady(status, x.value) && <Check size={12} />}
               </button>
             ))}

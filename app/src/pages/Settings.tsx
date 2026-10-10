@@ -14,6 +14,7 @@ import { desktop, type AiProvider, type BillingState, type ThemeSource } from '.
 import { toast } from '../toast'
 import { AI_PROVIDERS, saveAiProvider, savedAiProvider } from '../useAiTask'
 import { useTheme } from '../useTheme'
+import { AiLogo } from '../components/AiLogo'
 import { HAS_GPT, IS_MAC } from '../platform'
 
 /** 설정: 화면 테마 · AI · 업데이트 · Essay 정보 */
@@ -134,7 +135,9 @@ function AiSettings() {
                 }}
               />
               <span className="ai-provider-text">
-                <strong>{x.label}</strong>
+                <strong>
+                  <AiLogo provider={x.value} /> {x.label}
+                </strong>
                 <span className={'muted small' + (st && !st.available ? ' warn' : '')}>{describe(x.value)}</span>
               </span>
             </label>

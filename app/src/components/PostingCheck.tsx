@@ -1,4 +1,4 @@
-import { Check, ClipboardPaste, LoaderCircle, RefreshCw } from 'lucide-react'
+import { Check, ClipboardPaste, ExternalLink, LoaderCircle, RefreshCw } from 'lucide-react'
 import { kbd } from '../platform'
 import { useState } from 'react'
 import { postingRequest } from '../aiRun'
@@ -55,6 +55,11 @@ export function PostingCheck({ project, onPatch }: { project: Project; onPatch: 
           {running ? <LoaderCircle size={14} className="spin" /> : <RefreshCw size={14} />}{' '}
           {project.questions.some((q) => q.prompt.trim()) ? '공고 다시 확인' : 'AI로 공고 읽고 문항 채우기'}
         </button>
+      )}
+      {isHttpUrl(project.jobUrl.trim()) && (
+        <a className="btn ghost small" href={project.jobUrl.trim()} target="_blank" rel="noreferrer">
+          <ExternalLink size={14} /> 공고 열기
+        </a>
       )}
       {!running && (
         <button type="button" className="btn ghost small" aria-expanded={pasteOpen} onClick={() => setPasteOpen((v) => !v)}>

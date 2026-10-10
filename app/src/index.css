@@ -5798,3 +5798,98 @@ textarea:focus-visible {
 .paywall-recheck {
   margin-top: 22px;
 }
+
+/* ---------- AI 고르기 (로고가 들어간 펼침 목록) ---------- */
+
+.ai-logo {
+  display: inline-block;
+  vertical-align: -3px;
+}
+
+.provider-menu {
+  position: relative;
+  min-width: 0;
+}
+
+.provider-menu-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 13.5px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.provider-menu-btn span {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.provider-menu-btn:hover:not(:disabled) {
+  border-color: var(--border-strong);
+}
+
+.provider-menu-btn[aria-expanded='true'] {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgb(43 98 242 / 14%);
+}
+
+.provider-menu-caret {
+  flex: none;
+  color: var(--text-3);
+}
+
+.provider-menu-list {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 4px);
+  left: 0;
+  min-width: 100%;
+  width: max-content;
+  max-width: 360px;
+  margin: 0;
+  padding: 5px;
+  list-style: none;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: var(--shadow-lg, 0 12px 32px rgb(15 20 40 / 16%));
+}
+
+.provider-menu-list button {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--text);
+  font-size: 13.5px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.provider-menu-list button span {
+  flex: 1;
+}
+
+.provider-menu-list button:hover,
+.provider-menu-list button.on {
+  background: var(--primary-soft);
+}
+
+.provider-menu-check {
+  color: var(--primary-text);
+}
