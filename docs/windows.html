@@ -247,17 +247,31 @@
     out.tag_name = 'v' + (out.macVer || out.winVer);
     return out;
   }
-  fetch('https://api.github.com/repos/brothrone/Essay/releases?per_page=15', { headers: { Accept: 'application/vnd.github+json' } })
+  function start(asset) {
+    fname.textContent = asset.name; if (asset.size) fsize.textContent = '· ' + (asset.size / 1048576).toFixed(0) + 'MB';
+    tipname.textContent = asset.name;
+    again.href = asset.url || asset.browser_download_url;
+    // 카카오톡 · 인스타그램 같은 앱 안 브라우저는 파일을 못 받거나 다른 브라우저로 넘긴다 → 자동으로 받지 않고 안내만
+    if (inApp) { state.textContent = '이 앱 안에서는 다운로드가 안 돼요. Edge · Chrome에서 essay.win 을 열어 주세요.'; return; }
+    // 안내를 읽을 시간을 주고 자동으로 내려받기 시작
+    setTimeout(function () { location.href = again.href; state.textContent = '다운로드가 시작됐어요. 끝나면 아래 순서대로 설치해 주세요.'; setTimeout(showTip, 800); }, 1200);
+  }
+  var inApp = /KAKAOTALK|Instagram|FBAN|FBAV|NAVER\(|; ?Line\/|everytimeApp|DaumApps|Claude\//i.test(navigator.userAgent);
+  // 사이트에 둔 다운로드 목록(downloads.json, 윈도우 릴리스 때 갱신)을 먼저 본다. GitHub API 는 IP 당 시간 60번이라
+  // 학교 · 카페처럼 여럿이 같은 주소로 들어오면 막힐 수 있어서 목록이 없을 때만 쓴다
+  fetch('downloads.json', { cache: 'no-store' })
     .then(function (r) { return r.ok ? r.json() : null; })
-    .then(mergeReleases)
-    .then(function (rel) {
-      var asset = (rel && rel.assets || []).filter(function (a) { return /\.exe$/i.test(a.name); })[0];
-      if (!asset) { state.textContent = '파일을 찾지 못했어요. 아래 버튼으로 받아 주세요.'; return; }
-      fname.textContent = asset.name; fsize.textContent = '· ' + (asset.size / 1048576).toFixed(0) + 'MB';
-      tipname.textContent = asset.name;
-      again.href = asset.browser_download_url;
-      // 안내를 읽을 시간을 주고 자동으로 내려받기 시작
-      setTimeout(function () { location.href = asset.browser_download_url; state.textContent = '다운로드가 시작됐어요. 끝나면 아래 순서대로 설치해 주세요.'; setTimeout(showTip, 800); }, 1200);
+    .catch(function () { return null; })
+    .then(function (d) {
+      if (d && d.win && d.win.url) return start(d.win);
+      return fetch('https://api.github.com/repos/brothrone/Essay/releases?per_page=15', { headers: { Accept: 'application/vnd.github+json' } })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(mergeReleases)
+        .then(function (rel) {
+          var asset = (rel && rel.assets || []).filter(function (a) { return /\.exe$/i.test(a.name); })[0];
+          if (!asset) { state.textContent = '파일을 찾지 못했어요. 아래 버튼으로 받아 주세요.'; return; }
+          start(asset);
+        });
     })
     .catch(function () { state.textContent = '아래 버튼으로 받아 주세요.'; });
 })();

@@ -60,6 +60,29 @@ if ($LASTEXITCODE -ne 0) { throw 'electron-builder 실패' }
 
 $exe = "release\Essay-Setup-$version.exe"
 $hash = (Get-FileHash $exe -Algorithm SHA256).Hash
+
+# 사이트 다운로드 목록(docs/downloads.json)의 win 항목을 새 파일로 — 다운로드 안내 페이지가 GitHub API 한도에 걸려도 받을 수 있게.
+# mac 항목은 맥 세션(release.sh)이 채운다. 올린 뒤에만, -NoPublish 때는 Update-DownloadsJson 을 따로 부른다 (gh release upload 로 올린 뒤)
+function Update-DownloadsJson {
+  $size = (Get-Item $exe).Length
+  Push-Location ..
+  try {
+    cmd /c "git pull -q --rebase --autostash >nul 2>&1"
+    $name = "Essay-Setup-$version.exe"
+    node -e @"
+const fs = require('fs'); const p = 'docs/downloads.json'
+let d = {}; try { d = JSON.parse(fs.readFileSync(p, 'utf8')) } catch {}
+d.win = { version: process.argv[1], name: process.argv[2], size: Number(process.argv[3]), url: 'https://github.com/brothrone/Essay/releases/download/v' + process.argv[1] + '/' + process.argv[2] }
+fs.writeFileSync(p, JSON.stringify(d, null, 2) + '\n')
+"@ $version $name $size
+    git add docs/downloads.json
+    cmd /c "git commit -qm `"사이트: 윈도우 다운로드 목록 $version`" >nul 2>&1"
+    cmd /c "git push -q >nul 2>&1"
+    if ($LASTEXITCODE -ne 0) { Write-Warning 'downloads.json 갱신을 push 하지 못했어요 (직접 push 해 주세요)' }
+  } finally { Pop-Location }
+}
+if (-not $NoPublish) { Update-DownloadsJson }
+
 Write-Host ''
 Write-Host "완료: $exe" -ForegroundColor Green
 Write-Host "SHA-256: $hash"
