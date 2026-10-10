@@ -71,7 +71,7 @@ contextBridge.exposeInMainWorld('desktop', {
     onChanged: on('billing:changed'),
   },
   ai: {
-    status: () => ipcRenderer.invoke('ai:status'),
+    status: (opts) => ipcRenderer.invoke('ai:status', opts),
     run: (prompt, model, options = {}) =>
       ipcRenderer.invoke('ai:run', { prompt, model, web: !!options.web, provider: options.provider || 'claude' }),
     geminiAllowWeb: () => ipcRenderer.invoke('ai:gemini-allow-web'),

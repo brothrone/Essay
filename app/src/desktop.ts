@@ -83,7 +83,8 @@ export interface DesktopBridge {
     onStatus: (fn: (s: UpdateStatus) => void) => () => void
   }
   ai: {
-    status: () => Promise<AiStatus>
+    /** fresh: 기억해 둔 명령어 위치 · 로그인 결과를 버리고 새로 확인 ([연결 확인] 버튼) */
+    status: (opts?: { fresh?: boolean }) => Promise<AiStatus>
     run: (prompt: string, model?: string, options?: { web?: boolean; provider?: AiProvider }) => Promise<AiResult>
     cancel: () => Promise<boolean>
     geminiAllowWeb: () => Promise<{ ok: boolean; path: string }>

@@ -339,19 +339,18 @@ function loginShellPath() {
 const MAC_EXTRA_PATH = () => [path.join(HOME, '.local', 'bin'), '/opt/homebrew/bin', '/usr/local/bin']
 
 // PATH 에서 명령어 위치를 찾는다 (윈도우: where.exe, 맥: 로그인 셸 PATH 의 폴더를 직접 확인)
+// 윈도우: where.exe 를 띄우는 데 50~100ms 가 걸리고 창이 활성화될 때마다 여러 번 불리므로 결과를 30초 기억한다
+// (설치 직후엔 [연결 확인] 이 whereBinCache.clear() 로 새로 찾는다)
+const whereBinCache = new Map()
 function whereBin(name) {
-  if (IS_MAC) {
-    for (const dir of [...MAC_EXTRA_PATH(), ...loginShellPath(), '/usr/bin', '/bin']) {
-      const p = path.join(dir, name)
-      try {
-        fs.accessSync(p, fs.constants.X_OK)
-        if (fs.statSync(p).isFile()) return p
-      } catch {
-        /* 없음 */
-      }
-    }
-    return null
-  }
+  if (IS_MAC) return whereBinMac(name)
+  const hit = whereBinCache.get(name)
+  if (hit && Date.now() - hit.at < 30000 && (!hit.value || fs.existsSync(hit.value))) return hit.value
+  const value = whereBinWin(name)
+  whereBinCache.set(name, { at: Date.now(), value })
+  return value
+}
+function whereBinWin(name) {
   try {
     const out = execFileSync('where.exe', [name], { encoding: 'utf8', timeout: 5000, windowsHide: true, stdio: ['ignore', 'pipe', 'ignore'] })
     const p = out
@@ -362,6 +361,18 @@ function whereBin(name) {
   } catch {
     return null
   }
+}
+function whereBinMac(name) {
+  for (const dir of [...MAC_EXTRA_PATH(), ...loginShellPath(), '/usr/bin', '/bin']) {
+    const p = path.join(dir, name)
+    try {
+      fs.accessSync(p, fs.constants.X_OK)
+      if (fs.statSync(p).isFile()) return p
+    } catch {
+      /* 없음 */
+    }
+  }
+  return null
 }
 
 // Gemini는 두 CLI 중 설치된 것을 쓴다: Antigravity CLI(agy, 구독 로그인) → 없으면 Gemini CLI(gemini, Google 로그인)
@@ -602,8 +613,8 @@ function claudeLoggedInUncached(bin) {
 // API 키 로그인은 API 요금이 나가므로 따로 구분한다. 돌려주는 값: 'chatgpt' · 'apikey' · 'none' · null(모름)
 let codexLoginCache = { bin: '', at: 0, value: null }
 function codexLogin(bin) {
-  // 금방 끝나는 명령(0.1초 안팎)이라 로그인 창에서 돌아오자마자 반영되도록 5초만 기억한다
-  if (codexLoginCache.bin === bin && Date.now() - codexLoginCache.at < 5000) return codexLoginCache.value
+  // 창이 활성화될 때마다 묻는데 프로세스를 하나 띄우는 일이라 30초 기억한다 (앱 안 로그인이 끝나거나 [연결 확인]을 누르면 바로 지운다)
+  if (codexLoginCache.bin === bin && Date.now() - codexLoginCache.at < 30000) return codexLoginCache.value
   let value = null
   try {
     // 결과 문구는 stderr 로 나온다
@@ -642,7 +653,13 @@ function geminiLoggedIn(cli) {
   return fs.existsSync(AGY_LOGIN_MARK()) ? true : null
 }
 
-ipcMain.handle('ai:status', () => {
+// fresh: 사용자가 [연결 확인]을 눌렀거나 설치가 막 끝났을 때 — 기억해 둔 명령어 위치 · 로그인 결과를 버리고 새로 본다
+ipcMain.handle('ai:status', (_e, opts) => {
+  if (opts?.fresh) {
+    whereBinCache.clear()
+    claudeLoginCache = { bin: '', at: 0, value: null }
+    codexLoginCache = { bin: '', at: 0, value: null }
+  }
   const claude = findCli('claude')
   const gemini = findCli('gemini')
   const gpt = findCli('gpt')
@@ -932,6 +949,7 @@ ipcMain.handle('ai:install', (e, action) => {
     child.on('close', (code) => {
       if (buf) emit(buf)
       installChild = null
+      whereBinCache.clear() // 방금 설치한 명령어를 바로 찾게
       if (!wc.isDestroyed()) wc.send('ai:install-done', { action, code: code ?? 1, seconds: Math.round((Date.now() - started) / 1000) })
     })
     child.on('error', (err) => {

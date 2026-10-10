@@ -5,16 +5,17 @@ import { desktop, type AiProvider, type AiStatus } from './desktop'
 export function useAiStatus() {
   const [status, setStatus] = useState<AiStatus | null>(null)
   const [checking, setChecking] = useState(false)
-  const load = useCallback(() => desktop.ai.status().then(setStatus), [])
+  const load = useCallback((fresh = false) => desktop.ai.status(fresh ? { fresh: true } : undefined).then(setStatus), [])
   useEffect(() => {
     load()
     const onFocus = () => void load()
     window.addEventListener('focus', onFocus)
     return () => window.removeEventListener('focus', onFocus)
   }, [load])
+  // [연결 확인]: 기억해 둔 결과를 버리고 새로 (설치 · 로그인 직후)
   const refresh = useCallback(() => {
     setChecking(true)
-    load().finally(() => setChecking(false))
+    load(true).finally(() => setChecking(false))
   }, [load])
   return { status, checking, refresh }
 }
