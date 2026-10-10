@@ -88,6 +88,11 @@ export interface DesktopBridge {
     geminiLoginStatus: () => Promise<{ loggedIn: boolean; result: string }>
     /** 브라우저에 뜬 인증 코드를 로그인 콘솔 창에 대신 입력 */
     sendAuthCode: (code: string) => Promise<{ ok: boolean; error?: string }>
+    /** GPT(Codex CLI) 로그인: 창 없이 codex login 을 띄운다(브라우저가 열림). 진행은 onGptLogin 으로 온다 */
+    gptLogin: () => Promise<{ ok: boolean; error?: string }>
+    gptLoginCancel: () => Promise<boolean>
+    /** url: 브라우저가 안 열렸을 때 열 로그인 주소 · done: 끝남(ok 면 로그인됨) */
+    onGptLogin: (fn: (p: { url?: string; done?: boolean; ok?: boolean; cancelled?: boolean; error?: string }) => void) => () => void
     onProgress: (fn: (p: AiProgress) => void) => () => void
     /** 이 컴퓨터에서 Essay 가 쓴 AI 토큰 합계 (오늘 · 7일 · 30일, 최근 14일 날짜별) */
     usage: () => Promise<AiUsageSummary>

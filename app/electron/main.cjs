@@ -293,6 +293,21 @@ const GEMINI_WEB_RULE = 'read_url(*)'
 const PROVIDER_LABEL = { claude: 'Claude Code', gemini: 'Gemini CLI(agy 또는 gemini)', gpt: 'Codex CLI' }
 // Codex CLI 공식 설치 스크립트(install.ps1)가 실행 파일을 두는 곳
 const CODEX_BIN_DIR = () => path.join(LOCALAPPDATA, 'Programs', 'OpenAI', 'Codex', 'bin')
+// Essay 가 Codex 를 돌릴 때 끄는 기능 (codex features list 의 이름, 2026-10 Codex 0.162 기준)
+const CODEX_OFF_FEATURES = [
+  'shell_tool',
+  'unified_exec',
+  'multi_agent',
+  'apps',
+  'plugins',
+  'image_generation',
+  'computer_use',
+  'browser_use',
+  'in_app_browser',
+  'hooks',
+  'goals',
+  'memories',
+]
 // Antigravity CLI 로그인 기록 (agy 는 로그인 여부를 물어볼 명령이 없다) · 로그인 콘솔 창 제목
 const AGY_LOGIN_MARK = () => path.join(app.getPath('userData'), 'agy-login-ok')
 const AGY_LOGIN_RESULT = () => path.join(app.getPath('userData'), 'agy-login-result.txt')
@@ -485,14 +500,28 @@ function geminiErrorMessage(text) {
   return t.trim().slice(0, 400) || '알 수 없는 오류가 났어요.'
 }
 
-const CODEX_LOGIN_ERROR = 'ChatGPT 로그인이 필요해요. 홈의 [연결 관리]에서 [로그인 창 열기]를 눌러 ChatGPT 계정으로 로그인해 주세요.'
+const CODEX_LOGIN_ERROR = 'ChatGPT 로그인이 필요해요. 홈의 [연결 관리]에서 [로그인]을 눌러 ChatGPT 계정으로 로그인해 주세요.'
 const CODEX_API_KEY_ERROR =
-  'Codex CLI가 API 키로 로그인돼 있어서 쓰면 OpenAI API 요금이 나가요. 홈의 [연결 관리]에서 [로그인 창 열기]를 눌러 ChatGPT 계정으로 다시 로그인해 주세요.'
+  'Codex CLI가 API 키로 로그인돼 있어서 쓰면 OpenAI API 요금이 나가요. 홈의 [연결 관리]에서 [로그인]을 눌러 ChatGPT 계정으로 다시 로그인해 주세요.'
+// "try again in 2 hours" · "try again at 3:05 PM" → "2시간 뒤" · "3:05 PM"
+function codexRetryHint(t) {
+  const m = t.match(/try again in (?:about )?(\d+)\s*(day|hour|minute|min|second)s?(?:\s*(?:and\s*)?(\d+)\s*(minute|min)s?)?/i)
+  if (m) {
+    const unit = { day: '일', hour: '시간', minute: '분', min: '분', second: '초' }[m[2].toLowerCase()]
+    return `${m[1]}${unit}${m[3] ? ` ${m[3]}분` : ''} 뒤`
+  }
+  const at = t.match(/try again (?:at|after) ([0-9]{1,2}:[0-9]{2}\s*(?:AM|PM)?)/i)
+  return at ? at[1] : ''
+}
 function codexErrorMessage(text) {
   const t = String(text || '')
   if (/401|unauthori[sz]ed|not logged in|log ?in again|token (is )?(expired|invalid)|refresh token/i.test(t)) return CODEX_LOGIN_ERROR
-  if (/usage limit|rate.?limit|429|too many requests|quota|purchase more credits/i.test(t))
-    return 'ChatGPT 사용량 한도에 도달했어요. 한도가 초기화된 뒤 다시 시도하거나 모델을 바꿔 보세요.'
+  if (/not (available|included|enabled) (on|for|in) (your|this) (plan|account|workspace)|upgrade (your )?plan to use|plan does not include|not eligible/i.test(t))
+    return '이 ChatGPT 계정 · 요금제로는 Codex 를 쓸 수 없다고 나와요. 다른 계정으로 로그인하거나 다른 AI 를 골라 주세요.'
+  if (/usage limit|rate.?limit|429|too many requests|quota|purchase more credits/i.test(t)) {
+    const hint = codexRetryHint(t)
+    return `ChatGPT 사용량 한도에 도달했어요. ${hint ? `${hint}에 다시 쓸 수 있어요.` : '한도가 초기화된 뒤 다시 시도해 주세요.'} 그동안 다른 AI 로 바꿔 써도 돼요.`
+  }
   if (/model .*(not supported|does not exist|not found|unavailable)|unsupported model|invalid model/i.test(t))
     return '선택한 GPT 모델을 쓸 수 없어요(요금제에 따라 다를 수 있어요). 모델을 "기본"으로 바꿔 주세요.'
   if (/unexpected argument|unrecognized (option|argument)|unknown (option|argument)/i.test(t))
@@ -740,7 +769,7 @@ const TERMINAL_ACTIONS = {
     title: 'Codex CLI 설치',
     cmd: "$env:CODEX_NON_INTERACTIVE = '1'; irm https://chatgpt.com/codex/install.ps1 | iex",
     provider: 'gpt',
-    hint: ['설치가 끝나면 이 창을 닫고 Essay로 돌아가세요. 2단계 [로그인 창 열기]를 누르면 돼요.'],
+    hint: ['설치가 끝나면 이 창을 닫고 Essay로 돌아가세요. 2단계 [로그인]을 누르면 돼요.'],
   },
   // 브라우저에서 ChatGPT 로그인을 마치면 저절로 끝난다 (코드 붙여넣기 없음). API 키 로그인이었으면 먼저 지운다
   'login-codex': {
@@ -1248,6 +1277,84 @@ ipcMain.handle('ai:gemini-login-status', () => ({
   result: readLoginResult(),
 }))
 
+// GPT(Codex CLI) 로그인: 창 없이 `codex login` 을 띄운다. codex 가 브라우저를 열고, 사용자가 ChatGPT 로그인을 마치면 0 으로 끝난다.
+// 브라우저가 안 열렸을 때를 위해 출력에 나오는 로그인 주소를 화면에 넘긴다(주소는 기록에 남기지 않음). API 키 로그인이면 먼저 지운다
+let gptLoginChild = null
+let gptLoginCancelled = false
+const GPT_LOGIN_URL_RE = /https:\/\/auth\.openai\.com\/[^\s"'<>]+/
+ipcMain.handle('ai:gpt-login', (e) => {
+  const found = findCodex()
+  if (!found) return { ok: false, error: 'Codex CLI를 찾지 못했어요. 먼저 설치해 주세요.' }
+  const wc = e.sender
+  const send = (p) => !wc.isDestroyed() && wc.send('ai:gpt-login', p)
+  if (gptLoginChild && gptLoginChild.exitCode === null) killTree(gptLoginChild)
+  const { bin } = found
+  const viaCmd = /\.(cmd|bat)$/i.test(bin)
+  const env = aiEnv('gpt')
+  const cwd = path.join(app.getPath('temp'), 'essay-ai')
+  fs.mkdirSync(cwd, { recursive: true })
+  const opts = { cwd, env, windowsHide: true }
+  try {
+    if (codexLogin(bin) === 'apikey') {
+      if (viaCmd) spawnSync(quoteArg(bin), ['logout'], { ...opts, shell: true, timeout: 15000 })
+      else spawnSync(bin, ['logout'], { ...opts, timeout: 15000 })
+    }
+  } catch {
+    /* 지우지 못해도 새 로그인이 덮어쓴다 */
+  }
+  codexLoginCache = { bin: '', at: 0, value: null }
+  let child
+  try {
+    const o = { ...opts, stdio: ['ignore', 'pipe', 'pipe'], detached: IS_MAC }
+    child = viaCmd ? spawn(quoteArg(bin), ['login'], { ...o, shell: true }) : spawn(bin, ['login'], o)
+  } catch (ex) {
+    return { ok: false, error: `Codex CLI를 실행하지 못했어요: ${ex.message}` }
+  }
+  gptLoginChild = child
+  gptLoginCancelled = false
+  let out = ''
+  let url = ''
+  const onData = (d) => {
+    out += d
+    const m = !url && out.match(GPT_LOGIN_URL_RE)
+    if (m) {
+      url = m[0]
+      send({ url })
+    }
+  }
+  child.stdout.setEncoding('utf8')
+  child.stderr.setEncoding('utf8')
+  child.stdout.on('data', onData)
+  child.stderr.on('data', onData)
+  // 10분 안에 끝내지 않으면 멈춘다 (로그인 서버가 포트를 계속 잡고 있지 않게)
+  const timer = setTimeout(() => killTree(child), 10 * 60 * 1000)
+  let settled = false
+  const done = (code) => {
+    if (settled) return
+    settled = true
+    clearTimeout(timer)
+    if (gptLoginChild === child) gptLoginChild = null
+    codexLoginCache = { bin: '', at: 0, value: null }
+    const text = out.replace(ANSI_RE, '').split(url || '\0').join('<로그인 주소>')
+    writeAiLog({ provider: 'gpt', bin, login: true, code, output: text.slice(-1500) })
+    if (gptLoginCancelled) return send({ done: true, ok: false, cancelled: true })
+    if (code === 0) return send({ done: true, ok: true })
+    const error = /address (already )?in use|os error 10048|1455/i.test(text)
+      ? `다른 로그인이 아직 열려 있어요. 열려 있는 로그인 창(${IS_MAC ? '터미널' : 'PowerShell'})을 닫고 다시 눌러 주세요.`
+      : '로그인이 끝나지 않았어요. [로그인]을 다시 눌러 주세요.'
+    send({ done: true, ok: false, error })
+  }
+  child.on('close', done)
+  child.on('error', () => done(1))
+  return { ok: true }
+})
+ipcMain.handle('ai:gpt-login-cancel', () => {
+  if (!gptLoginChild || gptLoginChild.exitCode !== null) return false
+  gptLoginCancelled = true
+  killTree(gptLoginChild)
+  return true
+})
+
 ipcMain.handle('ai:run', (e, opts) => runAi(e.sender, opts))
 
 // GPT 모델은 요금제 · 시기마다 바뀌어서(2026-10 기준 GPT-6 계열) 앱에 적어 두지 않고,
@@ -1456,6 +1563,10 @@ function runAi(sender, { prompt, model, web, provider }) {
       stdinText = `${system}\n\n${prompt}`
       args = ['exec', '--json', '--ephemeral', '--skip-git-repo-check', '--ignore-user-config', '--ignore-rules', '--color', 'never', '-s', 'read-only']
       args.push('-c', `web_search=${web ? 'live' : 'disabled'}`)
+      // 글쓰기에는 명령 실행 · 앱 · 플러그인 · 브라우저 같은 코딩 도구가 필요 없다. 꺼 두면 엉뚱한 명령을 돌리거나
+      // 윈도우 샌드박스 준비 창이 뜰 일이 없고, 도구 설명이 빠져 요청도 가벼워진다.
+      // (-c features.X=false 는 모르는 이름이면 경고만 하고 넘어가서 Codex 가 기능 이름을 바꿔도 실행은 된다. --disable 은 실패함)
+      for (const f of CODEX_OFF_FEATURES) args.push('-c', `features.${f}=false`)
       if (web) args.push('-c', 'model_reasoning_effort=low')
       if (model) args.push('-m', String(model))
       args.push('-')
@@ -2382,6 +2493,7 @@ if (!app.requestSingleInstanceLock()) {
   app.on('before-quit', () => {
     killTree(aiChild)
     killTree(loginChild)
+    killTree(gptLoginChild)
     // 맥: 받아 둔 새 버전이 있으면 끌 때 조용히 바꿔 둔다 (윈도우의 autoInstallOnAppQuit 과 같은 동작, 다시 켜지는 않음)
     if (IS_MAC && macUpdate && !macInstalling) installMacUpdate(false)
   })

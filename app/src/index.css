@@ -3964,6 +3964,15 @@ textarea:focus-visible {
   margin-top: 3px;
 }
 
+.login-wait {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 13px;
+  color: var(--text);
+}
+
 .login-guide.big {
   font-size: 14px;
   line-height: 1.7;

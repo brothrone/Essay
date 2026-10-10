@@ -1,5 +1,5 @@
 import { Check, Download, ExternalLink, KeyRound, LoaderCircle, RefreshCw, Settings2, Sparkles, TerminalSquare } from 'lucide-react'
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { desktop, type AiProvider, type AiStatus, type TerminalAction } from '../desktop'
 import { IS_MAC, PASTE_HINT, TERMINAL } from '../platform'
 import { toast } from '../toast'
@@ -50,6 +50,41 @@ export function AiSetup({
       else setLoginError(r.error || '로그인 창을 열지 못했어요')
     } finally {
       setTimeout(() => setBusy(null), 1500)
+    }
+  }
+  // GPT(Codex CLI) 로그인: 창 없이 codex login 을 띄우고(브라우저가 열림) 끝나면 상태를 다시 확인한다.
+  // 여러 화면에 카드가 있을 수 있어 이 카드에서 시작한 로그인만 안내 · 알림을 띄운다
+  const [gptWait, setGptWait] = useState<{ url: string } | null>(null)
+  const [gptError, setGptError] = useState('')
+  const gptStarted = useRef(false)
+  useEffect(
+    () =>
+      desktop.ai.onGptLogin((p) => {
+        if (!gptStarted.current) {
+          if (p.done) refresh()
+          return
+        }
+        if (p.url) setGptWait({ url: p.url })
+        if (!p.done) return
+        gptStarted.current = false
+        setGptWait(null)
+        if (p.ok) {
+          setLoginConfirmed('gpt', true)
+          toast('ChatGPT 로그인을 마쳤어요')
+          refresh()
+        } else if (!p.cancelled) setGptError(p.error || '로그인이 끝나지 않았어요. [로그인]을 다시 눌러 주세요.')
+      }),
+    [refresh],
+  )
+  const startGptLogin = async () => {
+    setGptError('')
+    gptStarted.current = true
+    setGptWait({ url: '' })
+    const r = await desktop.ai.gptLogin()
+    if (!r.ok) {
+      gptStarted.current = false
+      setGptWait(null)
+      setGptError(r.error || '로그인을 시작하지 못했어요')
     }
   }
   const open = async (action: TerminalAction) => {
@@ -193,16 +228,43 @@ export function AiSetup({
       body: oLogged ? null : (
         <>
           {o?.apiKey && <p className="ai-error">지금은 API 키로 로그인돼 있어서 쓰면 OpenAI API 요금이 나가요. ChatGPT 계정으로 다시 로그인해 주세요.</p>}
-          {o?.available ? (
-            loginGuide(['브라우저가 열리면 ChatGPT 계정으로 로그인. (무료 · Go 요금제도 되지만 한도가 작아요.)', '브라우저에 로그인 완료가 뜨면 열린 창을 닫으세요.'])
-          ) : (
+          {!o?.available ? (
             <p className="muted small">설치가 끝나면 로그인할 수 있어요.</p>
+          ) : gptWait ? (
+            <>
+              <p className="login-wait">
+                <LoaderCircle size={14} className="spin" /> 브라우저에서 ChatGPT 로그인을 마치면 여기서 저절로 연결돼요.
+              </p>
+              <div className="btn-row">
+                {gptWait.url && (
+                  <a className="btn small" href={gptWait.url} target="_blank" rel="noreferrer">
+                    <ExternalLink size={14} /> 로그인 페이지 다시 열기
+                  </a>
+                )}
+                <button type="button" className="btn small ghost" onClick={() => desktop.ai.gptLoginCancel()}>
+                  취소
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              {loginGuide([
+                '[로그인]을 누르면 브라우저가 열려요. ChatGPT 계정으로 로그인하세요. (무료 · Go 요금제도 되지만 한도가 작아요.)',
+                '브라우저에 로그인 완료가 뜨면 Essay로 돌아오세요. 저절로 연결돼요.',
+              ])}
+              <div className="btn-row">
+                <button type="button" className="btn small primary" disabled={busy !== null} onClick={startGptLogin}>
+                  <KeyRound size={14} /> 로그인
+                </button>
+                {o.loggedIn === null && confirmBtn('gpt')}
+              </div>
+            </>
           )}
-          {o?.available && (
-            <div className="btn-row">
-              {btn('login-codex', '로그인 창 열기', true)}
-              {o.loggedIn === null && confirmBtn('gpt')}
-            </div>
+          {gptError && (
+            <>
+              <p className="ai-error">{gptError}</p>
+              <div className="btn-row">{btn('login-codex', `${TERMINAL} 창에서 로그인`)}</div>
+            </>
           )}
         </>
       ),

@@ -28,6 +28,7 @@ function cliModels(p: AiProvider) {
     return []
   }
 }
+let gptModels: { at: number; list: { value: string; label: string }[] } = { at: 0, list: [] }
 
 export const AI_MODELS: Record<AiProvider, { value: string; label: string }[]> = {
   claude: [
@@ -40,8 +41,12 @@ export const AI_MODELS: Record<AiProvider, { value: string; label: string }[]> =
     { value: 'gemini-3.1-pro-high', label: 'Gemini 3.1 Pro · 가장 잘 씀' },
     { value: 'gemini-3.8-flash-high', label: 'Gemini 3.8 Flash · 빠르고 한도 절약' },
   ],
-  // 요금제 · 시기마다 모델이 바뀌어서 기본은 Codex 가 정한 모델, 나머지는 Codex 가 받아 둔 목록(한 번 실행한 뒤부터 보임)
-  gpt: [{ value: '', label: '기본 모델 (Codex 추천)' }, ...(HAS_GPT ? cliModels('gpt') : [])],
+  // 요금제 · 시기마다 모델이 바뀌어서 기본은 Codex 가 정한 모델, 나머지는 Codex 가 받아 둔 목록(한 번 실행한 뒤부터 보임).
+  // 첫 실행 뒤 목록이 생기므로 1분마다 다시 읽는다
+  get gpt() {
+    if (HAS_GPT && Date.now() - gptModels.at > 60000) gptModels = { at: Date.now(), list: cliModels('gpt') }
+    return [{ value: '', label: '기본 모델 (Codex 추천)' }, ...gptModels.list]
+  },
 }
 
 /** 고른 적이 없으면 Gemini(Google 계정) 가 기본 */
