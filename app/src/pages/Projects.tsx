@@ -82,28 +82,6 @@ export function Projects() {
             <KanbanSquare size={14} /> 보드
           </button>
         </div>
-        {view === 'list' && (
-          <div className='chips'>
-            <button
-              type='button'
-              className={'chip' + (!status ? ' on' : '')}
-              onClick={() => setStatus(null)}
-            >
-              전체 <b>{data.projects.length}</b>
-            </button>
-            {STATUS_ORDER.map((s) => (
-              <button
-                type='button'
-                key={s}
-                className={'chip' + (status === s ? ' on' : '')}
-                onClick={() => setStatus(status === s ? null : s)}
-              >
-                {STATUS[s].label}{' '}
-                <b>{data.projects.filter((p) => p.status === s).length}</b>
-              </button>
-            ))}
-          </div>
-        )}
         <div className='toolbar-right'>
           <label className='search'>
             <Search size={16} />
@@ -124,6 +102,28 @@ export function Projects() {
           </select>
         </div>
       </div>
+      {view === 'list' && (
+        <div className='status-tabs'>
+            <button
+              type='button'
+              className={'status-tab' + (!status ? ' on' : '')}
+              onClick={() => setStatus(null)}
+            >
+              전체 <b>{data.projects.length}</b>
+            </button>
+            {STATUS_ORDER.map((s) => (
+              <button
+                type='button'
+                key={s}
+                className={'status-tab' + (status === s ? ' on' : '')}
+                onClick={() => setStatus(status === s ? null : s)}
+              >
+                {STATUS[s].label}{' '}
+                <b>{data.projects.filter((p) => p.status === s).length}</b>
+              </button>
+            ))}
+        </div>
+      )}
 
       {view === 'board' ? (
         <Board projects={list} onStatus={setProjectStatus} />
@@ -133,10 +133,10 @@ export function Projects() {
             <thead>
               <tr>
                 <th>회사 · 직무</th>
-                <th>마감</th>
-                <th>진행</th>
-                <th>상태</th>
-                <th>수정</th>
+                <th className='col-deadline'>마감</th>
+                <th className='col-progress'>진행</th>
+                <th className='col-status'>상태</th>
+                <th className='col-updated'>수정</th>
               </tr>
             </thead>
             <tbody>
@@ -175,7 +175,7 @@ export function Projects() {
                       onChange={(s) => setProjectStatus(p.id, s)}
                     />
                   </td>
-                  <td className='muted small'>{fmtRelative(p.updatedAt)}</td>
+                  <td className='col-updated muted small'>{fmtRelative(p.updatedAt)}</td>
                 </tr>
               ))}
             </tbody>
@@ -286,7 +286,7 @@ function Board({
                   </article>
                 )
               })}
-              {!items.length && (
+              {!items.length && dragId && (
                 <p className='board-empty'>여기로 끌어다 놓기</p>
               )}
             </div>

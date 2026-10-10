@@ -1723,6 +1723,78 @@ textarea:focus-visible {
   width: 100%;
   border-collapse: collapse;
   min-width: 640px;
+  table-layout: fixed;
+}
+
+.project-table .col-deadline {
+  width: 190px;
+}
+
+.project-table .col-progress {
+  width: 130px;
+}
+
+.project-table .col-status {
+  width: 140px;
+}
+
+.project-table .col-updated {
+  width: 96px;
+  text-align: right;
+}
+
+.project-table td:first-child {
+  overflow: hidden;
+}
+
+/* 목록의 상태 거르기: 상자 대신 밑줄 탭 */
+.status-tabs {
+  display: flex;
+  gap: 4px;
+  margin: -4px 0 14px;
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+
+.status-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.status-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 10px 10px;
+  margin-bottom: -1px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--text-3);
+  font-size: 13.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.status-tab b {
+  font-weight: 600;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.status-tab:hover {
+  color: var(--text);
+}
+
+.status-tab.on {
+  color: var(--text);
+  border-bottom-color: var(--text);
+}
+
+.status-tab.on b {
+  color: var(--text-2);
 }
 
 .project-table th {
@@ -4856,17 +4928,23 @@ textarea:focus-visible {
 
 .board {
   display: grid;
-  grid-template-columns: repeat(6, minmax(168px, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 10px;
-  overflow-x: auto;
-  padding-bottom: 8px;
+}
+
+/* 창이 좁으면 3칸씩 두 줄로 (가로 스크롤 없이) */
+@media (max-width: 1180px) {
+  .board {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 .board-col {
   display: flex;
   flex-direction: column;
-  min-height: 320px;
-  border: 1px solid var(--border);
+  min-width: 0;
+  min-height: 260px;
+  border: 1px solid transparent;
   border-radius: var(--radius-lg);
   background: var(--surface-2);
   transition: background 0.15s, border-color 0.15s;
@@ -4881,8 +4959,9 @@ textarea:focus-visible {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 12px 12px 8px;
+  padding: 12px 12px 10px;
   font-size: 13.5px;
+  white-space: nowrap;
 }
 
 .board-count {
@@ -4903,7 +4982,8 @@ textarea:focus-visible {
 .board-card {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
+  min-width: 0;
   padding: 12px;
   border: 1px solid var(--border);
   border-radius: 12px;
@@ -4919,6 +4999,14 @@ textarea:focus-visible {
 .board-card-title {
   display: flex;
   flex-direction: column;
+  min-width: 0;
+}
+
+.board-card-title strong,
+.board-card-title span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .board-card-title strong {
@@ -4939,10 +5027,23 @@ textarea:focus-visible {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+  min-width: 0;
+}
+
+.board-card-foot .progress {
+  flex: 1;
+  min-width: 0;
+  justify-content: flex-end;
+}
+
+.board-card-foot .progress-bar {
+  width: auto;
+  flex: 1;
+  max-width: 64px;
 }
 
 .board-empty {
-  margin: auto 0;
+  margin: 0;
   padding: 20px 8px;
   text-align: center;
   font-size: 12.5px;
