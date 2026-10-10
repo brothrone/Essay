@@ -1,6 +1,6 @@
 import { CLICHES, postingKeywords } from './prompts'
 import type { AppData, Project, Question } from './types'
-import { similarity } from './utils'
+import { placeholderCount, similarity } from './utils'
 
 /** '한빛전자 (예시)' · 'Cultural Vistas · WEST' → 앞부분 회사 이름만 */
 export function coreCompanyName(company: string) {
@@ -58,8 +58,8 @@ export function answerWarnings(data: AppData, project: Project, q: Question): An
       })
   }
 
-  const marks = text.match(/\(확인 필요[^)]*\)/g)?.length ?? 0
-  if (marks) out.push({ kind: 'check', level: 'warn', text: `AI가 몰라서 비워 둔 '(확인 필요)'가 ${marks}군데 있어요` })
+  const marks = placeholderCount(text)
+  if (marks) out.push({ kind: 'check', level: 'warn', text: `AI가 몰라서 비워 둔 곳이 ${marks}군데 있어요` })
 
   // 공고 분석 키워드가 있으면 답변에 얼마나 녹였는지 (억지 나열이 아니라 '하나도 없음'만 알린다)
   const keywords = postingKeywords(project.notes)

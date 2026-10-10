@@ -111,3 +111,7 @@ export const includesText = (haystack: (string | undefined)[], q: string) => {
   const k = q.trim().toLowerCase()
   return !k || haystack.some((s) => s?.toLowerCase().includes(k))
 }
+
+/** AI 가 모르는 내용을 비워 둔 자리: "(확인 필요…)", "[N]%" · "[수치]" 같은 빈칸, "○○" */
+export const PLACEHOLDER_SOURCE = String.raw`\(확인 필요[^)]*\)|\[(?:[NnXx]|숫자|수치|인원|기간|○+)\]|○○+`
+export const placeholderCount = (text: string) => text.match(new RegExp(PLACEHOLDER_SOURCE, 'g'))?.length ?? 0

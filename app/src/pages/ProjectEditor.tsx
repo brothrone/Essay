@@ -34,7 +34,7 @@ import { experienceToText, isHttpUrl, projectToText } from '../format'
 import { recordSnapshot } from '../history'
 import { newQuestion, useStore } from '../store'
 import type { CountMode, Experience, Project, Question } from '../types'
-import { copyText, countChars, fmtDateTime, fmtPeriod, includesText, similarity } from '../utils'
+import { copyText, countChars, fmtDateTime, fmtPeriod, includesText, PLACEHOLDER_SOURCE, similarity } from '../utils'
 
 type Panel = 'exp' | 'answers' | 'info'
 
@@ -415,7 +415,7 @@ function QuestionEditor({
   const findMark = () => {
     const el = box.current?.querySelector<HTMLTextAreaElement>('.answer-input')
     if (!el) return
-    const re = /\(확인 필요[^)]*\)/g
+    const re = new RegExp(PLACEHOLDER_SOURCE, 'g')
     re.lastIndex = el.selectionEnd
     const m = re.exec(el.value) ?? ((re.lastIndex = 0), re.exec(el.value))
     if (!m) return
@@ -442,7 +442,7 @@ function QuestionEditor({
       new CustomEvent(CHAT_ASK_EVENT, {
         detail: {
           qid: q.id,
-          message: "답변에 남은 '(확인 필요)' 표시를 모두 없애 줘. 모르는 수치나 사실은 지어내지 말고 빼서, 자연스러운 문장으로 고쳐 줘.",
+          message: "답변에 남은 '(확인 필요)', [N] 같은 빈칸을 모두 없애 줘. 모르는 수치나 사실은 지어내지 말고 빼서, 자연스러운 문장으로 고쳐 줘. 그래서 짧아져도 괜찮아.",
         },
       }),
     )

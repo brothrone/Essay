@@ -1,7 +1,7 @@
 import { desktop, type AiProvider } from './desktop'
 import { fitPrompt, lengthGoal, parseAiAnswer } from './prompts'
 import type { Question } from './types'
-import { countChars } from './utils'
+import { countChars, placeholderCount } from './utils'
 
 /**
  * 글자수 범위(제한의 88~100%)에서 얼마나 벗어났는지. 0 이면 범위 안.
@@ -37,6 +37,8 @@ export async function fitToLimit(
     extraSeconds += r.seconds
     extraTokens += r.usage ? r.usage.input + r.usage.output : 0
     const candidate = parseAiAnswer(r.text).answer.trim()
+    // 분량을 채우려고 "[N]%" 같은 빈칸이나 없는 수치를 넣은 답은 받지 않는다 (짧아도 지어내지 않은 쪽이 낫다)
+    if (placeholderCount(candidate) > placeholderCount(best)) continue
     if (candidate && lengthMiss(candidate, q, opts.overOnly) < lengthMiss(best, q, opts.overOnly)) best = candidate
   }
   return { text: best, extraSeconds, extraTokens }

@@ -142,7 +142,7 @@ function WelcomeWizard({ onClose }: { onClose: () => void }) {
           <ul className="welcome-points">
             <li>
               <strong>추가 구독료 없음</strong>
-              <p>쓰던 구독 한도 안에서</p>
+              <p>이미 쓰고 있는 구독 한도 안에서</p>
             </li>
             <li>
               <strong>최신 모델</strong>
