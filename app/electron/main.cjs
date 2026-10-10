@@ -749,7 +749,7 @@ const TERMINAL_ACTIONS = {
     cmd: "$st = cmd /c \"codex login status 2>&1\"\r\nif (\"$st\" -match 'API key') { codex logout }\r\ncodex login\r\nif ($LASTEXITCODE -eq 0) { Write-Host ''; Write-Host '로그인 완료! 이 창을 닫고 Essay 로 돌아가세요.' -ForegroundColor Green }",
     provider: 'gpt',
     hint: [
-      '1) 브라우저가 열리면 ChatGPT 계정(Plus · Pro 등 유료 요금제)으로 로그인하세요.',
+      '1) 브라우저가 열리면 ChatGPT 계정으로 로그인하세요. (무료 · Go 요금제도 되지만 한도가 작아요.)',
       '2) 브라우저에 로그인 완료가 뜨면 이 창을 닫고 Essay 로 돌아오세요.',
       '   (브라우저가 안 열리면 아래에 나온 https:// 주소를 복사해 브라우저에 붙여넣으세요.)',
     ],

@@ -61,7 +61,7 @@ type AiChoice = 'agy' | 'claude' | 'gpt' | 'gemini-free'
 const ALL_CHOICES: { value: AiChoice; provider: AiProvider; name: string; need: string }[] = [
   { value: 'agy', provider: 'gemini', name: 'Gemini', need: 'Google AI Pro · Ultra 구독' },
   { value: 'claude', provider: 'claude', name: 'Claude', need: 'Claude Pro · Max 구독' },
-  { value: 'gpt', provider: 'gpt', name: 'ChatGPT', need: 'ChatGPT Plus · Pro 구독' },
+  { value: 'gpt', provider: 'gpt', name: 'ChatGPT', need: 'ChatGPT 계정 · 무료 · Go 는 한도 작음' },
   { value: 'gemini-free', provider: 'gemini', name: 'Gemini 무료', need: '무료 Google 계정 · 한도 작음' },
 ]
 const CHOICES = ALL_CHOICES.filter((c) => HAS_GPT || c.value !== 'gpt')
@@ -184,7 +184,7 @@ function WelcomeWizard({ onClose }: { onClose: () => void }) {
             ))}
           </div>
           <p className="muted small">
-            구독이 없으면 Gemini 무료.
+            구독이 없으면 {HAS_GPT ? 'Gemini 무료나 무료 ChatGPT 계정.' : 'Gemini 무료.'}
             {choices.length > 1 && <> 기본 AI는 먼저 고른 {CHOICES.find((c) => c.value === choices[0])!.name}.</>}
           </p>
         </div>

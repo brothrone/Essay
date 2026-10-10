@@ -194,7 +194,7 @@ export function AiSetup({
         <>
           {o?.apiKey && <p className="ai-error">지금은 API 키로 로그인돼 있어서 쓰면 OpenAI API 요금이 나가요. ChatGPT 계정으로 다시 로그인해 주세요.</p>}
           {o?.available ? (
-            loginGuide(['브라우저가 열리면 ChatGPT 계정(Plus · Pro 등)으로 로그인.', '브라우저에 로그인 완료가 뜨면 열린 창을 닫으세요.'])
+            loginGuide(['브라우저가 열리면 ChatGPT 계정으로 로그인. (무료 · Go 요금제도 되지만 한도가 작아요.)', '브라우저에 로그인 완료가 뜨면 열린 창을 닫으세요.'])
           ) : (
             <p className="muted small">설치가 끝나면 로그인할 수 있어요.</p>
           )}
