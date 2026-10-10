@@ -6,6 +6,7 @@ import { NewProjectModal } from './NewProjectModal'
 import { Paywall } from './Paywall'
 import { Sidebar } from './Sidebar'
 import { useTheme } from '../useTheme'
+import { autoPickAiProvider } from '../useAiTask'
 import { AboutDialogHost } from './AboutDialog'
 import { AuthCodeDialog } from './AuthCodeDialog'
 import { CommunityConsentHost } from './CommunityConsent'
@@ -32,6 +33,14 @@ export function Layout() {
     refreshBilling()
     return desktop.billing.onChanged((p) => p.revoked && refreshBilling())
   }, [refreshBilling])
+
+  // AI 를 고른 적 없는 사람: 이미 연결된 AI 가 있으면 그것을 기본으로 (시작할 때 · 창으로 돌아올 때)
+  useEffect(() => {
+    const check = () => void desktop.ai.status().then(autoPickAiProvider, () => {})
+    check()
+    window.addEventListener('focus', check)
+    return () => window.removeEventListener('focus', check)
+  }, [])
 
   // 마감 알림 클릭 · 메뉴 단축키(Ctrl+1~5) · 점프 목록에서 오는 이동 요청, Ctrl+N · 점프 목록 '새 자소서 시작하기'
   useEffect(() => {

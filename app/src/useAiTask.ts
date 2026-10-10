@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
-import { desktop, type AiProvider, type AiResult } from './desktop'
+import { desktop, type AiProvider, type AiResult, type AiStatus } from './desktop'
 import { HAS_GPT } from './platform'
-import { noteAiResult } from './useAiStatus'
+import { aiReady, noteAiResult } from './useAiStatus'
 
 export const AI_MODEL_KEY = 'essay/ai-model'
 export const AI_PROVIDER_KEY = 'essay/ai-provider'
@@ -57,6 +57,22 @@ export function savedAiProvider(): AiProvider {
   } catch {
     return 'gemini'
   }
+}
+
+/**
+ * AI 를 고른 적이 없고 기본(Gemini)을 바로 쓸 수 없으면, 이미 설치 · 로그인된 AI 로 정한다.
+ * (예: ChatGPT 만 연결한 사람이 Gemini 설치 안내부터 보지 않게). 한 번 정하면 그 뒤로는 사용자가 고른 대로
+ */
+export function autoPickAiProvider(status: AiStatus) {
+  try {
+    if (localStorage.getItem(AI_PROVIDER_KEY)) return
+  } catch {
+    return
+  }
+  if (aiReady(status, 'gemini')) return
+  const order: AiProvider[] = HAS_GPT ? ['gemini', 'claude', 'gpt'] : ['gemini', 'claude']
+  const pick = order.find((p) => aiReady(status, p)) ?? order.find((p) => status[p].available)
+  if (pick && pick !== 'gemini') saveAiProvider(pick)
 }
 
 export function saveAiProvider(p: AiProvider) {

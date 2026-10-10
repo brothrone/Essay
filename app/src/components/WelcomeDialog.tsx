@@ -1,5 +1,5 @@
 import { ArrowLeft, ArrowRight, Check, FileUp } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { desktop, type AiProvider } from '../desktop'
 import { buildSample } from '../sample'
@@ -74,6 +74,12 @@ function WelcomeWizard({ onClose }: { onClose: () => void }) {
   const [step, setStep] = useState(0)
   // 여러 개 골라도 된다. 먼저 고른 것이 홈의 기본 AI
   const [choices, setChoices] = useState<AiChoice[]>(() => [CHOICE_OF[savedAiProvider()]])
+  const touched = useRef(false)
+  useEffect(() => {
+    const sync = () => !touched.current && setChoices([CHOICE_OF[savedAiProvider()]])
+    window.addEventListener(AI_PREFS_EVENT, sync)
+    return () => window.removeEventListener(AI_PREFS_EVENT, sync)
+  }, [])
   const { status, checking, refresh } = useAiStatus()
   const { data, replaceAll } = useStore()
   const navigate = useNavigate()
@@ -88,6 +94,7 @@ function WelcomeWizard({ onClose }: { onClose: () => void }) {
   const pick = (c: AiChoice) => {
     const next = choices.includes(c) ? choices.filter((x) => x !== c) : [...choices, c]
     if (!next.length) return
+    touched.current = true
     setChoices(next)
     saveAiProvider(CHOICES.find((x) => x.value === next[0])!.provider)
     notify()
