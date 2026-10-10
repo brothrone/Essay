@@ -146,6 +146,8 @@ export interface BillingState {
   licensed: boolean
   /** 결제를 켜기 전에 설치해 계속 무료 */
   legacy: boolean
+  /** 이용권은 있지만 60일 넘게 확인하지 못함 → 인터넷 연결 뒤 확인 */
+  offlineTooLong: boolean
   /** 가린 키 (ESSAY-ABCD-····-····-WXYZ) */
   key: string
   price: number

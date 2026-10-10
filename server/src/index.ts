@@ -1,11 +1,11 @@
 // Essay 백엔드: 의견 받기 · 익명 사용 통계 · 오류 보고 · 회사별 자소서 문항 모음, 개발자용 관리 주소.
 // 결제 확인 · 이용권(라이선스 키)은 billing.ts (포트원)
 import { admin, isAdmin } from './admin'
-import { adminBilling, billing } from './billing'
+import { adminBilling, billing, reconcile } from './billing'
 import { postFeedback } from './feedback'
 import { getQuestions, postQuestions } from './questions'
 import { postErrors, postStats } from './telemetry'
-import { CORS, fail, json, type Env } from './util'
+import { CORS, fail, hashFor, ipOf, json, overLimit, type Env } from './util'
 
 export type { Env }
 
@@ -33,7 +33,11 @@ export default {
       if (b) return b
 
       if (path.startsWith('/v1/admin/')) {
-        if (!(await isAdmin(req, env))) return fail(401, '관리 열쇠가 필요해요')
+        if (!(await isAdmin(req, env))) {
+          // 관리 열쇠 추측 막기: 틀린 열쇠는 한 곳에서 시간당 10번까지
+          if (await overLimit(env, await hashFor(env, 'admin-fail', ipOf(req)), 10, 30)) return fail(429, '잠시 뒤에 다시 시도해 주세요')
+          return fail(401, '관리 열쇠가 필요해요')
+        }
         return (await adminBilling(path, req, url, env)) ?? (await admin(path, req, url, env))
       }
       return fail(404, '없는 주소')
@@ -43,8 +47,9 @@ export default {
     }
   },
 
-  /** 매일 한 번: 횟수 제한 기록 정리, 400일 지난 통계 정리 */
+  /** 매일 한 번: 횟수 제한 기록 정리, 400일 지난 통계 정리, 결제 대사(확인 못 한 결제 다시 확인) */
   async scheduled(_c: ScheduledController, env: Env): Promise<void> {
+    await reconcile(env).catch((e) => console.error('결제 대사 실패', e))
     await env.DB.batch([
       env.DB.prepare(`DELETE FROM rate WHERE substr(bucket, 3, 10) < date('now', '-2 days')`),
       env.DB.prepare(`DELETE FROM stats_daily WHERE day < date('now', '-400 days')`),

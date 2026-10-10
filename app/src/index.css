@@ -5794,3 +5794,7 @@ textarea:focus-visible {
 .paywall .ai-error {
   margin: 14px 0 0;
 }
+
+.paywall-recheck {
+  margin-top: 22px;
+}

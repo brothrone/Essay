@@ -30,10 +30,13 @@ FEEDBACK_PER_DAY = "20"
 PRICE = "3900"
 PORTONE_STORE_ID = ""
 PORTONE_CHANNEL_KEY = ""
+# 결제를 켜는 날 "1" 로 (그 뒤로 새 기기는 '먼저 쓰던 사람' 확인증을 못 받는다). 앱 쪽 docs/app-config.json 의 billing.enabled 와 같은 날 바꾼다
+BILLING_LIVE = "0"
 
 # 비밀 값은 여기 쓰지 않는다. 배포 전에 한 번:
 #   npx wrangler secret put ADMIN_TOKEN   (관리용 주소 열쇠, 긴 무작위 문자열)
 #   npx wrangler secret put IP_SALT       (IP 를 그대로 저장하지 않고 섞어서 저장할 때 쓰는 값, 긴 무작위 문자열)
 #   npx wrangler secret put LICENSE_PRIVATE_KEY  (이용권 등록증 서명 키, Ed25519 PKCS8 base64 — 공개 키는 앱 electron/billing.cjs 에)
 #   npx wrangler secret put PORTONE_API_SECRET   (포트원 V2 API 비밀 값, 포트원 가입 뒤)
+#   npx wrangler secret put PORTONE_WEBHOOK_SECRET  (포트원 콘솔 결제알림(Webhook)의 whsec_… 비밀 값)
 # 로컬 개발은 .dev.vars 파일에 같은 이름으로 (저장소에 올리지 않음)

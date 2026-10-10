@@ -53,11 +53,22 @@ export function Paywall({ state, onUnlocked }: { state: BillingState; onUnlocked
       <div className="paywall-card">
         <Logo size={56} />
         <h1>Essay 이용권</h1>
-        <p className="paywall-lead">한 번 결제하면 계속 써요.</p>
-        <div className="paywall-price">
-          {state.listPrice > state.price && <s>{won(state.listPrice)}</s>}
-          <strong>{won(state.price)}</strong>
-        </div>
+        {state.offlineTooLong ? (
+          <>
+            <p className="paywall-lead">인터넷에 연결한 뒤 이용권을 확인해 주세요.</p>
+            <button type="button" className="btn primary paywall-buy paywall-recheck" onClick={onUnlocked}>
+              다시 확인
+            </button>
+          </>
+        ) : (
+          <p className="paywall-lead">한 번 결제하면 계속 써요.</p>
+        )}
+        {!state.offlineTooLong && (
+          <div className="paywall-price">
+            {state.listPrice > state.price && <s>{won(state.listPrice)}</s>}
+            <strong>{won(state.price)}</strong>
+          </div>
+        )}
         {waiting ? (
           <div className="paywall-wait">
             <p>
@@ -75,9 +86,11 @@ export function Paywall({ state, onUnlocked }: { state: BillingState; onUnlocked
             </div>
           </div>
         ) : (
-          <button type="button" className="btn primary paywall-buy" onClick={buy}>
-            구매하기
-          </button>
+          !state.offlineTooLong && (
+            <button type="button" className="btn primary paywall-buy" onClick={buy}>
+              구매하기
+            </button>
+          )
         )}
         {keyOpen ? (
           <form className="paywall-key" onSubmit={activate}>

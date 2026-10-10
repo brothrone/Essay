@@ -11,6 +11,12 @@ export interface Env {
   PORTONE_API_SECRET?: string
   LICENSE_PRIVATE_KEY: string
   BILLING_MOCK?: string
+  /** '1' 이면 결제 시작됨: 이때부터 새 기기는 '먼저 쓰던 사람' 확인증을 받지 못한다 */
+  BILLING_LIVE?: string
+  /** 포트원 웹훅 서명 비밀 값 (whsec_…). 없으면 서명 확인 없이 결제 번호로 다시 조회만 */
+  PORTONE_WEBHOOK_SECRET?: string
+  /** '0' 이면 결제 금액 사전 등록을 건너뜀 (기본은 등록) */
+  PORTONE_PREREGISTER?: string
 }
 
 export const CORS = {
