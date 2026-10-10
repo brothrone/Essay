@@ -388,12 +388,21 @@ function findGemini() {
   return null
 }
 
-// GPT: OpenAI Codex CLI (ChatGPT 계정 로그인). 공식 설치 스크립트 → 그 실행 파일 원본 → npm 설치 → PATH 순
+// GPT: OpenAI Codex CLI (ChatGPT 계정 로그인). 공식 설치 스크립트 → 그 실행 파일 원본 → brew · npm 설치 → PATH 순
 function findCodex() {
   const found =
     firstExisting(
       IS_MAC
-        ? [process.env.ESSAY_CODEX_PATH]
+        ? [
+            process.env.ESSAY_CODEX_PATH,
+            // 공식 install.sh: ~/.local/bin/codex (→ ~/.codex/packages/standalone/current/bin/codex 링크)
+            path.join(HOME, '.local', 'bin', 'codex'),
+            path.join(process.env.CODEX_HOME || path.join(HOME, '.codex'), 'packages', 'standalone', 'current', 'bin', 'codex'),
+            // Homebrew(brew install --cask codex) · npm -g @openai/codex
+            '/opt/homebrew/bin/codex',
+            '/usr/local/bin/codex',
+            path.join(HOME, '.npm-global', 'bin', 'codex'),
+          ]
         : [
             process.env.ESSAY_CODEX_PATH,
             path.join(CODEX_BIN_DIR(), 'codex.exe'),
@@ -846,6 +855,24 @@ const TERMINAL_ACTIONS_MAC = {
       '1) 브라우저가 열리면 Claude 구독 계정(Pro·Max)으로 로그인하세요. Anthropic Console 계정은 API 요금이 나가요.',
       '2) 브라우저에 인증 코드가 뜨면 복사해서 이 창에 붙여넣고(⌘V) Enter.',
       '3) 완료 메시지가 나오면 이 창을 닫고 Essay 로 돌아오세요.',
+    ],
+  },
+  // OpenAI 공식 설치 스크립트(~/.local/bin/codex). CODEX_NON_INTERACTIVE 면 아무것도 묻지 않고 설치만 한다
+  'install-codex': {
+    title: 'Codex CLI 설치',
+    cmd: 'curl -fsSL https://chatgpt.com/codex/install.sh | CODEX_NON_INTERACTIVE=1 sh',
+    provider: 'gpt',
+    hint: ['설치가 끝나면 이 창을 닫고 Essay로 돌아가세요. 2단계 [로그인]을 누르면 돼요.'],
+  },
+  // 앱 안 로그인이 안 될 때 쓰는 직접 방식. 브라우저에서 ChatGPT 로그인을 마치면 저절로 끝난다. API 키 로그인이었으면 먼저 지운다
+  'login-codex': {
+    title: 'ChatGPT 로그인 (Codex CLI)',
+    cmd: "codex login status 2>&1 | grep -qi 'api key' && codex logout; codex login && printf '\\n로그인 완료! 이 창을 닫고 Essay 로 돌아가세요.\\n'",
+    provider: 'gpt',
+    hint: [
+      '1) 브라우저가 열리면 ChatGPT 계정으로 로그인하세요. (무료 · Go 요금제도 되지만 한도가 작아요.)',
+      '2) 브라우저에 로그인 완료가 뜨면 이 창을 닫고 Essay 로 돌아오세요.',
+      '   (브라우저가 안 열리면 아래에 나온 https:// 주소를 ⌘ 를 누른 채 클릭하세요.)',
     ],
   },
 }

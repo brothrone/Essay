@@ -14,7 +14,7 @@
     "gpt": {
       "name": "ChatGPT",
       "need": "ChatGPT 계정 · 무료 · Go 는 한도 작음",
-      "note": "Codex CLI(윈도우). OpenAI 안내상 무료 · Go 를 포함한 모든 ChatGPT 요금제에 Codex 가 들어 있어요(무료 · Go 는 한도가 작아요). 한도는 ChatGPT 의 Codex 와 같이 써요. API 키로 로그인하면 요금이 나가니 ChatGPT 계정으로 로그인하세요."
+      "note": "Codex CLI. OpenAI 안내상 무료 · Go 를 포함한 모든 ChatGPT 요금제에 Codex 가 들어 있어요(무료 · Go 는 한도가 작아요). 한도는 ChatGPT 의 Codex 와 같이 써요. API 키로 로그인하면 요금이 나가니 ChatGPT 계정으로 로그인하세요."
     },
     "gemini-free": {
       "name": "Gemini 무료",

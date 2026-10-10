@@ -193,7 +193,7 @@ const COMMANDS: { title: string; lines: { cmd: string; note?: string }[] }[] = [
         {
           title: 'GPT (Codex CLI) 설치 → 로그인',
           lines: [
-            { cmd: 'irm https://chatgpt.com/codex/install.ps1 | iex', note: '설치' },
+            { cmd: IS_MAC ? 'curl -fsSL https://chatgpt.com/codex/install.sh | sh' : 'irm https://chatgpt.com/codex/install.ps1 | iex', note: '설치' },
             { cmd: 'codex login', note: '브라우저에서 ChatGPT 계정으로 로그인' },
           ],
         },

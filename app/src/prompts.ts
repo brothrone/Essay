@@ -384,9 +384,10 @@ export function jobSearchPrompt(
   // Claude · GPT 의 검색 결과에는 주소가 함께 나오므로 페이지를 열 필요가 없다 (앱이 따로 열어 확인한다)
   const career = query.career || '신입'
   const region = query.region ? ` ${query.region}` : ''
-  // 검색어 모양도 엔진마다 다르게: Gemini 는 공고 주소 안 검색(site:)이 잘 되고, Claude 는 사이트 이름을 넣은 평범한 검색이 잘 된다
+  // 검색어 모양도 엔진마다 다르게: Gemini · GPT 는 공고 주소 안 검색(site:)이 잘 되고, Claude 는 사이트 이름을 넣은 평범한 검색이 잘 된다
+  // (GPT 는 2026-10 맥 시험에서 평범한 검색어로는 공고 한 건 페이지가 거의 안 나왔다)
   const searchRule =
-    provider === 'gemini'
+    provider === 'gemini' || provider === 'gpt'
       ? [
           '- 공고 한 건의 페이지가 바로 나오도록 채용 사이트의 공고 주소 안에서 검색하세요. 키워드는 한 번에 하나씩, 중요한 것부터:',
           `  · site:saramin.co.kr/zf_user/jobs/relay/view {키워드 하나} ${career}${region}`,

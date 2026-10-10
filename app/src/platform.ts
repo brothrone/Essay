@@ -18,5 +18,5 @@ export const DATA_FOLDER = IS_MAC ? '문서/Essay' : '문서\\Essay'
 /** 붙여넣기 단축키 안내 */
 export const PASTE_HINT = IS_MAC ? '⌘V' : '마우스 오른쪽 클릭'
 
-/** GPT(Codex CLI)를 고를 수 있는지. 지금은 윈도우만 — 맥은 설치 · 로그인 명령(main.cjs 의 TERMINAL_ACTIONS_MAC)을 넣은 뒤 켠다 */
-export const HAS_GPT = !IS_MAC
+/** GPT(Codex CLI)를 고를 수 있는지. 윈도우 1.9.3, 맥 1.9.6 부터 둘 다 */
+export const HAS_GPT = true

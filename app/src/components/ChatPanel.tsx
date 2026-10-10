@@ -11,6 +11,9 @@ import { AI_PREFS_EVENT, AI_PROVIDERS, savedAiModel, savedAiProvider } from '../
 import { copyText, countChars, fmtTokens } from '../utils'
 import { fitToLimit, lengthMiss } from '../fitLength'
 
+/** 대화에서 분량을 줄여 달라는 말 (이땐 모자라도 다시 늘리지 않는다) */
+const SHORTER_RE = /짧게|짧아|짧은|줄여|줄이|줄인|간결|요약/
+
 /** 답변 아래 [AI와 대화하며 고치기] 를 누르면 대화 입력칸으로 커서를 옮긴다 */
 export const CHAT_FOCUS_EVENT = 'essay:chat-focus'
 const KEEP = 60
@@ -108,11 +111,13 @@ export function ChatPanel({
     let parsed = r.ok ? parseChatReply(r.text) : null
     let seconds = r.ok ? r.seconds : 0
     let tokens = r.ok && r.usage ? r.usage.input + r.usage.output : 0
-    // 고친 답변이 글자수 제한을 넘으면 앱이 세어 보고 맞춘다 (일부러 짧게 해 달라는 말일 수 있어 모자란 건 두고 넘친 것만)
-    if (parsed?.answer && lengthMiss(parsed.answer, q, true) > 0) {
+    // 고친 답변이 글자수 범위(제한의 88~100%)를 벗어나면 앱이 세어 보고 맞춘다.
+    // 짧게 해 달라고 한 말이면 일부러 줄인 것이라 넘친 것만 맞춘다
+    const overOnly = SHORTER_RE.test(message)
+    if (parsed?.answer && lengthMiss(parsed.answer, q, overOnly) > 0) {
       setFixing(true)
       setLive('')
-      const fixed = await fitToLimit(parsed.answer, q, { provider: p, model, overOnly: true })
+      const fixed = await fitToLimit(parsed.answer, q, { provider: p, model, overOnly })
       parsed = { ...parsed, answer: fixed.text }
       seconds += fixed.extraSeconds
       tokens += fixed.extraTokens
