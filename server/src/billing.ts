@@ -27,7 +27,12 @@ function cors(req: Request): Record<string, string> {
 const price = (env: Env) => Number(env.PRICE) || 3900
 // 가짜 결제는 세 조건이 모두 맞을 때만: 로컬 설정(.dev.vars)의 BILLING_MOCK, 로컬 요청, 포트원 비밀 값 없음(운영에는 늘 있음)
 const mock = (env: Env, req: Request) => env.BILLING_MOCK === '1' && !env.PORTONE_API_SECRET && isLocal(req)
-const ready = (env: Env, req: Request) => !!(env.PORTONE_STORE_ID && env.PORTONE_CHANNEL_KEY && (env.PORTONE_API_SECRET || mock(env, req)))
+// 결제 수단: 카카오페이 · 네이버페이만 (사용자 결정 2026-10-10). 포트원 채널 키가 들어간 것만 구매 페이지에 버튼이 나온다
+const METHODS = { kakaopay: '카카오페이', naverpay: '네이버페이' } as const
+type Method = keyof typeof METHODS
+const channelOf = (env: Env, m: Method) => (m === 'kakaopay' ? env.PORTONE_CHANNEL_KAKAOPAY : env.PORTONE_CHANNEL_NAVERPAY) || ''
+const methodsOf = (env: Env) => (Object.keys(METHODS) as Method[]).filter((m) => channelOf(env, m))
+const ready = (env: Env, req: Request) => !!(env.PORTONE_STORE_ID && methodsOf(env).length && (env.PORTONE_API_SECRET || mock(env, req)))
 const randomHex = (bytes: number) => [...crypto.getRandomValues(new Uint8Array(bytes))].map((b) => b.toString(16).padStart(2, '0')).join('')
 const now = () => new Date().toISOString()
 
@@ -170,11 +175,20 @@ async function activate(env: Env, key: string, deviceRaw: string) {
 
 const limited = async (env: Env, req: Request, purpose: string, perHour: number, perDay: number) => overLimit(env, await hashFor(env, purpose, ipOf(req)), perHour, perDay)
 
-/** POST /v1/billing/prepare {ref?, email?} → 결제 창에 넘길 값. 금액은 서버가 정하고 포트원에 미리 등록한다 */
+/** POST /v1/billing/options → 구매 페이지가 처음에 부른다: 가격과 쓸 수 있는 결제 수단 (가격은 서버가 정한 값만 보여 준다) */
+async function options(req: Request, env: Env, h: Record<string, string>) {
+  return json({ ok: true, ready: ready(env, req), price: price(env), listPrice: Number(env.LIST_PRICE) || 4900, methods: ready(env, req) ? methodsOf(env) : [] }, 200, h)
+}
+
+/** POST /v1/billing/prepare {method, ref?, email?} → 결제 창에 넘길 값. 금액은 서버가 정하고 포트원에 미리 등록한다 */
 async function prepare(req: Request, env: Env, h: Record<string, string>) {
   if (!ready(env, req)) return fail(503, '결제를 준비하고 있어요. 조금만 기다려 주세요.', h)
   if (await limited(env, req, 'billing', 20, 60)) return fail(429, '잠시 뒤에 다시 시도해 주세요.', h)
   const body = await readJson(req)
+  const method = (typeof body?.method === 'string' && body.method in METHODS ? body.method : '') as Method | ''
+  if (!method) return fail(400, '결제 수단을 골라 주세요', h)
+  const channelKey = channelOf(env, method)
+  if (!channelKey) return fail(503, `${METHODS[method]}는 준비하고 있어요. 다른 결제 수단을 써 주세요.`, h)
   const paymentId = `${mock(env, req) ? 'mock-' : ''}essay-${Date.now().toString(36)}-${randomHex(8)}`
   const amount = price(env)
   if (!mock(env, req) && env.PORTONE_PREREGISTER !== '0') {
@@ -187,7 +201,10 @@ async function prepare(req: Request, env: Env, h: Record<string, string>) {
   await env.DB.prepare(`INSERT INTO orders (payment_id, ref, email, amount) VALUES (?1, ?2, ?3, ?4)`)
     .bind(paymentId, validRef(body?.ref) || null, validEmail(body?.email) || null, amount)
     .run()
-  return json({ ok: true, paymentId, amount, orderName: 'Essay 이용권', storeId: env.PORTONE_STORE_ID, channelKey: env.PORTONE_CHANNEL_KEY }, 200, h)
+  // 카카오페이 · 네이버페이 모두 포트원에서는 EASY_PAY. 네이버페이는 상품 정보(productItems)가 필요하다 (이름은 주문 이름과 같게)
+  const bypass =
+    method === 'naverpay' ? { naverpay: { productItems: [{ categoryType: 'ETC', categoryId: 'ETC', uid: 'essay-license', name: 'Essay 이용권', count: 1 }] } } : undefined
+  return json({ ok: true, paymentId, amount, orderName: 'Essay 이용권', storeId: env.PORTONE_STORE_ID, channelKey, payMethod: 'EASY_PAY', method, bypass }, 200, h)
 }
 
 /** POST /v1/billing/complete {paymentId} → 결제 확인 뒤 이용권 키 */
@@ -319,6 +336,7 @@ export async function billing(path: string, req: Request, env: Env): Promise<Res
   const h = cors(req)
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: h })
   if (req.method !== 'POST') return fail(405, 'POST 만 받아요', h)
+  if (path === '/v1/billing/options') return options(req, env, h)
   if (path === '/v1/billing/prepare') return prepare(req, env, h)
   if (path === '/v1/billing/complete') return complete(req, env, h)
   if (path === '/v1/billing/webhook') return webhook(req, env)

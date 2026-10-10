@@ -61,7 +61,9 @@
   label.field input{display:block;width:100%;margin-top:6px;padding:11px 12px;border:1px solid var(--line-2);border-radius:10px;background:var(--bg);color:var(--fg);font:inherit;font-weight:400}
   label.agree{display:flex;gap:8px;align-items:flex-start;text-align:left;font-size:.88rem;color:var(--fg-2);margin:4px 0 18px}
   label.agree input{margin-top:4px}
-  button.pay{width:100%;height:50px;border:0;border-radius:12px;background:linear-gradient(135deg,var(--brand),var(--brand-2));color:#fff;font:inherit;font-size:1.05rem;font-weight:700;cursor:pointer}
+    .pays{display:grid;gap:10px}
+  button.pay{width:100%;height:50px;border:0;border-radius:12px;background:#FEE500;color:#191919;font:inherit;font-size:1.05rem;font-weight:700;cursor:pointer}
+  button.pay.naver{background:#03C75A;color:#fff}
   button.pay:disabled{opacity:.5;cursor:default}
   .err{margin:14px 0 0;color:#d4380d;font-size:.9rem}
   .done h2{margin:6px 0 6px;font-size:1.3rem}
@@ -88,7 +90,11 @@
     <label class="agree"><input id="agree" type="checkbox" required>
       <span>디지털 상품이라 이용권을 앱에 등록한 뒤에는 환불이 어려워요. <a href="terms.html" target="_blank">이용약관 · 환불 규정</a>에 동의해요.</span>
     </label>
-    <button class="pay" id="pay" type="submit">결제하기</button>
+    <div class="pays">
+      <button class="pay kakao" type="submit" data-method="kakaopay" hidden>카카오페이로 결제</button>
+      <button class="pay naver" type="submit" data-method="naverpay" hidden>네이버페이로 결제</button>
+    </div>
+    <p class="note" id="soon" hidden>결제를 준비하고 있어요. 조금만 기다려 주세요.</p>
     <p class="err" id="err" hidden></p>
   </form>
 

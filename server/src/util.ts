@@ -7,7 +7,9 @@ export interface Env {
   // 유료 판매 (billing.ts). 상점 ID · 채널 키는 공개 값(wrangler.toml), API 비밀 값 · 서명 키는 wrangler secret
   PRICE?: string
   PORTONE_STORE_ID?: string
-  PORTONE_CHANNEL_KEY?: string
+  PORTONE_CHANNEL_KAKAOPAY?: string
+  PORTONE_CHANNEL_NAVERPAY?: string
+  LIST_PRICE?: string
   PORTONE_API_SECRET?: string
   LICENSE_PRIVATE_KEY: string
   BILLING_MOCK?: string
