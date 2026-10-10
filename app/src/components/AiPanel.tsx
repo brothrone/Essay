@@ -19,7 +19,7 @@ import { useStore } from '../store'
 import { toast } from '../toast'
 import type { Experience, Project, Question } from '../types'
 import { noteAiResult } from '../useAiStatus'
-import { AI_MODELS, AI_PROVIDERS, saveAiModel, saveAiProvider, savedAiModel, savedAiProvider } from '../useAiTask'
+import { AI_MODELS, AI_PREFS_EVENT, AI_PROVIDERS, saveAiModel, saveAiProvider, savedAiModel, savedAiProvider } from '../useAiTask'
 import { ProviderMenu } from './ProviderMenu'
 import { copyText, countChars, fmtTokens } from '../utils'
 import { track } from '../community'
@@ -67,6 +67,16 @@ export function AiPanel({
   const [provider, setProvider] = useState<AiProvider>(savedAiProvider)
   const [model, setModel] = useState(() => savedAiModel(savedAiProvider()))
   const available = status ? status[provider].available : null
+  // 다른 화면에서 AI 를 바꾸면 여기도 따라간다
+  useEffect(() => {
+    const f = () => {
+      const p = savedAiProvider()
+      setProvider(p)
+      setModel(savedAiModel(p))
+    }
+    window.addEventListener(AI_PREFS_EVENT, f)
+    return () => window.removeEventListener(AI_PREFS_EVENT, f)
+  }, [])
   const providerInfo = AI_PROVIDERS.find((x) => x.value === provider)!
   const [running, setRunning] = useState<Kind | null>(null)
   const [elapsed, setElapsed] = useState(0)
@@ -221,16 +231,7 @@ export function AiPanel({
           </header>
 
           <div className="ai-selects">
-            <ProviderMenu
-              value={provider}
-              status={status}
-              disabled={!!running}
-              onChange={(p) => {
-                setProvider(p)
-                saveAiProvider(p)
-                setModel(savedAiModel(p))
-              }}
-            />
+            <ProviderMenu value={provider} status={status} disabled={!!running} onChange={(p) => saveAiProvider(p)} />
             <select
               value={model}
               aria-label="AI 모델"

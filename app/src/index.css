@@ -5893,3 +5893,24 @@ textarea:focus-visible {
 .provider-menu-check {
   color: var(--primary-text);
 }
+
+.provider-menu.compact .provider-menu-btn {
+  width: auto;
+  height: 28px;
+  padding: 0 8px;
+  gap: 6px;
+  border-color: transparent;
+  background: var(--primary-soft);
+  color: var(--primary-text);
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+.provider-menu.compact .provider-menu-list {
+  left: auto;
+  right: 0;
+}
+
+.chat-head .provider-menu {
+  flex: none;
+}

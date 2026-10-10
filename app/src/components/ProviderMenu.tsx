@@ -10,11 +10,14 @@ export function ProviderMenu({
   onChange,
   status,
   disabled,
+  compact,
 }: {
   value: AiProvider
   onChange: (p: AiProvider) => void
   status?: AiStatus | null
   disabled?: boolean
+  /** 좁은 자리(대화 창 머리)용: 테두리 없는 작은 버튼 */
+  compact?: boolean
 }) {
   const [open, setOpen] = useState(false)
   const box = useRef<HTMLDivElement>(null)
@@ -34,7 +37,7 @@ export function ProviderMenu({
   }, [open])
 
   return (
-    <div className="provider-menu" ref={box}>
+    <div className={'provider-menu' + (compact ? ' compact' : '')} ref={box}>
       <button
         type="button"
         className="provider-menu-btn"

@@ -69,8 +69,10 @@ export function saveAiProvider(p: AiProvider) {
     desktop.community.setContext({ ai: p }) // 익명 통계의 'AI 종류' (동의했을 때만 보냄)
   } catch {
     /* 무시 */
-  }
+  }  // 열려 있는 다른 화면(AI 도우미 · 대화 · 홈 AI 바 · 설정)도 같은 AI 로 바뀌게 알린다
+  window.dispatchEvent(new Event(AI_PREFS_EVENT))
 }
+
 
 export function savedAiModel(provider: AiProvider = savedAiProvider()) {
   try {

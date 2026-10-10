@@ -7,7 +7,8 @@ import { useStore } from '../store'
 import { toast } from '../toast'
 import type { ChatMessage, Experience, Project, Question } from '../types'
 import { noteAiResult } from '../useAiStatus'
-import { AI_PREFS_EVENT, AI_PROVIDERS, savedAiModel, savedAiProvider } from '../useAiTask'
+import { AI_PREFS_EVENT, AI_PROVIDERS, saveAiProvider, savedAiModel, savedAiProvider } from '../useAiTask'
+import { ProviderMenu } from './ProviderMenu'
 import { copyText, countChars, fmtTokens } from '../utils'
 import { fitToLimit, lengthMiss } from '../fitLength'
 
@@ -207,7 +208,7 @@ export function ChatPanel({
         <strong>
           <MessagesSquare size={17} /> AI와 대화하며 고치기
         </strong>
-        <span className="badge tone-blue">{providerName}</span>
+        <ProviderMenu value={provider} status={status} disabled={running} compact onChange={(p) => saveAiProvider(p)} />
         <span className="chat-head-tools">
           {chat.length > 0 && (
             <button type="button" className="icon-btn" onClick={clear} disabled={running} aria-label="대화 지우기" title="대화 지우기">
