@@ -62,6 +62,26 @@ upload() {
 npx electron-builder --mac --publish never
 upload release/Essay-"$VERSION"-mac-*.dmg release/Essay-"$VERSION"-mac-*.dmg.blockmap release/latest-mac.yml
 
+# 사이트 다운로드 목록(docs/downloads.json)의 mac 항목을 새 파일로 — 다운로드 안내 페이지가 GitHub API 한도(IP 당 시간 60번)에 걸려도 받을 수 있게.
+# win 항목은 윈도우 세션(release.ps1)이 채운다
+if [[ "$PUBLISH" == "always" ]]; then
+  DMG=$(ls release/Essay-"$VERSION"-mac-arm64.dmg 2>/dev/null | head -1)
+  if [[ -n "$DMG" ]]; then
+    ( cd .. && git pull -q --rebase --autostash 2>/dev/null
+      python3 - "$VERSION" "$(stat -f%z "app/$DMG")" <<'PY'
+import json, sys
+v, size = sys.argv[1], int(sys.argv[2])
+p = 'docs/downloads.json'
+try: d = json.load(open(p))
+except Exception: d = {}
+name = f'Essay-{v}-mac-arm64.dmg'
+d['mac'] = {'version': v, 'name': name, 'size': size, 'url': f'https://github.com/brothrone/Essay/releases/download/v{v}/{name}'}
+json.dump(d, open(p, 'w'), ensure_ascii=False, indent=2); open(p, 'a').write('\n')
+PY
+      git add docs/downloads.json && git commit -qm "사이트: 맥 다운로드 목록 $VERSION" && git push -q ) || echo "downloads.json 갱신 실패 (직접 고쳐 주세요)" >&2
+  fi
+fi
+
 echo
 echo "완료:"
 for f in release/Essay-"$VERSION"-mac-*.dmg; do

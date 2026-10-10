@@ -667,9 +667,16 @@
     out.tag_name = 'v' + (out.macVer || out.winVer);
     return out;
   }
-  fetch('https://api.github.com/repos/brothrone/Essay/releases?per_page=15', { headers: { Accept: 'application/vnd.github+json' } })
+  // 사이트의 다운로드 목록(downloads.json)이 두 운영체제를 다 갖고 있으면 그걸로, 아니면 GitHub API (IP 당 시간 60번 한도)
+  fetch('downloads.json', { cache: 'no-store' })
     .then(function (r) { return r.ok ? r.json() : null; })
-    .then(mergeReleases)
+    .catch(function () { return null; })
+    .then(function (d) {
+      if (d && d.mac && d.win) return { tag_name: 'v' + d.mac.version, macVer: d.mac.version, winVer: d.win.version, assets: [{ name: d.win.name, size: d.win.size }, { name: d.mac.name, size: d.mac.size }] };
+      return fetch('https://api.github.com/repos/brothrone/Essay/releases?per_page=15', { headers: { Accept: 'application/vnd.github+json' } })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(mergeReleases);
+    })
     .then(function (rel) {
       var assets = rel && rel.assets || [];
       var exe = assets.filter(function (a) { return /\.exe$/i.test(a.name); })[0];
