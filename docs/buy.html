@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Essay — 이용권 구매</title>
+<meta name="description" content="Essay 이용권 — 한 번 결제하면 계속 써요.">
+<meta name="color-scheme" content="light dark">
+<meta name="robots" content="noindex">
+<link rel="icon" href="img/icon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>
+  :root{
+    --bg:#f7f8fb; --bg-2:#ffffff; --bg-3:#eef1f7; --fg:#10141c; --fg-2:#4b5563; --fg-3:#8a93a3;
+    --line:#e3e7ee; --line-2:#cfd6e1;
+    --brand:#3854db; --brand-2:#6a4cff; --brand-deep:#0f1440; --brand-soft:#eef1fd; --brand-text:#2742b8;
+    --ok:#1a7f4b; --ok-soft:#e9f7ef; --warn:#b45309; --warn-soft:#fff3df;
+    --shadow:0 1px 2px rgb(16 20 28/.04),0 10px 30px rgb(16 20 28/.08);
+    --shadow-lg:0 30px 80px rgb(16 20 28/.18);
+    --glass:rgb(255 255 255/.72);
+    --mono:'JetBrains Mono',ui-monospace,Consolas,monospace;
+    --sans:'Pretendard Variable',Pretendard,'Inter','Segoe UI','Malgun Gothic',system-ui,sans-serif;
+    --maxw:860px;
+  }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      --bg:#0b0e14; --bg-2:#12161e; --bg-3:#171c26; --fg:#e8ecf3; --fg-2:#aab3c2; --fg-3:#737d8f;
+      --line:#242b38; --line-2:#323b4b;
+      --brand:#6f8bff; --brand-2:#a08bff; --brand-soft:#1b2342; --brand-text:#a7b8ff;
+      --ok:#5cc98a; --ok-soft:#14291d; --warn:#f0b65a; --warn-soft:#3a2b12;
+      --shadow:0 1px 2px rgb(0 0 0/.3),0 10px 30px rgb(0 0 0/.35);
+      --shadow-lg:0 30px 80px rgb(0 0 0/.55);
+      --glass:rgb(11 14 20/.7);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0b0e14; --bg-2:#12161e; --bg-3:#171c26; --fg:#e8ecf3; --fg-2:#aab3c2; --fg-3:#737d8f;
+    --line:#242b38; --line-2:#323b4b;
+    --brand:#6f8bff; --brand-2:#a08bff; --brand-soft:#1b2342; --brand-text:#a7b8ff;
+    --ok:#5cc98a; --ok-soft:#14291d; --warn:#f0b65a; --warn-soft:#3a2b12;
+    --shadow:0 1px 2px rgb(0 0 0/.3),0 10px 30px rgb(0 0 0/.35);
+    --shadow-lg:0 30px 80px rgb(0 0 0/.55);
+    --glass:rgb(11 14 20/.7);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;display:grid;place-items:center;padding:32px 16px;background:var(--bg);color:var(--fg);font-family:var(--sans);line-height:1.6;-webkit-font-smoothing:antialiased;word-break:keep-all}
+  a{color:var(--brand-text)}
+  .card{width:min(420px,100%);padding:40px 28px 28px;border:1px solid var(--line);border-radius:22px;background:var(--bg-2);box-shadow:var(--shadow);text-align:center}
+  .card svg.logo{width:56px;height:56px;border-radius:13px;box-shadow:0 4px 12px rgb(15 20 64/.25)}
+  h1{margin:16px 0 4px;font-size:1.5rem;letter-spacing:-.02em}
+  .lead{margin:0;color:var(--fg-2)}
+  .price{display:flex;justify-content:center;align-items:baseline;gap:10px;margin:20px 0 22px}
+  .price s{color:var(--fg-3)}
+  .price strong{font-size:2.1rem;font-weight:800;letter-spacing:-.03em}
+  label.field{display:block;text-align:left;font-size:.9rem;font-weight:600;margin-bottom:14px}
+  label.field input{display:block;width:100%;margin-top:6px;padding:11px 12px;border:1px solid var(--line-2);border-radius:10px;background:var(--bg);color:var(--fg);font:inherit;font-weight:400}
+  label.agree{display:flex;gap:8px;align-items:flex-start;text-align:left;font-size:.88rem;color:var(--fg-2);margin:4px 0 18px}
+  label.agree input{margin-top:4px}
+  button.pay{width:100%;height:50px;border:0;border-radius:12px;background:linear-gradient(135deg,var(--brand),var(--brand-2));color:#fff;font:inherit;font-size:1.05rem;font-weight:700;cursor:pointer}
+  button.pay:disabled{opacity:.5;cursor:default}
+  .err{margin:14px 0 0;color:#d4380d;font-size:.9rem}
+  .done h2{margin:6px 0 6px;font-size:1.3rem}
+  .key{display:flex;gap:8px;margin:16px 0 10px}
+  .key code{flex:1;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--bg-3);font-family:var(--mono);font-size:.95rem;letter-spacing:.02em}
+  .key button{border:1px solid var(--line-2);border-radius:10px;background:var(--bg-2);color:var(--fg);font:inherit;padding:0 14px;cursor:pointer}
+  .note{color:var(--fg-2);font-size:.92rem;margin:0}
+  .foot{margin-top:18px;font-size:.82rem;color:var(--fg-3)}
+  .foot a{color:var(--fg-3)}
+  [hidden]{display:none!important}
+</style>
+</head>
+<body>
+<main class="card">
+  <svg class="logo" viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3854DB"/><stop offset="1" stop-color="#0F1440"/></linearGradient></defs><rect width="64" height="64" rx="14.5" fill="url(#g)"/><g fill="#fff" transform="translate(32 32) scale(0.96) translate(-32 -36.25)"><path fill-rule="evenodd" d="M32 57C28.5 50 21.5 40 21 32C20.8 27.5 22.6 24.2 25 22.5H39C41.4 24.2 43.2 27.5 43 32C42.5 40 35.5 50 32 57ZM34.6 33A2.6 2.6 0 1 0 29.4 33A2.6 2.6 0 1 0 34.6 33ZM31.25 36.2H32.75V53H31.25Z"/><rect x="24.5" y="15.5" width="15" height="5" rx="1.4"/></g></svg>
+  <h1>Essay 이용권</h1>
+  <p class="lead">한 번 결제하면 계속 써요 · 기기 3대까지</p>
+
+  <form id="buy">
+    <div class="price"><s id="list">4,900원</s><strong id="price">3,900원</strong></div>
+    <label class="field">메일 <span style="color:var(--fg-3);font-weight:400">(이용권 찾을 때)</span>
+      <input id="email" type="email" autocomplete="email" placeholder="you@example.com">
+    </label>
+    <label class="agree"><input id="agree" type="checkbox" required>
+      <span>디지털 상품이라 이용권을 앱에 등록한 뒤에는 환불이 어려워요. <a href="terms.html" target="_blank">이용약관 · 환불 규정</a>에 동의해요.</span>
+    </label>
+    <button class="pay" id="pay" type="submit">결제하기</button>
+    <p class="err" id="err" hidden></p>
+  </form>
+
+  <section class="done" id="done" hidden>
+    <h2>결제가 끝났어요</h2>
+    <p class="note" id="done-app">Essay로 돌아가면 저절로 열려요.</p>
+    <div class="key"><code id="key"></code><button type="button" id="copy">복사</button></div>
+    <p class="note">이 키는 다른 PC에 등록할 때 써요. 잘 보관해 주세요.</p>
+  </section>
+
+  <p class="foot"><a href="terms.html" target="_blank">이용약관 · 환불 규정</a> · <a href="./">essay.win</a></p>
+</main>
+
+<script src="https://cdn.portone.io/v2/browser-sdk.js"></script>
+<script>
+(function () {
+  var local = /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
+  var API = local ? 'http://localhost:8787' : 'https://api.essay.win';
+  var q = new URLSearchParams(location.search);
+  var ref = /^[0-9a-f]{32}$/.test(q.get('ref') || '') ? q.get('ref') : '';
+  try { if (ref) sessionStorage.setItem('essay-ref', ref); else ref = sessionStorage.getItem('essay-ref') || ''; } catch (e) {}
+  var $ = function (id) { return document.getElementById(id); };
+  var won = function (n) { return Number(n).toLocaleString('ko-KR') + '원'; };
+  function post(path, body) {
+    return fetch(API + path, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
+      .then(function (r) { return r.json().then(function (j) { return { status: r.status, j: j }; }); });
+  }
+  function error(msg) { $('err').textContent = msg; $('err').hidden = false; $('pay').disabled = false; }
+  function finish(paymentId) {
+    return post('/v1/billing/complete', { paymentId: paymentId }).then(function (r) {
+      if (!r.j.ok) return error(r.j.error || '결제를 확인하지 못했어요');
+      $('buy').hidden = true; $('done').hidden = false; $('key').textContent = r.j.key;
+      if (!ref) $('done-app').textContent = 'Essay의 결제 화면에서 [이용권 키가 있어요]를 누르고 아래 키를 넣어 주세요.';
+    });
+  }
+  $('copy').addEventListener('click', function () {
+    navigator.clipboard.writeText($('key').textContent).then(function () { $('copy').textContent = '복사됨'; });
+  });
+  // 모바일 결제는 이 페이지로 되돌아온다 (?paymentId=…)
+  if (q.get('paymentId')) {
+    if (q.get('code')) error(q.get('message') || '결제가 끝나지 않았어요');
+    else finish(q.get('paymentId'));
+  }
+  $('buy').addEventListener('submit', function (e) {
+    e.preventDefault();
+    $('err').hidden = true; $('pay').disabled = true;
+    post('/v1/billing/prepare', { ref: ref, email: $('email').value.trim() }).then(function (r) {
+      if (!r.j.ok) return error(r.j.error || '결제를 시작하지 못했어요');
+      var o = r.j;
+      $('price').textContent = won(o.amount);
+      // 로컬 시험(가짜 결제)은 결제 창 없이 바로 확인
+      if (o.paymentId.indexOf('mock-') === 0) return finish(o.paymentId);
+      return PortOne.requestPayment({
+        storeId: o.storeId, channelKey: o.channelKey, paymentId: o.paymentId, orderName: o.orderName,
+        totalAmount: o.amount, currency: 'CURRENCY_KRW', payMethod: 'CARD',
+        customer: $('email').value.trim() ? { email: $('email').value.trim() } : undefined,
+        redirectUrl: location.origin + location.pathname
+      }).then(function (res) {
+        if (!res || res.code !== undefined) return error((res && res.message) || '결제가 끝나지 않았어요');
+        return finish(o.paymentId);
+      });
+    }).catch(function () { error('서버에 연결하지 못했어요. 잠시 뒤 다시 해 주세요.'); });
+  });
+})();
+</script>
+</body>
+</html>

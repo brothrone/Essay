@@ -1,5 +1,5 @@
-import { BookOpen, Bot, CircleHelp, Info, MessageSquareHeart, Monitor, Moon, Sun } from 'lucide-react'
-import { useState } from 'react'
+import { BookOpen, Bot, CircleHelp, Info, KeyRound, MessageSquareHeart, Monitor, Moon, Sun } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { AboutContent } from '../components/AboutDialog'
 import { AiSetup } from '../components/AiSetup'
 import { AiUsageCard } from '../components/AiUsageCard'
@@ -10,7 +10,7 @@ import { openHelpDialog } from '../components/HelpDialog'
 import { UpdateCard } from '../components/UpdateBanner'
 import { openWelcomeDialog } from '../components/WelcomeDialog'
 import { loggedInFor, useAiStatus } from '../useAiStatus'
-import { type AiProvider, type ThemeSource } from '../desktop'
+import { desktop, type AiProvider, type BillingState, type ThemeSource } from '../desktop'
 import { toast } from '../toast'
 import { AI_PROVIDERS, saveAiProvider, savedAiProvider } from '../useAiTask'
 import { useTheme } from '../useTheme'
@@ -36,6 +36,8 @@ export function Settings() {
 
       <CommunitySettingsCard />
 
+      <LicenseCard />
+
       <section className="card">
         <header className="card-head">
           <h3>
@@ -50,6 +52,25 @@ export function Settings() {
         </div>
       </section>
     </div>
+  )
+}
+
+/** 이용권 (결제를 켠 뒤에만 보임) */
+function LicenseCard() {
+  const [b, setB] = useState<BillingState | null>(null)
+  useEffect(() => {
+    desktop.billing.state().then(setB, () => setB(null))
+  }, [])
+  if (!b?.enabled) return null
+  return (
+    <section className="card">
+      <header className="card-head">
+        <h3>
+          <KeyRound size={18} /> 이용권
+        </h3>
+      </header>
+      <p className="muted">{b.licensed ? `등록됨 · ${b.key}` : b.legacy ? '먼저 써 주신 분이라 계속 무료예요' : '등록 안 됨'}</p>
+    </section>
   )
 }
 

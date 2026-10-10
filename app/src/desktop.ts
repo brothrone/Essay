@@ -27,6 +27,16 @@ export interface DesktopBridge {
     findQuestions: (q: { company: string; position?: string }) => Promise<{ ok: boolean; sets: CommunityQuestionSet[]; error?: string }>
     shareQuestions: (info: { company: string; position: string; deadline: string; url: string; questions: { prompt: string; limit: number | null }[] }) => void
   }
+  /** 유료 판매: 이용권 확인 · 구매 (app-config 의 billing.enabled 가 true 일 때만 결제를 요구) */
+  billing: {
+    state: () => Promise<BillingState>
+    activate: (key: string) => Promise<{ ok: boolean; error?: string }>
+    /** 구매 페이지를 브라우저로 열고, 결제가 끝나면 onChanged({ done: true }) */
+    buy: () => Promise<{ ok: boolean; url?: string }>
+    cancel: () => Promise<boolean>
+    openTerms: () => Promise<boolean>
+    onChanged: (fn: (p: { done?: boolean; error?: string; revoked?: boolean }) => void) => () => void
+  }
   loadData: () => string | null
   saveData: (json: string) => Promise<void>
   saveDataSync: (json: string) => boolean
@@ -129,6 +139,20 @@ export interface PlanInfo {
   need: string
   note: string
 }
+export interface BillingState {
+  enabled: boolean
+  /** true 면 결제 화면만 보여 준다 */
+  required: boolean
+  licensed: boolean
+  /** 결제를 켜기 전에 설치해 계속 무료 */
+  legacy: boolean
+  /** 가린 키 (ESSAY-ABCD-····-····-WXYZ) */
+  key: string
+  price: number
+  listPrice: number
+  termsUrl: string
+}
+
 export interface AppConfig {
   /** 요금제 조건을 마지막으로 확인한 날 (YYYY-MM-DD) */
   checkedAt: string
@@ -138,6 +162,8 @@ export interface AppConfig {
   feedback: { formUrl: string; issuesUrl: string }
   /** Essay 서버 주소 (비어 있으면 의견 보내기 · 통계 · 오류 보고 · 문항 모음을 쓰지 않음) */
   api?: { baseUrl: string }
+  /** 유료 판매 (enabled 가 true 일 때만 결제를 요구) */
+  billing?: { enabled: boolean; price: number; listPrice: number; buyUrl: string; termsUrl: string }
 }
 
 export interface BackupFile {

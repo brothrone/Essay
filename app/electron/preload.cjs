@@ -59,6 +59,14 @@ contextBridge.exposeInMainWorld('desktop', {
     set: (source) => ipcRenderer.invoke('theme:set', source),
     onChanged: on('theme:changed'),
   },
+  billing: {
+    state: () => ipcRenderer.invoke('billing:state'),
+    activate: (key) => ipcRenderer.invoke('billing:activate', key),
+    buy: () => ipcRenderer.invoke('billing:buy'),
+    cancel: () => ipcRenderer.invoke('billing:cancel'),
+    openTerms: () => ipcRenderer.invoke('billing:open-terms'),
+    onChanged: on('billing:changed'),
+  },
   ai: {
     status: () => ipcRenderer.invoke('ai:status'),
     run: (prompt, model, options = {}) =>

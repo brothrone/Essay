@@ -29,5 +29,12 @@
   },
   "api": {
     "baseUrl": ""
+  },
+  "billing": {
+    "enabled": false,
+    "price": 3900,
+    "listPrice": 4900,
+    "buyUrl": "https://essay.win/buy.html",
+    "termsUrl": "https://essay.win/terms.html"
   }
 }

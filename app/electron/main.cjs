@@ -1504,6 +1504,8 @@ const CONFIG_URL = 'https://essay.win/app-config.json'
 const CONFIG_CACHE = () => path.join(app.getPath('userData'), 'app-config.json')
 const CONFIG_DEFAULT = () => JSON.parse(fs.readFileSync(path.join(__dirname, 'app-config-default.json'), 'utf8'))
 const validConfig = (c) => c && typeof c === 'object' && c.plans && typeof c.plans === 'object' && c.feedback && typeof c.feedback === 'object'
+// 지금 쓰는 설정이 서버에서 받은 것(또는 그 저장본)인지, 앱에 든 기본값인지 (결제 '먼저 쓰던 사람' 판단에 쓴다)
+let configFromServer = false
 async function loadAppConfig() {
   let cached = null
   try {
@@ -1511,22 +1513,29 @@ async function loadAppConfig() {
   } catch {
     /* 처음 */
   }
-  if (validConfig(cached?.config) && Date.now() - (cached.at || 0) < 24 * 3600 * 1000) return cached.config
+  if (validConfig(cached?.config) && Date.now() - (cached.at || 0) < 24 * 3600 * 1000) {
+    configFromServer = true
+    return cached.config
+  }
   try {
     const r = await fetch(CONFIG_URL, { signal: AbortSignal.timeout(8000), cache: 'no-store' })
     const c = r.ok ? await r.json() : null
     if (validConfig(c)) {
       fs.writeFileSync(CONFIG_CACHE(), JSON.stringify({ at: Date.now(), config: c }))
+      configFromServer = true
       return c
     }
   } catch {
     /* 오프라인 등 */
   }
-  return validConfig(cached?.config) ? cached.config : CONFIG_DEFAULT()
+  configFromServer = validConfig(cached?.config)
+  return configFromServer ? cached.config : CONFIG_DEFAULT()
 }
 ipcMain.handle('app:config', () => loadAppConfig())
 // 개선 돕기(의견 보내기 · 익명 통계 · 오류 보고 · 문항 모음). 서버 주소는 app-config 의 api.baseUrl — 비어 있으면 아무것도 보내지 않는다
 require('./community.cjs')({ app, ipcMain, getConfig: loadAppConfig, isMac: IS_MAC })
+// 유료 판매: 이용권 확인 · [구매하기] (app-config 의 billing.enabled 가 true 일 때만 결제를 요구)
+require('./billing.cjs')({ app, ipcMain, shell, getConfig: loadAppConfig, configIsRemote: () => configFromServer, isMac: IS_MAC })
 
 ipcMain.handle('ai:usage-reset', () => {
   try {

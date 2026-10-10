@@ -1,6 +1,7 @@
 // Essay 백엔드: 의견 받기 · 익명 사용 통계 · 오류 보고 · 회사별 자소서 문항 모음, 개발자용 관리 주소.
-// 결제 확인 · 라이선스 키는 사업자 등록 · PG 가 정해지면 여기에 더한다 (CLAUDE.md 남은 일 2)
+// 결제 확인 · 이용권(라이선스 키)은 billing.ts (포트원)
 import { admin, isAdmin } from './admin'
+import { adminBilling, billing } from './billing'
 import { postFeedback } from './feedback'
 import { getQuestions, postQuestions } from './questions'
 import { postErrors, postStats } from './telemetry'
@@ -28,9 +29,12 @@ export default {
         if (method === 'POST') return await postQuestions(req, env)
       }
 
+      const b = await billing(path, req, env)
+      if (b) return b
+
       if (path.startsWith('/v1/admin/')) {
         if (!(await isAdmin(req, env))) return fail(401, '관리 열쇠가 필요해요')
-        return await admin(path, req, url, env)
+        return (await adminBilling(path, req, url, env)) ?? (await admin(path, req, url, env))
       }
       return fail(404, '없는 주소')
     } catch (e) {

@@ -89,5 +89,27 @@ check('관리: 묶음 숨기기', (await post(`/v1/admin/questions/${hideId}/hid
 const look2 = await (await fetch(BASE + '/v1/questions?company=' + encodeURIComponent('누리푸드'))).json()
 check('숨긴 묶음은 안 보임', !look2.sets.some((x) => x.id === hideId))
 
+// ---------- 유료 판매 (로컬은 BILLING_MOCK=1: mock- 결제는 바로 완료로 봄) ----------
+const prep = await (await post('/v1/billing/prepare', { ref: 'c'.repeat(32), email: 'Buyer@Example.com' })).json()
+if (prep.ok && prep.paymentId.startsWith('mock-')) {
+  check('결제 준비: 금액 · 주문 이름', prep.amount > 0 && prep.orderName === 'Essay 이용권')
+  const dev = 'e'.repeat(64)
+  check('결제 전 claim 은 기다림', (await (await post('/v1/license/claim', { ref: 'd'.repeat(32), device: dev })).json()).pending === true)
+  const done = await (await post('/v1/billing/complete', { paymentId: prep.paymentId })).json()
+  check('결제 확인 → 이용권 키', /^ESSAY(-[A-Z2-9]{4}){4}$/.test(done.key || ''), done.key)
+  const again = await (await post('/v1/billing/complete', { paymentId: prep.paymentId })).json()
+  check('같은 결제를 다시 확인해도 같은 키', again.key === done.key)
+  const cl = await (await post('/v1/license/claim', { ref: 'c'.repeat(32), device: dev })).json()
+  check('앱이 ref 로 이용권 받기', cl.key === done.key && typeof cl.token === 'string' && cl.token.includes('.'))
+  for (const d of ['1', '2']) await post('/v1/license/activate', { key: done.key, device: d.repeat(64) })
+  check('기기 4대째는 막음', (await post('/v1/license/activate', { key: done.key, device: '3'.repeat(64) })).status === 409)
+  check('없는 키 거절', (await post('/v1/license/activate', { key: 'ESSAY-AAAA-BBBB-CCCC-DDDD', device: dev })).status === 404)
+  check('없는 결제 번호 거절', (await post('/v1/billing/complete', { paymentId: 'nope' })).status === 404)
+  check('관리: 주문 목록 · 매출', (await (await fetch(BASE + '/v1/admin/orders', { headers: auth })).json()).summary?.paid >= 1)
+  check('관리: 환불 처리', (await post(`/v1/admin/licenses/${done.key}/revoke`, {}, auth)).status === 200)
+  check('환불한 키는 확인에서 무효', (await (await post('/v1/license/check', { key: done.key, device: dev })).json()).valid === false)
+  check('환불한 키는 새 기기 등록 막음', (await post('/v1/license/activate', { key: done.key, device: dev })).status === 403)
+} else check('결제 준비(운영): 포트원 설정 전이면 준비 중', !prep.ok)
+
 console.log(failed ? `\n${failed}개 실패` : '\n모두 통과')
 process.exit(failed ? 1 : 0)
