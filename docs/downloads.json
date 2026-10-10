@@ -6,9 +6,9 @@
     "url": "https://github.com/brothrone/Essay/releases/download/v1.9.16/Essay-1.9.16-mac-arm64.dmg"
   },
   "win": {
-    "version": "1.9.16",
-    "name": "Essay-Setup-1.9.16.exe",
-    "size": 106636969,
-    "url": "https://github.com/brothrone/Essay/releases/download/v1.9.16/Essay-Setup-1.9.16.exe"
+    "version": "1.9.17",
+    "name": "Essay-Setup-1.9.17.exe",
+    "size": 106637296,
+    "url": "https://github.com/brothrone/Essay/releases/download/v1.9.17/Essay-Setup-1.9.17.exe"
   }
 }
