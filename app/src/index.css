@@ -5806,6 +5806,26 @@ textarea:focus-visible {
   vertical-align: -3px;
 }
 
+/* GPT 로고: 밝은 화면은 흰 타일 + 검은 심볼, 어두운 화면은 검은 타일 + 흰 심볼 */
+.gpt-tile {
+  fill: #fff;
+  stroke: #d9dde4;
+  stroke-width: 1;
+}
+
+.gpt-mark {
+  fill: #0d0d0d;
+}
+
+:root[data-theme='dark'] .gpt-tile {
+  fill: #0d0d0d;
+  stroke: #3a3f48;
+}
+
+:root[data-theme='dark'] .gpt-mark {
+  fill: #fff;
+}
+
 .provider-menu {
   position: relative;
   min-width: 0;
@@ -5913,4 +5933,17 @@ textarea:focus-visible {
 
 .chat-head .provider-menu {
   flex: none;
+}
+
+/* '(확인 필요)' 경고: 글 + [찾기] [AI로 없애기] */
+.answer-warning-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.answer-warning-actions {
+  display: flex;
+  gap: 6px;
+  flex: none;
+  align-self: center;
 }

@@ -17,6 +17,8 @@ const SHORTER_RE = /짧게|짧아|짧은|줄여|줄이|줄인|간결|요약/
 
 /** 답변 아래 [AI와 대화하며 고치기] 를 누르면 대화 입력칸으로 커서를 옮긴다 */
 export const CHAT_FOCUS_EVENT = 'essay:chat-focus'
+/** 다른 곳(답변 아래 경고 등)에서 이 문항 대화로 요청을 보낸다: detail = { qid, message } */
+export const CHAT_ASK_EVENT = 'essay:chat-ask'
 const KEEP = 60
 
 /**
@@ -151,6 +153,17 @@ export function ChatPanel({
     setText('')
     void ask(history, message)
   }
+
+  const sendRef = useRef(send)
+  sendRef.current = send
+  useEffect(() => {
+    const f = (e: Event) => {
+      const d = (e as CustomEvent<{ qid: string; message: string }>).detail
+      if (d?.qid === q.id) sendRef.current(d.message)
+    }
+    window.addEventListener(CHAT_ASK_EVENT, f)
+    return () => window.removeEventListener(CHAT_ASK_EVENT, f)
+  }, [q.id])
 
   const resend = () => {
     if (!last || last.role !== 'user') return

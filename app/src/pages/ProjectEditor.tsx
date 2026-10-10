@@ -18,9 +18,10 @@ import {
   Trash2,
   X,
 } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { AiWorkbench, type AiMode } from '../components/AiWorkbench'
+import { CHAT_ASK_EVENT } from '../components/ChatPanel'
 import { QuestionImportDialog } from '../components/QuestionImportDialog'
 import { toast } from '../toast'
 import { PostingCheck } from '../components/PostingCheck'
@@ -408,9 +409,47 @@ function QuestionEditor({
   const unit = q.countMode === 'byte' ? 'byte' : '자'
   const { data } = useStore()
   const warnings = useMemo(() => answerWarnings(data, project, q), [data, project, q])
+  const box = useRef<HTMLDivElement>(null)
+
+  /** 답변 칸에서 다음 '(확인 필요…)' 를 골라 보여 준다 (끝까지 가면 처음부터) */
+  const findMark = () => {
+    const el = box.current?.querySelector<HTMLTextAreaElement>('.answer-input')
+    if (!el) return
+    const re = /\(확인 필요[^)]*\)/g
+    re.lastIndex = el.selectionEnd
+    const m = re.exec(el.value) ?? ((re.lastIndex = 0), re.exec(el.value))
+    if (!m) return
+    el.focus()
+    el.setSelectionRange(m.index, m.index + m[0].length)
+    // 고른 곳이 보이게: 같은 글꼴 · 폭의 숨은 복사본에서 그 위치의 높이를 재서 화면 가운데로
+    const cs = getComputedStyle(el)
+    const mirror = document.createElement('div')
+    for (const k of ['font', 'letterSpacing', 'lineHeight', 'padding', 'border', 'boxSizing', 'wordBreak'] as const) mirror.style[k] = cs[k]
+    Object.assign(mirror.style, { position: 'absolute', visibility: 'hidden', whiteSpace: 'pre-wrap', overflowWrap: 'break-word', width: `${el.offsetWidth}px` })
+    mirror.textContent = el.value.slice(0, m.index)
+    const mark = mirror.appendChild(document.createElement('span'))
+    mark.textContent = m[0]
+    document.body.appendChild(mirror)
+    const y = mark.offsetTop
+    mirror.remove()
+    let sc: HTMLElement | null = el.parentElement
+    while (sc && !/(auto|scroll)/.test(getComputedStyle(sc).overflowY)) sc = sc.parentElement
+    if (sc) sc.scrollBy({ top: el.getBoundingClientRect().top + y - sc.getBoundingClientRect().top - sc.clientHeight / 2, behavior: 'smooth' })
+  }
+  const fixMarks = () => {
+    onAiMode('chat')
+    window.dispatchEvent(
+      new CustomEvent(CHAT_ASK_EVENT, {
+        detail: {
+          qid: q.id,
+          message: "답변에 남은 '(확인 필요)' 표시를 모두 없애 줘. 모르는 수치나 사실은 지어내지 말고 빼서, 자연스러운 문장으로 고쳐 줘.",
+        },
+      }),
+    )
+  }
 
   return (
-    <div className="q-editor">
+    <div className="q-editor" ref={box}>
       <div className="q-toolbar">
         <span className="q-label">문항 {index + 1}</span>
         <div className="q-tools">
@@ -505,7 +544,18 @@ function QuestionEditor({
         <ul className="answer-warnings">
           {warnings.map((w) => (
             <li key={w.kind} className={`${w.kind} ${w.level}`}>
-              {w.level === 'tip' ? <Lightbulb size={14} /> : <AlertTriangle size={14} />} {w.text}
+              {w.level === 'tip' ? <Lightbulb size={14} /> : <AlertTriangle size={14} />}
+              <span className="answer-warning-text">{w.text}</span>
+              {w.kind === 'check' && (
+                <span className="answer-warning-actions">
+                  <button type="button" className="btn small" onClick={findMark}>
+                    찾기
+                  </button>
+                  <button type="button" className="btn small primary" onClick={fixMarks}>
+                    AI로 없애기
+                  </button>
+                </span>
+              )}
             </li>
           ))}
         </ul>

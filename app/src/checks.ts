@@ -59,7 +59,7 @@ export function answerWarnings(data: AppData, project: Project, q: Question): An
   }
 
   const marks = text.match(/\(확인 필요[^)]*\)/g)?.length ?? 0
-  if (marks) out.push({ kind: 'check', level: 'warn', text: `'(확인 필요)'가 ${marks}군데 남아 있어요` })
+  if (marks) out.push({ kind: 'check', level: 'warn', text: `AI가 몰라서 비워 둔 '(확인 필요)'가 ${marks}군데 있어요` })
 
   // 공고 분석 키워드가 있으면 답변에 얼마나 녹였는지 (억지 나열이 아니라 '하나도 없음'만 알린다)
   const keywords = postingKeywords(project.notes)
