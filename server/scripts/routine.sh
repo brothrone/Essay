@@ -1,5 +1,5 @@
 #!/bin/bash
-# 정기 작업 (월 · 목 10시, ~/Library/LaunchAgents/win.essay.collect.plist): Gemini CLI(agy)가
+# 공고 모으기 작업 (직접 실행: bash server/scripts/routine.sh — 1시간 안팎): Gemini CLI(agy)가
 # 1) 주요 기업 8곳의 공고 · 문항 · 분석을 모아 확인 대기로 올리고(collect.mjs) 2) 원문과 하나씩 대조해 공개 · 숨김을 정한다(verify.mjs).
 # Claude 는 이 작업을 하지 않는다 (사용자 지시 2026-10-11). 기록은 server/.collect/routine-*.log
 set -u

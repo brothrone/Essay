@@ -23,7 +23,7 @@ AI 기능은 유료 API 없이 사용자 PC에 로그인된 CLI(Claude Code `cla
 - `guides/` 개발 노트 · 사용자 설치 안내 · **맥 작업 안내**
 - `server/` 백엔드 (Cloudflare Workers + D1, 무료 요금제): 의견 받기 · 익명 사용 통계 · 오류 보고 · 회사별 자소서 문항 모음 · 개발자용 관리 주소 · 결제 확인 · 이용권(`billing.ts`, 앱 쪽 `app/electron/billing.cjs` · `src/components/Paywall.tsx`, 구매 페이지 `docs/buy.html` · `docs/terms.html`). 앱 쪽은 `app/electron/community.cjs` · `app/src/community.ts` — 서버 주소는 `docs/app-config.json` 의 `api.baseUrl`(비면 아무것도 안 보냄), 통계 · 오류 · 문항은 사용자가 [개선 돕기]에서 고른 것만. 배포 · 도메인 · 결제 설계는 `guides/서버-안내.md`. 비밀 값은 `wrangler secret` 과 `server/.dev.vars`(저장소 밖)에만
 
-- **공고 모음 · 분석**(2026-10-11, 1.9.16): 서버 `postings.ts` — 앱은 공고 주소 해시로 먼저 서버를 찾고(있으면 AI 없이 바로 채움), 편집 화면 [분석] 탭은 서버의 공개된 직무 · 기업 · 문항 분석, 없으면 [내 AI로 분석]. **주요 기업 공고 모으기와 원문 대조 · 공개는 Gemini CLI(agy)가 한다 — Claude 가 대신 돌리지 않는다**(사용자 지시): `server/scripts/routine.sh`(LaunchAgent `win.essay.collect`, 월 · 목 10시). 자세한 건 `guides/서버-안내.md` 의 "공고 모음 · 분석"
+- **공고 모음 · 분석**(2026-10-11, 1.9.16): 서버 `postings.ts` — 앱은 공고 주소 해시로 먼저 서버를 찾고(있으면 AI 없이 바로 채움), 편집 화면 [분석] 탭은 서버의 공개된 직무 · 기업 · 문항 분석, 없으면 [내 AI로 분석]. **주요 기업 공고 모으기와 원문 대조 · 공개는 Gemini CLI(agy)가 한다 — Claude 가 대신 돌리지 않는다**(사용자 지시): `bash server/scripts/routine.sh` 를 사용자가 직접 실행(자동 예약은 없음 — 백그라운드 예약 등록은 Claude Code 안전 검사가 막음). 자세한 건 `guides/서버-안내.md` 의 "공고 모음 · 분석"
 
 ## 명령 (`app/` 에서)
 ```bash
