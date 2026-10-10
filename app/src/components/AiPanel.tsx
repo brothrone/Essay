@@ -429,7 +429,7 @@ export function AiPanel({
       </section>
 
       <details className="ai-copy">
-        <summary>요청문 복사 (다른 AI 채팅용)</summary>
+        <summary title="다른 AI 채팅에 붙여넣을 요청문">요청문 복사</summary>
         <div className="ai-actions">
           {copyActions.map((a) => (
             <button

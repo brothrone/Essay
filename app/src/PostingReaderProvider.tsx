@@ -108,7 +108,7 @@ export function PostingReaderProvider({ children }: { children: ReactNode }) {
   )
 
   const start = useCallback<PostingReaderApi['start']>(
-    async (key, { prompt, kind, mode, projectId, label }) => {
+    async (key, { prompt, kind, mode, projectId, label, url }) => {
       const cur = tasksRef.current[key]
       if (cur && (cur.status === 'running' || cur.status === 'waiting')) return
       stopped.current.delete(key)
@@ -117,6 +117,30 @@ export function PostingReaderProvider({ children }: { children: ReactNode }) {
         [key]: { key, projectId, label, kind, mode, status: 'running', startedAt: Date.now(), steps: [], error: '', info: null, applied: null },
       }
       setTasks(tasksRef.current)
+
+      // 공고 모음에 이미 있는 공고(다른 사용자들이 똑같이 읽었거나 개발자가 확인한 것)면 AI 없이 바로 채운다
+      if (kind === 'link' && url) {
+        const hit = await desktop.community.lookupPosting(url).catch(() => null)
+        const sp = hit?.posting
+        if (sp && tasksRef.current[key] && !stopped.current.has(key)) {
+          const today = toDateInput(new Date())
+          const info: PostingInfo = {
+            company: sp.company,
+            position: sp.position,
+            deadline: sp.deadline,
+            deadlineTime: sp.deadlineTime,
+            isOpen: sp.deadline ? sp.deadline >= today : null,
+            notes: sp.notes,
+            questions: sp.questions,
+            questionsSource: sp.questionsSource || '공고 페이지',
+            url,
+          }
+          commit(key, () => ({ status: 'done', info, serverId: sp.id }))
+          track('posting_server_hit')
+          applyIfReady(key)
+          return
+        }
+      }
 
       const r = await runWebTask(prompt, {
         web: kind !== 'text', // 붙여넣은 공고는 본문만 정리하면 돼서 웹을 쓰지 않는다 (빠르고 엉뚱한 검색이 없음)
@@ -145,6 +169,8 @@ export function PostingReaderProvider({ children }: { children: ReactNode }) {
       }
       commit(key, () => ({ status: 'done', info }))
       track('posting_read_ok')
+      // 공고 한 건을 읽었으면 공고 모음에 보탠다 (동의한 사람만 — 확인은 main 쪽에서)
+      if (kind === 'link' && url) desktop.community.sharePosting({ ...info, url })
       // 공고 페이지에 적힌 문항이면 문항 모음에 보탠다 (사용자가 '문항 모음'에 동의했을 때만, 공고 본문은 보내지 않음)
       if (info.questionsSource === '공고 페이지' && info.questions.length)
         desktop.community.shareQuestions({

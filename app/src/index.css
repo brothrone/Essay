@@ -986,7 +986,8 @@ textarea:focus-visible {
 }
 
 /* 저장한 공고: 버튼이 채워진 모양으로 남는다 */
-.btn.save-on {
+.btn.save-on,
+.icon-btn.save-on {
   background: var(--primary-soft);
   border-color: transparent;
   color: var(--primary-text);
@@ -2295,7 +2296,10 @@ textarea:focus-visible {
 }
 
 .panel-tabs [role='tab'] {
-  padding: 7px 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 10px;
   border: 0;
   border-radius: 8px;
   background: transparent;
@@ -2311,6 +2315,14 @@ textarea:focus-visible {
 .panel-tabs [role='tab'].on {
   background: var(--surface-2);
   color: var(--text);
+}
+
+.panel-fold {
+  margin-left: auto;
+}
+
+.panel-fold + .panel-close {
+  margin-left: 0;
 }
 
 .panel-close {
@@ -3025,9 +3037,36 @@ textarea:focus-visible {
 
 /* ---------- responsive ---------- */
 
+/* 넓은 화면: 오른쪽 패널을 접으면 답안 칸이 넓어진다 (좁은 화면은 원래 겹쳐 여는 방식) */
+.panel-unfold {
+  display: none !important;
+}
+
+@media (min-width: 1241px) {
+  .editor-body.panel-folded {
+    grid-template-columns: 250px minmax(0, 1fr);
+  }
+
+  .editor-body.panel-folded .side-panel {
+    display: none;
+  }
+
+  .panel-unfold {
+    display: inline-flex !important;
+  }
+
+  .editor-body.panel-folded .q-editor {
+    max-width: 900px;
+  }
+}
+
 @media (max-width: 1240px) {
   .editor-body {
     grid-template-columns: 230px minmax(0, 1fr);
+  }
+
+  .panel-fold {
+    display: none !important;
   }
 
   .panel-toggle,
@@ -3299,6 +3338,7 @@ textarea:focus-visible {
 }
 
 .job-actions {
+  align-items: center;
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
@@ -5946,4 +5986,173 @@ textarea:focus-visible {
   gap: 6px;
   flex: none;
   align-self: center;
+}
+
+/* ---------- 분석 탭 (직무 · 기업 · 문항) ---------- */
+
+.insight {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.insight-tabs {
+  align-self: stretch;
+  display: flex;
+}
+
+.insight-tabs button {
+  flex: 1;
+  justify-content: center;
+  position: relative;
+}
+
+.insight-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--primary);
+  margin-left: 2px;
+}
+
+.insight-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 36px 8px;
+  text-align: center;
+  color: var(--text-3);
+}
+
+.insight-empty p {
+  margin: 0;
+}
+
+.insight-view {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.insight-summary {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--primary-soft);
+  color: var(--primary-text);
+  font-weight: 650;
+  line-height: 1.55;
+}
+
+.insight-sec h4 {
+  margin: 0 0 6px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.insight-sec p {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.65;
+  color: var(--text-2);
+}
+
+.insight-sec ul {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--text-2);
+}
+
+.insight-table {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.insight-table table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.insight-table th,
+.insight-table td {
+  padding: 7px 9px;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--border);
+}
+
+.insight-table th {
+  background: var(--surface-2);
+  font-weight: 650;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+
+.insight-table tr:last-child td {
+  border-bottom: 0;
+}
+
+.insight-sources {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  margin: 0;
+  font-size: 12px;
+}
+
+.insight-sources a {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: var(--text-3);
+}
+
+.insight-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+.insight-foot span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* 아이콘만 있는 보기 바꾸기 (목록 · 보드, 카드 · 마인드맵) — 이름은 마우스를 올리면 */
+.segmented.icons button {
+  width: 36px;
+  padding: 0;
+  justify-content: center;
+}
+
+.plan-notes summary {
+  cursor: pointer;
+  list-style: none;
+}
+
+.plan-notes summary::-webkit-details-marker {
+  display: none;
+}
+
+.plan-notes summary::before {
+  content: '▸ ';
+  color: var(--text-3);
+}
+
+.plan-notes[open] summary::before {
+  content: '▾ ';
 }

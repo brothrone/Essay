@@ -43,6 +43,9 @@ async function summary(url: URL, env: Env) {
          (SELECT COUNT(*) FROM feedback WHERE status = 'new') AS feedback_new,
          (SELECT COUNT(*) FROM errors WHERE status = 'new') AS errors_new,
          (SELECT COUNT(*) FROM question_sets WHERE hidden = 0) AS question_sets,
+         (SELECT COUNT(*) FROM postings WHERE status = 'pending') AS postings_pending,
+         (SELECT COUNT(*) FROM postings WHERE status = 'published') AS postings_published,
+         (SELECT COUNT(*) FROM insights WHERE status = 'pending') AS insights_pending,
          (SELECT COUNT(DISTINCT install) FROM stats_daily WHERE day >= date('now', '-7 days')) AS users_7d,
          (SELECT COUNT(DISTINCT install) FROM stats_daily WHERE day >= date('now', '-30 days')) AS users_30d`),
   ])

@@ -51,11 +51,11 @@ export function NewProjectModal({ onClose }: { onClose: () => void }) {
     setSourceState(s)
     setImportError('')
   }
-  const importWith = (prompt: string, kind: 'link' | 'company' | 'text') => {
+  const importWith = (prompt: string, kind: 'link' | 'company' | 'text', url?: string) => {
     setImportError('')
     setImported(null)
     consumed.current = false
-    reader.start(draftKey, { prompt, kind, mode: 'new', projectId: null, label: form.company.trim() })
+    reader.start(draftKey, { prompt, kind, mode: 'new', projectId: null, label: form.company.trim(), url })
   }
 
   // 다 읽으면 아래 칸을 채운다 (한 번만)
@@ -103,7 +103,7 @@ export function NewProjectModal({ onClose }: { onClose: () => void }) {
       return
     }
     setForm((f) => ({ ...f, jobUrl: url }))
-    importWith(postingPrompt(url, toDateInput(new Date())), 'link')
+    importWith(postingPrompt(url, toDateInput(new Date())), 'link', url)
   }
   // 로그인해야 보이는 공고 등: 복사한 공고 본문을 정리한다
   const importFromText = () => {
@@ -196,6 +196,7 @@ export function NewProjectModal({ onClose }: { onClose: () => void }) {
         mode: 'new',
         projectId: project.id,
         label: project.company,
+        url,
       })
       toast('AI가 공고를 읽는 중이에요')
     }

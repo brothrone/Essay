@@ -22,13 +22,16 @@ export interface PostingTask {
   steps: string[]
   error: string
   info: PostingInfo | null
+  /** 서버 공고 모음에서 가져왔으면 그 공고 번호 (분석을 찾을 때 씀) */
+  serverId?: number
   /** 자소서에 실제로 넣은 것 */
   applied: { questions: number; notes: boolean; deadline: boolean } | null
 }
 
 export interface PostingReaderApi {
   tasks: Record<string, PostingTask>
-  start: (key: string, opts: { prompt: string; kind: 'link' | 'company' | 'text'; mode: PostingMode; projectId: string | null; label: string }) => void
+  /** url: 공고 한 건 주소면 먼저 서버의 공고 모음에서 찾아(있으면 AI 없이 바로) 쓰고, 없으면 AI 로 읽은 뒤 모음에 보탠다 */
+  start: (key: string, opts: { prompt: string; kind: 'link' | 'company' | 'text'; mode: PostingMode; projectId: string | null; label: string; url?: string }) => void
   /** 새 자소서 창에서 읽던 작업을 방금 만든 자소서에 연결한다 (끝나면 그 자소서에 채움) */
   attach: (key: string, projectId: string) => void
   cancel: (key: string) => void

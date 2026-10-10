@@ -1,7 +1,7 @@
 import { COUNT_MODE_LABEL } from './constants'
 import { experienceToText } from './format'
 import { SPEC_CATEGORIES, sortSpecs } from './specConfig'
-import type { AppData, Experience, Project, Question } from './types'
+import type { AppData, Experience, InsightKind, Project, Question, SavedInsight } from './types'
 import { countChars } from './utils'
 
 /* 자소서에 최적화한 AI 요청문.
@@ -564,4 +564,103 @@ export function companyLookupPrompt(company: string, position: string, today: st
 3. 자기소개서 문항은 아래 규칙대로 찾으세요.
 
 ${POSTING_OUTPUT}`
+}
+
+// ---------- 분석 탭: 직무 · 기업 · 문항 분석 (서버 server/src/postings.ts cleanInsight 와 같은 모양)
+
+const INSIGHT_FORMAT = `[출력 형식]
+<json>
+{"summary":"한 줄 요약","basis":"무엇을 기준으로 했는지 (예: 2025 사업보고서 · 2026 하반기 공고)","sections":[{"title":"제목","items":["짧은 문장"]},{"title":"제목","text":"두세 문장"},{"title":"제목","table":{"head":["구분","내용"],"rows":[["…","…"]]}}],"sources":[{"title":"출처 이름","url":"https://…"}]}
+</json>
+- sections 는 4~6개. 한 항목은 한 줄(40자 안팎)로 짧게, 대학생이 바로 읽히게 쓰세요. 마크다운 기호(#, **)는 쓰지 마세요.
+- 확인하지 못한 사실 · 수치는 쓰지 마세요. 숫자는 출처와 기준 연도가 있을 때만, 표의 칸이나 basis 에 기준을 적으세요.
+- 다른 회사 이야기가 섞이지 않았는지 마지막에 한 번 더 확인하세요.
+<json> 밖에는 아무것도 쓰지 마세요.`
+
+const postingBlock = (p: Project) =>
+  [`회사: ${p.company || '(모름)'}`, `직무: ${p.position || '(모름)'}`, p.jobUrl && `공고 주소: ${p.jobUrl}`, p.notes.trim() && `[공고 메모]\n${p.notes.trim().slice(0, 3000)}`]
+    .filter(Boolean)
+    .join('\n')
+
+/** 분석 하나를 내 AI 로 만드는 요청문. 직무 · 기업은 웹을 쓰고, 문항 분석은 공고와 내 경험 목록만 본다 */
+export function insightPrompt(kind: InsightKind, data: AppData, project: Project) {
+  const today = new Date().toISOString().slice(0, 10)
+  if (kind === 'job')
+    return `오늘은 ${today}입니다. 아래 채용 공고의 직무를 지원자 입장에서 분석해 주세요. 공고 메모가 부족하면 공고 주소를 WebFetch로 한 번 읽고, 필요하면 WebSearch 1~2번으로 같은 회사의 직무 소개(채용 홈페이지 · 직무 인터뷰)를 찾으세요.
+
+${postingBlock(project)}
+
+[sections 순서]
+1. 이 직무가 하는 일 (items 3~5개, 공고의 담당 업무를 쉬운 말로)
+2. 요구 역량 (table: head ["구분","필수","우대"], 구분은 지식 · 도구 · 태도 등, 공고에 있는 것만)
+3. 이 회사가 원하는 사람 (text 두 문장)
+4. 자소서에 녹일 키워드 (items 6~8개, 공고에 실제로 쓰인 단어 위주)
+5. 면접에서 자주 묻는 것 (items 3개, 이 직무에서 흔한 질문)
+
+${INSIGHT_FORMAT}`
+  if (kind === 'company')
+    return `오늘은 ${today}입니다. 지원자가 자소서 · 면접을 준비할 수 있게 "${project.company}" 기업을 분석해 주세요. WebSearch 3번 · WebFetch 3번 안에서 회사 공식 홈페이지(회사 소개 · 인재상), 전자공시(DART) 사업보고서 요약, 최근 1년 기사 순으로 확인하세요.
+
+${postingBlock(project)}
+
+[sections 순서]
+1. 무슨 회사인가 (items 3~4개: 주요 사업 · 대표 제품/서비스 · 고객)
+2. 숫자로 보는 회사 (table: head ["항목","값","기준"], 매출 · 영업이익 · 사업 부문별 비중 등 출처가 확실한 것만. 없으면 이 섹션을 빼세요)
+3. 최근 1년 이슈 (items 3~4개, 앞에 "2026.03"처럼 시기)
+4. 인재상 · 핵심 가치 (items, 회사가 공식으로 쓰는 표현 그대로)
+5. 지원 직무와 이어지는 포인트 (items 3개: 이 회사의 어떤 방향이 "${project.position || '지원 직무'}"와 맞닿는지)
+
+${INSIGHT_FORMAT}`
+  const qs = project.questions.filter((q) => q.prompt.trim())
+  const exps = data.experiences.slice(0, 30).map((e) => `- ${e.title}${e.summary ? `: ${e.summary}` : ''}`).join('\n')
+  return `아래 공고의 자기소개서 문항을 하나씩 분석해 주세요. 웹은 쓰지 마세요.
+
+${postingBlock(project)}
+
+[문항]
+${qs.map((q, i) => `Q${i + 1}. ${q.prompt}${q.limit ? ` (${q.limit}자)` : ''}`).join('\n') || '(문항 없음)'}
+
+[지원자의 경험 목록]
+${exps || '- (없음)'}
+
+[sections] 문항마다 하나씩, title 은 "Q1. 문항 앞부분(20자)…", items 는 아래 4줄:
+- "의도: …" (회사가 이 문항으로 확인하려는 것)
+- "평가 포인트: …" (서류 심사에서 보는 것 두세 가지)
+- "쓸 경험: …" (위 경험 목록 중 가장 맞는 것 1~2개의 제목, 없으면 어떤 경험이 필요한지)
+- "주의: …" (흔한 실수 하나)
+summary 는 문항 전체를 관통하는 키워드 한 줄, sources 는 빈 배열, basis 는 "공고 문항".
+
+${INSIGHT_FORMAT}`
+}
+
+/** AI 답 → 분석. 형식이 아니면 null */
+export function parseInsight(text: string): Omit<SavedInsight, 'at'> | null {
+  const o = parseAiJson<Record<string, unknown>>(text)
+  if (!o || typeof o !== 'object') return null
+  const str = (v: unknown, n: number) => (typeof v === 'string' ? v.trim().slice(0, n) : '')
+  const strs = (v: unknown, n: number, len: number) => (Array.isArray(v) ? v : []).slice(0, n).map((x) => str(x, len)).filter(Boolean)
+  const sections = (Array.isArray(o.sections) ? o.sections : []).slice(0, 14).flatMap((s) => {
+    if (!s || typeof s !== 'object') return []
+    const x = s as Record<string, unknown>
+    const title = str(x.title, 80).replace(/^#+\s*/, '')
+    const out: SavedInsight['sections'][number] = { title }
+    const t = str(x.text, 2000)
+    if (t) out.text = t
+    const items = strs(x.items, 20, 500)
+    if (items.length) out.items = items
+    const tb = x.table as Record<string, unknown> | undefined
+    if (tb && typeof tb === 'object') {
+      const head = strs(tb.head, 5, 40)
+      const rows = (Array.isArray(tb.rows) ? tb.rows : []).slice(0, 15).map((r) => strs(r, head.length || 5, 300))
+      if (head.length && rows.length) out.table = { head, rows }
+    }
+    return title && (out.text || out.items || out.table) ? [out] : []
+  })
+  if (!sections.length) return null
+  const sources = (Array.isArray(o.sources) ? o.sources : []).slice(0, 10).flatMap((s) => {
+    const x = (s || {}) as Record<string, unknown>
+    const url = str(x.url, 400)
+    return /^https?:\/\//.test(url) ? [{ title: str(x.title, 100) || url, url }] : []
+  })
+  return { summary: str(o.summary, 400), sections, sources, basis: str(o.basis, 40) }
 }

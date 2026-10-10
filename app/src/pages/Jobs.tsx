@@ -71,7 +71,7 @@ export function Jobs({ mode = 'search' }: { mode?: 'search' | 'saved' }) {
     addProject(p)
     updateJob(job.id, { status: 'started', projectId: p.id, deadline: p.deadline, ...(req.url ? { url: req.url } : {}) })
     if (job.company || req.url) {
-      reader.start(p.id, { prompt: req.prompt, kind: req.kind, mode: 'new', projectId: p.id, label: job.company })
+      reader.start(p.id, { prompt: req.prompt, kind: req.kind, mode: 'new', projectId: p.id, label: job.company, url: req.kind === 'link' ? req.url : undefined })
       toast('AI가 공고를 읽는 중이에요')
     }
     navigate(`/projects/${p.id}`)
@@ -249,11 +249,7 @@ function JobSearchForm({ onSearched }: { onSearched: () => void }) {
           <Sparkles size={16} /> AI로 찾기
         </button>
       </div>
-      {!search.running && (
-        <p className="muted small">
-          접수 중인 공고만 남겨요{lastFound > 0 && ` · 마지막 검색 ${fmtRelative(lastFound)}`}
-        </p>
-      )}
+      {!search.running && lastFound > 0 && <p className="muted small">마지막 검색 {fmtRelative(lastFound)}</p>}
       {!search.running && search.lastAdded !== null && (
         <p className="import-ok">
           확인된 공고 {search.lastAdded}개를 새로 더했어요
@@ -383,24 +379,25 @@ function JobCard({
           </button>
         )}
         {job.url && (
-          <a className="btn small" href={job.url} target="_blank" rel="noreferrer">
-            <ExternalLink size={14} /> 공고 열기
+          <a className="icon-btn" href={job.url} target="_blank" rel="noreferrer" title="공고 열기" aria-label="공고 열기">
+            <ExternalLink size={16} />
           </a>
         )}
         {job.status !== 'hidden' && (
           <button
             type="button"
-            className={'btn small ' + (job.saved ? 'save-on' : 'ghost')}
+            className={'icon-btn' + (job.saved ? ' save-on' : '')}
             aria-pressed={job.saved}
             title={job.saved ? '저장 풀기' : '저장'}
+            aria-label={job.saved ? '저장 풀기' : '저장'}
             onClick={onToggleSave}
           >
-            <Bookmark size={14} fill={job.saved ? 'currentColor' : 'none'} /> {job.saved ? '저장됨' : '저장'}
+            <Bookmark size={16} fill={job.saved ? 'currentColor' : 'none'} />
           </button>
         )}
         {job.status === 'new' && (
-          <button type="button" className="btn ghost small" onClick={() => onStatus('hidden')}>
-            <EyeOff size={14} /> 숨기기
+          <button type="button" className="icon-btn" onClick={() => onStatus('hidden')} title="숨기기" aria-label="숨기기">
+            <EyeOff size={16} />
           </button>
         )}
         {job.status === 'hidden' && (

@@ -1,8 +1,9 @@
-// Essay 백엔드: 의견 받기 · 익명 사용 통계 · 오류 보고 · 회사별 자소서 문항 모음, 개발자용 관리 주소.
+// Essay 백엔드: 의견 받기 · 익명 사용 통계 · 오류 보고 · 회사별 자소서 문항 모음 · 공고 모음과 분석(postings.ts), 개발자용 관리 주소.
 // 결제 확인 · 이용권(라이선스 키)은 billing.ts (포트원)
 import { admin, isAdmin } from './admin'
 import { adminBilling, billing, reconcile } from './billing'
 import { postFeedback } from './feedback'
+import { adminPostings, getInsights, lookupPosting, postPosting } from './postings'
 import { getQuestions, postQuestions } from './questions'
 import { postErrors, postStats } from './telemetry'
 import { CORS, fail, hashFor, ipOf, json, overLimit, type Env } from './util'
@@ -29,6 +30,10 @@ export default {
         if (method === 'POST') return await postQuestions(req, env)
       }
 
+      if (path === '/v1/postings/lookup' && method === 'GET') return await lookupPosting(url, env)
+      if (path === '/v1/postings' && method === 'POST') return await postPosting(req, env)
+      if (path === '/v1/insights' && method === 'GET') return await getInsights(url, env)
+
       const b = await billing(path, req, env)
       if (b) return b
 
@@ -38,7 +43,7 @@ export default {
           if (await overLimit(env, await hashFor(env, 'admin-fail', ipOf(req)), 10, 30)) return fail(429, '잠시 뒤에 다시 시도해 주세요')
           return fail(401, '관리 열쇠가 필요해요')
         }
-        return (await adminBilling(path, req, url, env)) ?? (await admin(path, req, url, env))
+        return (await adminBilling(path, req, url, env)) ?? (await adminPostings(path, req, url, env)) ?? (await admin(path, req, url, env))
       }
       return fail(404, '없는 주소')
     } catch (e) {

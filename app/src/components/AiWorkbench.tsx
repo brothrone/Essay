@@ -56,7 +56,6 @@ export function AiWorkbench({
           <span className="ai-tool-icon">{helperBusy && helperBusy !== 'draft' ? <LoaderCircle size={20} className="spin" /> : <Sparkles size={20} />}</span>
           <span className="ai-tool-text">
             <strong>AI 도우미</strong>
-            <span>피드백 · 글자수 · 면접</span>
           </span>
         </button>
         <button type="button" className={'ai-tool' + (mode === 'chat' ? ' on' : '')} aria-expanded={mode === 'chat'} onClick={openChat}>

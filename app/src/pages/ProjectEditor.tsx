@@ -5,13 +5,18 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronUp,
+  ChartNoAxesColumn,
+  ClipboardList,
   Copy,
   Download,
   ExternalLink,
+  Files,
   History,
   Lightbulb,
   LoaderCircle,
   PanelRight,
+  PanelRightClose,
+  PanelRightOpen,
   Pencil,
   Plus,
   Search,
@@ -22,6 +27,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { AiWorkbench, type AiMode } from '../components/AiWorkbench'
 import { CHAT_ASK_EVENT } from '../components/ChatPanel'
+import { InsightPanel } from '../components/InsightPanel'
 import { QuestionImportDialog } from '../components/QuestionImportDialog'
 import { toast } from '../toast'
 import { PostingCheck } from '../components/PostingCheck'
@@ -36,13 +42,14 @@ import { newQuestion, useStore } from '../store'
 import type { CountMode, Experience, Project, Question } from '../types'
 import { copyText, countChars, fmtDateTime, fmtPeriod, includesText, PLACEHOLDER_SOURCE, similarity } from '../utils'
 
-type Panel = 'exp' | 'answers' | 'info'
+type Panel = 'exp' | 'answers' | 'info' | 'insight'
 
 // 오른쪽은 참고 자료만. AI 도구는 가운데 문항 바로 아래 (AiWorkbench)
-const PANELS: { key: Panel; label: string }[] = [
-  { key: 'exp', label: '경험' },
-  { key: 'answers', label: '다른 답변' },
-  { key: 'info', label: '공고 정보' },
+const PANELS: { key: Panel; label: string; title: string; icon: typeof Lightbulb }[] = [
+  { key: 'exp', label: '경험', title: '이 문항에 쓸 경험', icon: Lightbulb },
+  { key: 'answers', label: '답변', title: '다른 자소서의 답변', icon: Files },
+  { key: 'info', label: '공고', title: '공고 정보', icon: ClipboardList },
+  { key: 'insight', label: '분석', title: '직무 · 기업 · 문항 분석', icon: ChartNoAxesColumn },
 ]
 
 export function ProjectEditor() {
@@ -52,6 +59,22 @@ export function ProjectEditor() {
   const [params, setParams] = useSearchParams()
   const [panel, setPanel] = useState<Panel>('exp')
   const [panelOpen, setPanelOpen] = useState(false)
+  // 넓은 화면에서 오른쪽 참고 패널을 접어 답안 칸을 넓게 쓴다 (기억해 둠)
+  const [panelFolded, setPanelFolded] = useState(() => {
+    try {
+      return localStorage.getItem('essay/panel-folded') === '1'
+    } catch {
+      return false
+    }
+  })
+  const foldPanel = (v: boolean) => {
+    setPanelFolded(v)
+    try {
+      localStorage.setItem('essay/panel-folded', v ? '1' : '0')
+    } catch {
+      /* 무시 */
+    }
+  }
   const [importOpen, setImportOpen] = useState(false)
   // 문항 아래 AI 카드에서 펼친 도구 (다른 문항으로 옮겨도 그대로)
   const [aiMode, setAiMode] = useState<AiMode>(null)
@@ -179,6 +202,11 @@ export function ProjectEditor() {
           <button type="button" className="btn ghost panel-toggle" onClick={() => setPanelOpen(true)}>
             <PanelRight size={16} /> 참고
           </button>
+          {panelFolded && (
+            <button type="button" className="icon-btn panel-unfold" onClick={() => foldPanel(false)} title="참고 패널 펼치기" aria-label="참고 패널 펼치기">
+              <PanelRightOpen size={18} />
+            </button>
+          )}
           <button
             type="button"
             className="btn ghost"
@@ -200,7 +228,7 @@ export function ProjectEditor() {
         }}
       />
 
-      <div className="editor-body">
+      <div className={'editor-body' + (panelFolded ? ' panel-folded' : '')}>
         <aside className="q-list">
           <div className="q-list-head">
             문항 <span>{doneCount}/{questions.length} 완료</span>
@@ -286,10 +314,14 @@ export function ProjectEditor() {
                 aria-selected={panel === p.key}
                 className={panel === p.key ? 'on' : ''}
                 onClick={() => setPanel(p.key)}
+                title={p.title}
               >
-                {p.label}
+                <p.icon size={15} /> {p.label}
               </button>
             ))}
+            <button type="button" className="icon-btn panel-fold" onClick={() => foldPanel(true)} title="패널 접기 (답안 칸 넓게)" aria-label="패널 접기">
+              <PanelRightClose size={17} />
+            </button>
             <button type="button" className="icon-btn panel-close" onClick={() => setPanelOpen(false)} aria-label="패널 닫기">
               <X size={18} />
             </button>
@@ -298,6 +330,9 @@ export function ProjectEditor() {
           <div className="panel-body">
             <div hidden={panel !== 'info'}>
               <InfoPanel project={project} onPatch={patch} />
+            </div>
+            <div hidden={panel !== 'insight'}>
+              <InsightPanel project={project} onPatch={patch} />
             </div>
             {active ? (
               <>
@@ -309,7 +344,7 @@ export function ProjectEditor() {
                 </div>
               </>
             ) : (
-              panel !== 'info' && <p className="muted small">문항을 먼저 추가해 주세요</p>
+              panel !== 'info' && panel !== 'insight' && <p className="muted small">문항을 먼저 추가해 주세요</p>
             )}
           </div>
         </aside>
@@ -348,7 +383,6 @@ function HistoryModal({
         </>
       }
     >
-      <p className="muted small">최근 30개까지 자동 저장돼요</p>
       {items.length ? (
         <ul className="history-list">
           {items.map((h) => (

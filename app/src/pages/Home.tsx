@@ -1,4 +1,4 @@
-import { AlertTriangle, ArrowRight, ArrowUp, CalendarClock, FileUp, Radar, Sparkles } from 'lucide-react'
+import { AlertTriangle, ArrowRight, ArrowUp, CalendarClock, FileUp, Link2, Radar, Sparkles } from 'lucide-react'
 import { useMemo, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { HomeAi } from '../components/AiSetup'
@@ -84,15 +84,15 @@ export function Home() {
           </button>
         </form>
         <div className="hero-actions">
-          <button type="button" className="chip-btn" onClick={openNew}>
-            공고 링크 · 마감일과 함께 시작하기
+          <button type="button" className="chip-btn" onClick={openNew} title="공고 링크 · 마감일과 함께 시작하기">
+            <Link2 size={14} /> 공고 링크로 시작
           </button>
           <button type="button" className="chip-btn accent-chip" onClick={openImportDialog} title="경험 · 스펙 자동 채우기">
-            <FileUp size={14} /> 예전 자소서로 한 번에 채우기
+            <FileUp size={14} /> 예전 자소서 불러오기
           </button>
           {isEmptyData(data) && (
             <Link to="/data" className="chip-btn">
-              <Sparkles size={14} /> 예시 데이터로 둘러보기
+              <Sparkles size={14} /> 예시로 둘러보기
             </Link>
           )}
         </div>
@@ -214,7 +214,6 @@ export function Home() {
             </ul>
           ) : (
             <div className="mini-jobs-empty">
-              <p className="muted small">내 스펙에 맞는 공고를 찾아 줘요</p>
               <Link to="/jobs" className="btn small">
                 <Sparkles size={14} /> 맞춤 공고 찾기
               </Link>
@@ -229,8 +228,7 @@ export function Home() {
               경험 관리 <ArrowRight size={14} />
             </Link>
           </header>
-          <p className="muted small">회색은 경험이 없는 역량이에요</p>
-          <div className="tag-cloud">
+          <div className="tag-cloud" title="회색은 경험이 없는 역량이에요">
             {COMPETENCY_TAGS.map((t) => {
               const n = tagCounts.get(t) ?? 0
               return (

@@ -102,6 +102,17 @@ export interface Project {
   createdAt: number
   updatedAt: number
   openedAt: number
+  /** 분석 탭: 내 AI 로 만든 직무 · 기업 · 문항 분석 (서버에 공개된 분석이 있으면 그걸 먼저 보여 준다) */
+  insights?: Partial<Record<InsightKind, SavedInsight>>
+}
+
+export type InsightKind = 'job' | 'company' | 'questions'
+export interface SavedInsight {
+  summary: string
+  sections: { title: string; text?: string; items?: string[]; table?: { head: string[]; rows: string[][] } }[]
+  sources: { title: string; url: string }[]
+  basis: string
+  at: number
 }
 
 /** 새 공고 · 숨김 · 자소서 시작. 저장 여부는 따로(saved) 둔다 → 저장해도 새 공고 목록에 남는다 */

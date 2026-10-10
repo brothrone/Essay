@@ -180,6 +180,77 @@ module.exports = function setupCommunity({ app, ipcMain, getConfig, isMac }) {
     return r.ok ? { ok: true, sets: Array.isArray(r.sets) ? r.sets : [] } : { ok: false, sets: [], error: r.error }
   }
 
+  // ---------- 공고 모음 · 분석 (server/src/postings.ts)
+  // 공고 주소를 정해진 방식으로 줄여 해시만 보낸다 — 서버가 모르는 공고는 어떤 공고를 보는지 알 수 없다. 서버 normalizePostingUrl 과 똑같이
+  function normalizePostingUrl(raw) {
+    let u
+    try {
+      u = new URL(String(raw || '').trim())
+    } catch {
+      return ''
+    }
+    if (!/^https?:$/.test(u.protocol)) return ''
+    const host = u.hostname.toLowerCase().replace(/^(www|m)\./, '')
+    const pick = (re) => re.exec(u.pathname)?.[1]
+    if (host.endsWith('saramin.co.kr')) {
+      const r = u.searchParams.get('rec_idx')
+      if (r && /^\d+$/.test(r)) return `saramin:${r}`
+    }
+    const site = [
+      ['jobkorea.co.kr', /GI_Read\/(\d+)/i, 'jobkorea'],
+      ['wanted.co.kr', /\/wd\/(\d+)/, 'wanted'],
+      ['catch.co.kr', /RecruitInfoDetails\/(\d+)/i, 'catch'],
+      ['jasoseol.com', /\/recruit\/(\d+)/, 'jasoseol'],
+    ].find(([h, re]) => host.endsWith(h) && pick(re))
+    if (site) return `${site[2]}:${pick(site[1])}`
+    const drop = /^(utm_|fbclid$|gclid$|ref$|referer$|src$|source$|from$)/i
+    const q = [...u.searchParams.entries()]
+      .filter(([k]) => !drop.test(k))
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([k, v]) => `${k}=${v}`)
+      .join('&')
+    return `${host}${u.pathname.replace(/\/+$/, '') || '/'}${q ? '?' + q : ''}`
+  }
+  const postingKey = (url) => {
+    const n = normalizePostingUrl(url)
+    return n ? crypto.createHash('sha256').update(`posting:${n}`).digest('hex') : ''
+  }
+  /** 이 공고를 다른 사용자 · 개발자가 이미 읽어 뒀는지 (동의 없이도: 해시만 보냄) */
+  async function lookupPosting(url) {
+    const k = postingKey(url)
+    if (!k) return { ok: true, posting: null }
+    const r = await call('GET', `/v1/postings/lookup?k=${k}`)
+    return r.ok ? { ok: true, posting: r.posting || null } : { ok: false, posting: null, error: r.error }
+  }
+  /** AI 로 읽은 공고(요약 · 문항)를 공고 모음에 보탠다 — '문항 모음' 동의한 사람만, 이름 · 연락처 같은 건 원래 없음 */
+  async function sharePosting(info) {
+    if (!state.consent?.questions || !info || typeof info !== 'object' || !postingKey(info.url)) return
+    const company = String(info.company || '').trim()
+    if (company.length < 2 || /\(예시\)/.test(company)) return
+    await call('POST', '/v1/postings', {
+      install: state.installId,
+      url: String(info.url).slice(0, 600),
+      info: {
+        company: company.slice(0, 60),
+        position: String(info.position || '').slice(0, 80),
+        deadline: info.deadline || '',
+        deadlineTime: info.deadlineTime || '',
+        notes: String(info.notes || '').slice(0, 4000),
+        questions: (Array.isArray(info.questions) ? info.questions : []).slice(0, 12),
+        questionsSource: String(info.questionsSource || '').slice(0, 80),
+      },
+    })
+  }
+  /** 공개된 기업 · 직무 · 문항 분석 */
+  async function insights({ company, position, postingId } = {}) {
+    const c = String(company || '').trim()
+    if (c.length < 2) return { ok: true, company: null, job: null, questions: null }
+    const q = new URLSearchParams({ company: c.slice(0, 60), position: String(position || '').trim().slice(0, 80) })
+    if (Number(postingId) > 0) q.set('posting', String(postingId))
+    const r = await call('GET', `/v1/insights?${q}`)
+    return r.ok ? { ok: true, company: r.company || null, job: r.job || null, questions: r.questions || null } : { ok: false, company: null, job: null, questions: null, error: r.error }
+  }
+
   // ---------- 화면과 주고받기
   ipcMain.handle('community:state', async () => ({ available: !!(await base()), consent: state.consent }))
   ipcMain.handle('community:set-consent', (_e, c) => {
@@ -208,6 +279,11 @@ module.exports = function setupCommunity({ app, ipcMain, getConfig, isMac }) {
     return r
   })
   ipcMain.handle('community:find-questions', (_e, q) => findQuestions(q))
+  ipcMain.handle('community:posting-lookup', (_e, url) => lookupPosting(url))
+  ipcMain.on('community:posting-share', (_e, info) => {
+    sharePosting(info)
+  })
+  ipcMain.handle('community:insights', (_e, q) => insights(q))
   ipcMain.on('community:share-questions', (_e, info) => {
     shareQuestions(info)
   })

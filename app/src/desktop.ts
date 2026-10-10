@@ -26,6 +26,12 @@ export interface DesktopBridge {
     sendFeedback: (f: { kind: 'bug' | 'idea' | 'etc'; message: string; contact?: string; withInfo: boolean }) => Promise<{ ok: boolean; error?: string }>
     findQuestions: (q: { company: string; position?: string }) => Promise<{ ok: boolean; sets: CommunityQuestionSet[]; error?: string }>
     shareQuestions: (info: { company: string; position: string; deadline: string; url: string; questions: { prompt: string; limit: number | null }[] }) => void
+    /** 공고 모음: 이 공고를 이미 읽어 둔 게 있는지 (주소 해시만 보냄) */
+    lookupPosting: (url: string) => Promise<{ ok: boolean; posting: ServerPosting | null; error?: string }>
+    /** AI 로 읽은 공고를 공고 모음에 보태기 ('문항 모음' 동의한 사람만) */
+    sharePosting: (info: { company: string; position: string; deadline: string; deadlineTime: string; notes: string; url: string; questions: { prompt: string; limit: number | null }[]; questionsSource: string }) => void
+    /** 공개된 기업 · 직무 · 문항 분석 */
+    insights: (q: { company: string; position?: string; postingId?: number }) => Promise<{ ok: boolean; company: Insight | null; job: Insight | null; questions: Insight | null; error?: string }>
   }
   /** 유료 판매: 이용권 확인 · 구매 (app-config 의 billing.enabled 가 true 일 때만 결제를 요구) */
   billing: {
@@ -124,6 +130,38 @@ export interface CommunityState {
   /** 아직 고르지 않았으면 null */
   consent: CommunityConsent | null
 }
+/** 서버 공고 모음의 공고 한 건 */
+export interface ServerPosting {
+  id: number
+  company: string
+  position: string
+  deadline: string
+  deadlineTime: string
+  notes: string
+  questions: { prompt: string; limit: number | null }[]
+  questionsSource: string
+  url: string
+  /** 개발자가 확인해 공개한 것 (아니면 여러 사용자가 똑같이 읽은 것) */
+  verified: boolean
+  contributors: number
+  updatedAt: string
+}
+export interface InsightSection {
+  title: string
+  text?: string
+  items?: string[]
+  table?: { head: string[]; rows: string[][] }
+}
+/** 기업 · 직무 · 문항 분석 (서버에서 받거나 내 AI 로 만든 것) */
+export interface Insight {
+  summary: string
+  sections: InsightSection[]
+  sources: { title: string; url: string }[]
+  /** 기준 (예: 2025 사업보고서 · 2026 하반기 공고) */
+  basis: string
+  updatedAt?: string
+}
+
 export interface CommunityQuestionSet {
   id: number
   company: string

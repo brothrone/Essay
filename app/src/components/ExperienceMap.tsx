@@ -216,7 +216,6 @@ export function ExperienceMap({
             유형별
           </button>
         </div>
-        <span className="muted small">휠로 확대 · 끌어서 이동</span>
         <div className="exp-map-zoom">
           <button type="button" className="icon-btn" onClick={() => zoom(1.2)} aria-label="확대">
             <Plus size={16} />

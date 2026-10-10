@@ -14,9 +14,9 @@ export function TitleBar() {
     <header className={'titlebar' + (IS_MAC ? ' mac' : '')}>
       <Logo size={20} />
       <span className="titlebar-name">{APP_NAME}</span>
-      <span className={`save-state ${saveState}`} title={`데이터는 ${DATA_FOLDER} 폴더에 바로 저장돼요`}>
+      <span className={`save-state ${saveState}`} title={`${SAVE_LABEL[saveState]} · 데이터는 ${DATA_FOLDER} 폴더에 바로 저장돼요`} aria-label={SAVE_LABEL[saveState]}>
         <i />
-        {SAVE_LABEL[saveState]}
+        {saveState === 'error' && SAVE_LABEL[saveState]}
       </span>
       <button type="button" className="icon-btn titlebar-info" onClick={openAboutDialog} title="Essay 정보" aria-label="Essay 정보">
         <Info size={15} />

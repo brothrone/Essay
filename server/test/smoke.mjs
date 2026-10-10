@@ -154,5 +154,55 @@ if (prep.ok && prep.paymentId.startsWith('mock-')) {
   check('관리: 매출 요약', sum.summary && sum.summary.cancelled >= 1 && sum.summary.failed >= 1)
 } else check('결제 준비(운영): 포트원 설정 전이면 준비 중', !prep.ok)
 
+// ---------- 공고 모음 · 분석
+{
+  const { createHash } = await import('node:crypto')
+  // 앱(community.cjs)과 같은 방식: 사람인 공고는 rec_idx 만 남겨 해시
+  const keyOf = (n) => createHash('sha256').update('posting:' + n).digest('hex')
+  const url1 = 'https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=list&rec_idx=52418306&utm_source=x'
+  const k1 = keyOf('saramin:52418306')
+  const info = { company: '(주)모먼트마켓', position: '그로스 마케팅 인턴', deadline: '2026-10-20', deadlineTime: '18:00', notes: '[주요 업무]\n- 첫 구매 전환 퍼널 분석\n[우대 사항]\n- GA4', questions: [{ prompt: '모먼트마켓에 지원한 이유를 작성해 주세요.', limit: 700 }], questionsSource: '공고 페이지' }
+  const pA = rnd(), pB = rnd(), pC = rnd()
+  check('공고 보태기', (await post('/v1/postings', { install: pA, url: url1, info })).status === 201)
+  check('주소 없으면 거절', (await post('/v1/postings', { install: pA, url: 'nope', info })).status === 400)
+  let look = await (await fetch(BASE + '/v1/postings/lookup?k=' + k1)).json()
+  check('한 기기만 읽은 공고는 아직 안 보임', look.ok && look.posting === null)
+  await post('/v1/postings', { install: pB, url: 'https://m.saramin.co.kr/job-search/view?rec_idx=52418306', info })
+  look = await (await fetch(BASE + '/v1/postings/lookup?k=' + k1)).json()
+  check('두 기기가 같은 문항을 읽으면 보임(주소 모양이 달라도 같은 공고)', look.posting?.questions?.[0]?.limit === 700 && look.posting.verified === false, JSON.stringify(look.posting?.company))
+  await post('/v1/postings', { install: pC, url: url1, info: { ...info, questions: [{ prompt: '엉뚱한 문항입니다 엉뚱', limit: 100 }] } })
+  look = await (await fetch(BASE + '/v1/postings/lookup?k=' + k1)).json()
+  check('다른 문항 한 건은 대표를 바꾸지 못함', look.posting?.questions?.[0]?.prompt.includes('모먼트마켓'))
+  check('해시 형식 아니면 거절', (await fetch(BASE + '/v1/postings/lookup?k=abc')).status === 400)
+  check('관리: 열쇠 없으면 막음', (await post('/v1/admin/postings/import', { items: [] })).status === 401)
+  const url2 = 'https://careers.example.com/jobs/1234?ref=abc'
+  const imp = await (await post('/v1/admin/postings/import', { items: [{ url: url2, info: { ...info, company: '한빛전자', position: '브랜드 마케팅' } }] }, auth)).json()
+  check('관리: 공식 공고 올리기(확인 대기)', imp.ok && imp.items[0].id > 0)
+  const k2 = keyOf('careers.example.com/jobs/1234')
+  check('확인 전엔 안 보임', (await (await fetch(BASE + '/v1/postings/lookup?k=' + k2)).json()).posting === null)
+  check('관리: 공개', (await post(`/v1/admin/postings/${imp.items[0].id}`, { status: 'published' }, auth)).status === 200)
+  look = await (await fetch(BASE + '/v1/postings/lookup?k=' + k2)).json()
+  check('공개하면 확인됨으로 보임', look.posting?.verified === true && look.posting.company === '한빛전자')
+  const pend = await (await fetch(BASE + '/v1/admin/postings?status=pending', { headers: auth })).json()
+  check('관리: 확인 대기 목록', pend.ok && pend.items.some((i) => i.url === url1))
+  const content = { summary: '전력기기 1위', sections: [{ title: '사업', items: ['전력 · 자동화'] }, { title: '비중', table: { head: ['부문', '비중'], rows: [['전력', '60%']] } }], sources: [{ title: 'DART', url: 'https://dart.fss.or.kr' }], basis: '2025 사업보고서' }
+  const ins = await (await post('/v1/admin/insights/import', { items: [
+    { kind: 'company', company: '한빛전자', content, status: 'published' },
+    { kind: 'job', company: '한빛전자', position: '브랜드 마케팅', content },
+    { kind: 'questions', company: '한빛전자', position: '브랜드 마케팅', postingUrl: url2, content, status: 'published' },
+    { kind: 'questions', company: '한빛전자', postingUrl: 'https://nowhere.example/x', content },
+    { kind: 'company', company: '한빛전자', content: { sections: [] } },
+  ] }, auth)).json()
+  check('관리: 분석 올리기', ins.items[0].id > 0 && ins.items[1].id > 0 && ins.items[2].id > 0)
+  check('없는 공고 문항 분석 · 빈 내용은 거절', !!ins.items[3].error && !!ins.items[4].error)
+  let got = await (await fetch(BASE + '/v1/insights?company=' + encodeURIComponent('(주)한빛전자') + '&position=' + encodeURIComponent('브랜드마케팅') + '&posting=' + imp.items[0].id)).json()
+  check('공개한 분석만 받음(직무 분석은 확인 대기)', got.company?.sections?.length === 2 && got.job === null && got.questions?.summary === '전력기기 1위')
+  await post(`/v1/admin/insights/${ins.items[1].id}`, { status: 'published' }, auth)
+  got = await (await fetch(BASE + '/v1/insights?company=' + encodeURIComponent('한빛전자') + '&position=' + encodeURIComponent('브랜드 마케팅 신입'))).json()
+  check('직무 이름이 조금 달라도 찾음', got.job?.position === '브랜드 마케팅')
+  const sm = await (await fetch(BASE + '/v1/admin/summary', { headers: auth })).json()
+  check('관리 요약에 공고 수', sm.counts.postings_pending >= 1 && sm.counts.postings_published >= 1)
+}
+
 console.log(failed ? `\n${failed}개 실패` : '\n모두 통과')
 process.exit(failed ? 1 : 0)

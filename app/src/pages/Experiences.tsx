@@ -102,12 +102,12 @@ export function Experiences() {
             <Search size={16} />
             <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="경험 내용 검색" />
           </label>
-          <div className="segmented">
-            <button type="button" className={view === 'cards' ? 'on' : ''} onClick={() => setParam('view', null)}>
-              <LayoutGrid size={14} /> 카드
+          <div className="segmented icons" role="tablist" aria-label="보기 방식">
+            <button type="button" role="tab" aria-selected={view === 'cards'} aria-label="카드" title="카드" className={view === 'cards' ? 'on' : ''} onClick={() => setParam('view', null)}>
+              <LayoutGrid size={17} />
             </button>
-            <button type="button" className={view === 'map' ? 'on' : ''} onClick={() => setParam('view', 'map')}>
-              <Network size={14} /> 마인드맵
+            <button type="button" role="tab" aria-selected={view === 'map'} aria-label="마인드맵" title="마인드맵" className={view === 'map' ? 'on' : ''} onClick={() => setParam('view', 'map')}>
+              <Network size={17} />
             </button>
           </div>
           <select value={type} onChange={(e) => setType(e.target.value)} aria-label="경험 유형">

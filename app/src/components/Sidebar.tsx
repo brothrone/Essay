@@ -12,7 +12,7 @@ export function Sidebar({ onNew }: { onNew: () => void }) {
   const recent = data.projects
     .filter((p) => p.openedAt)
     .sort((a, b) => b.openedAt - a.openedAt)
-    .slice(0, 6)
+    .slice(0, 3)
 
   return (
     <aside className="sidebar">
@@ -21,7 +21,6 @@ export function Sidebar({ onNew }: { onNew: () => void }) {
           <Plus size={16} />
         </span>
         새로 시작하기
-        <kbd>{kbd('N')}</kbd>
       </button>
 
       <nav className="nav">

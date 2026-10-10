@@ -66,20 +66,28 @@ export function Projects() {
       </header>
 
       <div className='toolbar'>
-        <div className='segmented'>
+        <div className='segmented icons' role='tablist' aria-label='보기 방식'>
           <button
             type='button'
+            role='tab'
+            aria-selected={view === 'list'}
+            aria-label='목록'
+            title='목록'
             className={view === 'list' ? 'on' : ''}
             onClick={() => setView('list')}
           >
-            <List size={14} /> 목록
+            <List size={17} />
           </button>
           <button
             type='button'
+            role='tab'
+            aria-selected={view === 'board'}
+            aria-label='보드'
+            title='보드'
             className={view === 'board' ? 'on' : ''}
             onClick={() => setView('board')}
           >
-            <KanbanSquare size={14} /> 보드
+            <KanbanSquare size={17} />
           </button>
         </div>
         <div className='toolbar-right'>

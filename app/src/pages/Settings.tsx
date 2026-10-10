@@ -165,8 +165,10 @@ function PlanNotes() {
   if (!config) return null
   const rows = [config.plans.agy, config.plans.claude, ...(HAS_GPT && config.plans.gpt ? [config.plans.gpt] : []), config.plans['gemini-free']]
   return (
-    <div className="plan-notes">
-      <strong>필요한 계정 · {config.checkedAt.replaceAll('-', '.')} 기준</strong>
+    <details className="plan-notes">
+      <summary>
+        <strong>필요한 계정</strong> <span className="muted small">{config.checkedAt.replaceAll('-', '.')} 기준</span>
+      </summary>
       {config.notice && <p className="ai-hint">{config.notice}</p>}
       <ul>
         {rows.map((r) => (
@@ -176,6 +178,6 @@ function PlanNotes() {
           </li>
         ))}
       </ul>
-    </div>
+    </details>
   )
 }
