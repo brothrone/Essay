@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { APP_NAME, AUTHOR } from '../constants'
 import { desktop } from '../desktop'
-import { DATA_FOLDER, HAS_GPT, OS_NAME } from '../platform'
+import { DATA_FOLDER, OS_NAME } from '../platform'
 import { Logo } from './Logo'
 import { Modal } from './ui'
 
@@ -51,14 +51,11 @@ export function AboutContent() {
           <strong>{AUTHOR}</strong>
         </dd>
         <dt>무엇을 하나요</dt>
-        <dd>지원할 공고별로 자소서 문항과 답변을 쓰고, 내 경험을 STAR로 정리해 꺼내 쓰고, 스펙을 한곳에 모아 두는 개인용 도구예요.</dd>
+        <dd>자소서 · 경험 · 스펙을 한곳에서 관리해요.</dd>
         <dt>데이터</dt>
-        <dd>자소서 · 경험 · 스펙은 모두 이 컴퓨터의 {DATA_FOLDER} 폴더에만 저장되고 인터넷 서버로 보내지 않아요. 설정의 [개선 돕기]에서 고른 경우에만 익명 사용 통계 · 오류 메시지 · 공고 문항을 보내요.</dd>
+        <dd>이 컴퓨터의 {DATA_FOLDER} 폴더에만 저장돼요. [개선 돕기]에서 고른 것만 익명으로 보내요.</dd>
         <dt>AI</dt>
-        <dd>
-          API 키 없이 이 컴퓨터에 로그인된 Claude Code{HAS_GPT ? ', Gemini(Antigravity CLI), GPT(Codex CLI) 중 하나를' : ' 또는 Gemini(Antigravity CLI)를'} 실행해요.
-          요청문에는 이름·연락처를 넣지 않아요.
-        </dd>
+        <dd>로그인된 구독 AI를 API 키 없이 실행해요. 이름 · 연락처는 넣지 않아요.</dd>
         <dt>만든 재료</dt>
         <dd>
           Electron {info.electron} · Chromium {info.chrome} · React · Vite · Pretendard 글꼴 · Lucide 아이콘.

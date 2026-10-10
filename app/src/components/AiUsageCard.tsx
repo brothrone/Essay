@@ -23,7 +23,7 @@ export function AiUsageCard() {
     load()
   }, [])
   const reset = async () => {
-    if (!(await desktop.confirm('AI 사용량 기록을 지울까요?', { detail: '앱에 쌓인 합계만 지워져요. 구독 사용량에는 영향이 없어요.', ok: '지우기' }))) return
+    if (!(await desktop.confirm('AI 사용량 기록을 지울까요?', { detail: '앱 기록만 지워져요. 구독엔 영향 없어요.', ok: '지우기' }))) return
     await desktop.ai.usageReset()
     await load()
     toast('사용량 기록을 지웠어요')
@@ -38,7 +38,7 @@ export function AiUsageCard() {
         <h3>
           <BarChart3 size={18} /> AI 사용량
         </h3>
-        <span className="muted small">이 컴퓨터에서 Essay가 쓴 것만 · 토큰</span>
+        <span className="muted small">토큰</span>
       </header>
       {!u ? (
         <p className="muted small">불러오는 중…</p>
@@ -84,7 +84,7 @@ export function AiUsageCard() {
             })}
           </div>
           <p className="muted small usage-legend">
-            <i className="c" /> Claude <i className="g" /> Gemini {providers.includes('gpt') && <><i className="o" /> GPT </>}· 입력(요청문 · 검색한 페이지)과 출력(생성한 글)을 합친 토큰이에요. 구독에서 남은 한도는 각 서비스가 정하고 Essay는 알 수 없어요:{' '}
+            <i className="c" /> Claude <i className="g" /> Gemini {providers.includes('gpt') && <><i className="o" /> GPT </>}· 남은 한도:{' '}
             {providers.map((p) => (
               <a key={p} href={LIMIT_LINKS[p].url} target="_blank" rel="noreferrer" className="link-btn">
                 {LIMIT_LINKS[p].label}

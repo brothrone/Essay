@@ -90,7 +90,7 @@ export function AiSetup({
   const open = async (action: TerminalAction) => {
     setBusy(action)
     await desktop.ai.openTerminal(action)
-    toast(`${TERMINAL} 창이 열렸어요. 끝나면 Essay로 돌아오세요`)
+    toast(`${TERMINAL} 창이 열렸어요`)
     setTimeout(() => setBusy(null), 1500)
   }
   const allowWeb = async () => {
@@ -123,7 +123,7 @@ export function AiSetup({
       className="btn small"
       onClick={() => {
         setLoginConfirmed(p, true)
-        toast('로그인한 것으로 표시했어요. 실제로 안 돼 있으면 첫 AI 실행 때 로그인 오류가 나요')
+        toast('로그인한 것으로 표시했어요')
         refresh()
       }}
     >
@@ -145,13 +145,9 @@ export function AiSetup({
     steps.push({
       title: g?.available ? `설치됨 · ${g.cli === 'agy' ? 'Antigravity CLI(agy)' : 'Gemini CLI(gemini)'}` : 'Antigravity CLI 설치',
       done: !!g?.available,
-      body: g?.available ? (
-        <span className="muted small">{g.path}</span>
-      ) : (
+      body: g?.available ? null : (
         <>
-          <p className="muted small">
-            Antigravity CLI 하나면 돼요. Google AI Pro · Ultra 구독은 물론 무료 Google 계정으로도 로그인돼요(무료는 한도가 작아요).
-          </p>
+          <p className="muted small">무료 Google 계정도 돼요 (한도 작음)</p>
           <div className="btn-row">{btn('install-agy', 'Antigravity CLI 설치', true)}</div>
         </>
       ),
@@ -164,17 +160,17 @@ export function AiSetup({
       body: gLogged ? null : (
         <>
           {!g?.available ? (
-            <p className="muted small">설치가 끝나면 로그인할 수 있어요.</p>
+            <p className="muted small">설치 먼저 해요</p>
           ) : g.cli === 'gemini' ? (
             loginGuide([
-              '열리는 창에서 "Login with Google"을 고르고 브라우저에서 로그인.',
-              '창에 /quit 를 입력해 끝낸 뒤 [로그인 마쳤어요].',
+              '창에서 "Login with Google" → 브라우저에서 로그인',
+              '/quit 입력 후 [로그인 마쳤어요]',
             ])
           ) : (
             loginGuide([
-              '브라우저가 열리면 Google 계정으로 로그인.',
-              '화면에 뜨는 인증 코드를 [Copy to Clipboard]로 복사.',
-              IS_MAC ? 'Essay 창에 ⌘V 로 붙여넣고 [코드 보내기].' : 'Essay 창에 붙여넣고 [코드 보내기].',
+              '브라우저에서 Google 계정으로 로그인',
+              '인증 코드를 [Copy to Clipboard]로 복사',
+              IS_MAC ? 'Essay 창에 ⌘V로 붙여넣고 [코드 보내기]' : 'Essay 창에 붙여넣고 [코드 보내기]',
             ])
           )}
           {g?.available && (
@@ -195,11 +191,11 @@ export function AiSetup({
     })
     if (g?.available && g.cli === 'agy')
       steps.push({
-        title: g.webAllowed ? '웹 읽기 권한 허용됨' : '웹 읽기 권한 (맞춤 공고 · 공고 링크용)',
+        title: g.webAllowed ? '웹 읽기 권한 허용됨' : '웹 읽기 권한',
         done: g.webAllowed,
         body: g.webAllowed ? null : (
           <>
-            <p className="muted small">맞춤 공고와 공고 링크 불러오기에 필요해요. 글쓰기만 쓰면 건너뛰어도 돼요.</p>
+            <p className="muted small">맞춤 공고 · 공고 링크에 필요해요</p>
             <button type="button" className="btn small" disabled={busy !== null} onClick={allowWeb}>
               웹 읽기 권한 허용
             </button>
@@ -212,11 +208,9 @@ export function AiSetup({
     steps.push({
       title: o?.available ? '설치됨 · Codex CLI' : 'Codex CLI 설치',
       done: !!o?.available,
-      body: o?.available ? (
-        <span className="muted small">{o.path}</span>
-      ) : (
+      body: o?.available ? null : (
         <>
-          <p className="muted small">OpenAI가 만든 프로그램이에요. 1~2분 걸려요.</p>
+          <p className="muted small">1~2분 걸려요</p>
           <div className="btn-row">{btn('install-codex', 'Codex CLI 설치', true)}</div>
         </>
       ),
@@ -227,13 +221,13 @@ export function AiSetup({
       unknown: !!o?.available && o.loggedIn === null,
       body: oLogged ? null : (
         <>
-          {o?.apiKey && <p className="ai-error">지금은 API 키로 로그인돼 있어서 쓰면 OpenAI API 요금이 나가요. ChatGPT 계정으로 다시 로그인해 주세요.</p>}
+          {o?.apiKey && <p className="ai-error">API 키로 로그인돼 있어서 요금이 나가요. ChatGPT 계정으로 다시 로그인해 주세요.</p>}
           {!o?.available ? (
-            <p className="muted small">설치가 끝나면 로그인할 수 있어요.</p>
+            <p className="muted small">설치 먼저 해요</p>
           ) : gptWait ? (
             <>
               <p className="login-wait">
-                <LoaderCircle size={14} className="spin" /> 브라우저에서 ChatGPT 로그인을 마치면 여기서 저절로 연결돼요.
+                <LoaderCircle size={14} className="spin" /> 브라우저에서 로그인하면 저절로 연결돼요
               </p>
               <div className="btn-row">
                 {gptWait.url && (
@@ -249,8 +243,8 @@ export function AiSetup({
           ) : (
             <>
               {loginGuide([
-                '[로그인]을 누르면 브라우저가 열려요. ChatGPT 계정으로 로그인하세요. (무료 · Go 요금제도 되지만 한도가 작아요.)',
-                '브라우저에 로그인 완료가 뜨면 Essay로 돌아오세요. 저절로 연결돼요.',
+                '[로그인] → 브라우저에서 ChatGPT 계정으로 로그인 (무료 · Go는 한도 작음)',
+                '완료되면 Essay로 돌아오세요',
               ])}
               <div className="btn-row">
                 <button type="button" className="btn small primary" disabled={busy !== null} onClick={startGptLogin}>
@@ -275,11 +269,9 @@ export function AiSetup({
     steps.push({
       title: c?.available ? '설치됨 · Claude Code' : 'Claude Code 설치',
       done: !!c?.available,
-      body: c?.available ? (
-        <span className="muted small">{c.path}</span>
-      ) : (
+      body: c?.available ? null : (
         <>
-          <p className="muted small">1~2분 걸려요.</p>
+          <p className="muted small">1~2분 걸려요</p>
           <div className="btn-row">{btn('install-claude', 'Claude Code 설치', true)}</div>
         </>
       ),
@@ -292,12 +284,12 @@ export function AiSetup({
         <>
           {c?.available ? (
             loginGuide([
-              '브라우저가 열리면 Claude 구독 계정으로 로그인. (Anthropic Console 계정은 API 요금이 나가요.)',
-              `인증 코드를 복사해 열린 창에 붙여넣고(${PASTE_HINT}) Enter.`,
-              '완료 메시지가 뜨면 창을 닫으세요.',
+              '브라우저에서 Claude 구독 계정으로 로그인 (Anthropic Console 계정은 요금이 나가요)',
+              `인증 코드를 창에 붙여넣고(${PASTE_HINT}) Enter`,
+              '완료되면 창을 닫아요',
             ])
           ) : (
-            <p className="muted small">설치가 끝나면 로그인할 수 있어요.</p>
+            <p className="muted small">설치 먼저 해요</p>
           )}
           {c?.available && (
             <div className="btn-row">
@@ -357,7 +349,7 @@ export function AiSetup({
       </ol>
 
       <p className="muted small">
-        API 키 없이 로그인한 CLI만 실행해요. 요금이 따로 나가지 않아요.{' '}
+        요금이 따로 나가지 않아요.{' '}
         <button type="button" className="link-btn" onClick={() => openHelpDialog()}>
           도움말
         </button>{' '}
@@ -378,7 +370,7 @@ export function AiSetup({
       {onLater && !ready && (
         <div className="btn-row">
           <button type="button" className="btn small ghost" onClick={onLater}>
-            나중에 할게요 (AI 없이도 자소서 작성은 돼요)
+            나중에 할게요
           </button>
         </div>
       )}

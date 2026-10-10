@@ -61,8 +61,8 @@ export const QUESTION_PRESETS: { prompt: string; limit: number }[] = [
 ]
 
 export const STAR_FIELDS = [
-  { key: 'situation', short: 'S', label: '상황', hint: '언제, 어디서, 어떤 상황이었나요? 배경과 문제를 적어요.' },
-  { key: 'task', short: 'T', label: '과제', hint: '내가 맡은 역할과 해결해야 했던 목표는 무엇이었나요?' },
-  { key: 'action', short: 'A', label: '행동', hint: '구체적으로 어떤 행동을 했나요? 나만의 방법과 노력을 적어요.' },
-  { key: 'result', short: 'R', label: '결과', hint: '결과는 어땠나요? 가능하면 숫자로 (예: 참여율 30% 증가).' },
+  { key: 'situation', short: 'S', label: '상황', hint: '언제, 어디서, 어떤 상황이었나요?' },
+  { key: 'task', short: 'T', label: '과제', hint: '내 역할과 목표는?' },
+  { key: 'action', short: 'A', label: '행동', hint: '구체적으로 무엇을 했나요?' },
+  { key: 'result', short: 'R', label: '결과', hint: '결과는? 가능하면 숫자로' },
 ] as const

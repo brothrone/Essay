@@ -65,7 +65,6 @@ export function Experiences() {
       <header className="page-head">
         <div>
           <h1>경험 관리</h1>
-          <p className="muted">경험을 STAR로 한 번 정리해 두면 어떤 문항에도 꺼내 쓸 수 있어요</p>
         </div>
         <div className="btn-row">
           <button type="button" className="btn" onClick={openImportDialog} title="예전 자소서에서 경험을 자동으로 뽑아요">
@@ -150,7 +149,7 @@ export function Experiences() {
                     </span>
                   ))}
                 </div>
-                <span className="exp-card-foot">{used ? `자소서 문항 ${used}개에 사용` : '아직 사용 안 함'}</span>
+                <span className="exp-card-foot">{used ? `문항 ${used}개에 사용` : '사용 안 함'}</span>
               </button>
             )
           })}
@@ -162,7 +161,7 @@ export function Experiences() {
           desc={
             data.experiences.length
               ? '검색어나 필터를 바꿔 보세요'
-              : '프로젝트, 인턴, 동아리, 아르바이트처럼 작은 경험도 좋아요. 한 번 정리하면 계속 재활용할 수 있어요.'
+              : '동아리, 아르바이트 같은 작은 경험도 좋아요'
           }
           action={
             !data.experiences.length && (
@@ -229,7 +228,7 @@ function ExperienceModal({
   }
 
   const remove = async () => {
-    const detail = usage.length ? `이 경험은 자소서 문항 ${usage.length}개에 연결되어 있어요. 연결도 함께 해제돼요.` : undefined
+    const detail = usage.length ? `문항 ${usage.length}개에 연결돼 있어요. 연결도 함께 풀려요.` : undefined
     if (!(await desktop.confirm('이 경험을 삭제할까요?', { detail, ok: '삭제', danger: true }))) return
     deleteExperience(draft.id)
     onClose()
@@ -365,7 +364,7 @@ function ExperienceModal({
               id="ex-learned"
               minRows={2}
               value={draft.learned}
-              placeholder="이 경험으로 얻은 역량, 지원 직무와 어떻게 이어지는지 적어요."
+              placeholder="얻은 역량, 직무와의 연결"
               onChange={(e) => set('learned', e.target.value)}
             />
           </div>

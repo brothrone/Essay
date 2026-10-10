@@ -33,7 +33,7 @@ import { experienceToText, isHttpUrl, projectToText } from '../format'
 import { recordSnapshot } from '../history'
 import { newQuestion, useStore } from '../store'
 import type { CountMode, Experience, Project, Question } from '../types'
-import { copyText, countChars, fmtDateTime, fmtPeriod, fmtRelative, includesText, similarity } from '../utils'
+import { copyText, countChars, fmtDateTime, fmtPeriod, includesText, similarity } from '../utils'
 
 type Panel = 'exp' | 'answers' | 'info'
 
@@ -65,7 +65,7 @@ export function ProjectEditor() {
       <div className="page">
         <Empty
           title="자소서를 찾을 수 없어요"
-          desc="삭제되었거나 주소가 잘못됐어요"
+          desc="삭제됐거나 없는 자소서예요"
           action={
             <Link className="btn" to="/projects">
               목록으로
@@ -237,7 +237,7 @@ export function ProjectEditor() {
             <QuestionImportDialog project={project} onPatch={patch} onAdd={addQuestions} onClose={() => setImportOpen(false)} />
           )}
           <details className="preset-menu">
-            <summary>자주 나오는 문항으로 추가</summary>
+            <summary>자주 나오는 문항</summary>
             {QUESTION_PRESETS.map((p) => (
               <button type="button" key={p.prompt} onClick={() => addQ(p)}>
                 {p.prompt}
@@ -264,7 +264,7 @@ export function ProjectEditor() {
           ) : (
             <Empty
               title="문항이 없어요"
-              desc="왼쪽에서 문항을 추가해 주세요"
+              desc="왼쪽에서 추가해요"
               action={
                 <button type="button" className="btn primary" onClick={() => addQ()}>
                   <Plus size={16} /> 문항 추가
@@ -347,9 +347,7 @@ function HistoryModal({
         </>
       }
     >
-      <p className="muted small">
-        답변을 고칠 때마다 10분에 한 번, AI 적용·되돌리기 직전에는 항상 이전 상태를 남겨요 (최근 30개). 되돌리면 지금 답변도 기록에 남아요.
-      </p>
+      <p className="muted small">최근 30개까지 자동 저장돼요</p>
       {items.length ? (
         <ul className="history-list">
           {items.map((h) => (
@@ -359,7 +357,7 @@ function HistoryModal({
                 {h.label && <span className="badge tone-blue">{h.label}</span>}
                 <span className="muted small">{countChars(h.answer, 'with').toLocaleString()}자</span>
                 <button type="button" className="btn small" disabled={h.answer === q.answer} onClick={() => onRestore(h.answer)}>
-                  {h.answer === q.answer ? '지금 답변과 같음' : '이 버전으로 되돌리기'}
+                  {h.answer === q.answer ? '지금과 같음' : '되돌리기'}
                 </button>
               </div>
               <p className="history-preview">{h.answer}</p>
@@ -367,7 +365,7 @@ function HistoryModal({
           ))}
         </ul>
       ) : (
-        <Empty title="아직 기록이 없어요" desc="답변을 고치거나 AI 결과를 적용하면 이전 상태가 쌓여요" />
+        <Empty title="아직 기록이 없어요" />
       )}
     </Modal>
   )
@@ -458,7 +456,7 @@ function QuestionEditor({
         className="prompt-input"
         minRows={1}
         value={q.prompt}
-        placeholder="문항을 입력하세요 (예: 지원 동기와 입사 후 포부를 작성해 주세요)"
+        placeholder="문항을 입력하세요"
         onChange={(e) => onPatch({ prompt: e.target.value })}
       />
 
@@ -499,7 +497,7 @@ function QuestionEditor({
         minRows={16}
         value={q.answer}
         spellCheck={false}
-        placeholder={'여기에 답변을 작성하세요.\n\n위 [AI로 초안 쓰기]를 누르면 연결한 경험으로 초안을 써 주고, [AI와 대화하며 고치기]로 고칠 점을 말로 부탁할 수 있어요.'}
+        placeholder="여기에 답변을 작성하세요"
         onChange={(e) => onPatch({ answer: e.target.value })}
       />
 
@@ -514,11 +512,11 @@ function QuestionEditor({
       )}
 
       <details className="memo" open={!!q.memo}>
-        <summary>작성 메모 · 소재 아이디어</summary>
+        <summary>작성 메모</summary>
         <AutoTextarea
           minRows={3}
           value={q.memo}
-          placeholder="문항 의도, 넣고 싶은 키워드, 구성 아이디어 등을 적어 두세요"
+          placeholder="키워드, 구성 아이디어"
           onChange={(e) => onPatch({ memo: e.target.value })}
         />
       </details>
@@ -567,8 +565,8 @@ function PostingBanner({ projectId, onOpen }: { projectId: string; onOpen: () =>
       <LoaderCircle size={16} className="spin" />
       <span>
         {task!.status === 'waiting'
-          ? '다른 AI 작업이 끝나면 공고를 읽어 자소서 문항을 채워요'
-          : 'AI가 공고를 읽어 자소서 문항을 채우는 중이에요. 다른 화면으로 가도 계속돼요'}{' '}
+          ? '공고 읽기 대기 중'
+          : 'AI가 공고를 읽는 중'}{' '}
         · {elapsed}초{task!.status === 'running' && task!.steps.at(-1) && ` · ${task!.steps.at(-1)}`}
       </span>
       <button type="button" className="btn ghost small" onClick={onOpen}>
@@ -638,7 +636,7 @@ function InfoPanel({ project, onPatch }: { project: Project; onPatch: (p: Partia
           id="pi-notes"
           minRows={12}
           value={project.notes}
-          placeholder={'인재상, 자격요건, 우대사항, 기업 분석 내용을 붙여넣어 두세요.\n\n예)\n- 주요 업무: \n- 우대사항: \n- 최근 이슈: '}
+          placeholder="인재상, 자격요건, 우대사항 등"
           onChange={(e) => onPatch({ notes: e.target.value })}
         />
       </div>
@@ -651,13 +649,10 @@ function InfoPanel({ project, onPatch }: { project: Project; onPatch: (p: Partia
           minRows={4}
           maxLength={1500}
           value={project.personal}
-          placeholder={'AI가 초안 · 피드백을 쓸 때 참고해요. 예)\n- 전공을 바꾼 이유, 공백기 사정, 근무 지역 사정\n- 이 회사 · 제품과의 인연, 꼭 넣고 싶은 강점'}
+          placeholder="전공을 바꾼 이유, 회사와의 인연 등 (AI가 참고해요)"
           onChange={(e) => onPatch({ personal: e.target.value })}
         />
       </div>
-      <p className="muted small">
-        만든 날 {new Date(project.createdAt).toLocaleDateString('ko-KR')} · 마지막 수정 {fmtRelative(project.updatedAt)}
-      </p>
     </div>
   )
 }
@@ -705,7 +700,7 @@ function ExperiencePanel({
             />
           ))
         ) : (
-          <p className="muted small">아래에서 경험을 연결하면 STAR 내용을 보면서 쓸 수 있어요.</p>
+          <p className="muted small">아래에서 연결해요</p>
         )}
       </section>
 
@@ -713,7 +708,7 @@ function ExperiencePanel({
         <h4 className="panel-title">내 경험에서 찾기</h4>
         {data.experiences.length === 0 ? (
           <div className="panel-empty">
-            <p>아직 정리한 경험이 없어요.</p>
+            <p>아직 경험이 없어요</p>
             <Link className="btn small" to="/experiences?edit=new">
               <Plus size={14} /> 경험 추가하기
             </Link>
@@ -827,7 +822,7 @@ function LinkedExperience({ exp, onUnlink }: { exp: Experience; onUnlink: () => 
             </div>
           )}
           {!exp.summary && !STAR_FIELDS.some((f) => exp[f.key]) && !exp.learned && (
-            <p className="muted small">아직 STAR 내용이 비어 있어요. 연필 버튼으로 채워 보세요.</p>
+            <p className="muted small">STAR 내용이 비어 있어요</p>
           )}
         </div>
       )}
@@ -855,16 +850,14 @@ function AnswersPanel({ q }: { q: Question }) {
     <div className="panel-stack">
       <label className="search small">
         <Search size={14} />
-        <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="회사, 문항, 답변 내용 검색" />
+        <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="회사, 문항, 답변 검색" />
       </label>
-      <p className="muted small">
-        {query.trim() ? `검색 결과 ${results.length}개` : '지금 문항과 비슷한 순서로 보여줘요. 예전 답변을 재활용해 보세요.'}
-      </p>
+      {query.trim() && <p className="muted small">검색 결과 {results.length}개</p>}
       {results.length ? (
         results.map(({ p, o, score }) => <AnswerCard key={o.id} project={p} q={o} similar={score >= 0.2} />)
       ) : (
         <div className="panel-empty">
-          <p>{query.trim() ? '검색 결과가 없어요' : '다른 자소서에 작성한 답변이 아직 없어요'}</p>
+          <p>{query.trim() ? '검색 결과가 없어요' : '다른 답변이 아직 없어요'}</p>
         </div>
       )}
     </div>

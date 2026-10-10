@@ -41,7 +41,6 @@ export function Backup() {
       <header className="page-head">
         <div>
           <h1>백업</h1>
-          <p className="muted">전체 데이터를 파일 하나로 저장해 두면 다른 컴퓨터로 옮기거나 실수했을 때 되돌릴 수 있어요.</p>
         </div>
       </header>
 
@@ -49,9 +48,7 @@ export function Backup() {
         <div className="setting-row">
           <div>
             <strong>백업 파일 저장</strong>
-            <p className="muted small">
-              지금 데이터({summary})를 JSON 파일 하나로 저장해요. 제출 전이나 큰 정리를 하기 전에 한 번 저장해 두세요.
-            </p>
+            <p className="muted small">{summary}</p>
           </div>
           <button type="button" className="btn primary" onClick={exportBackup}>
             <Download size={16} /> 백업하기
@@ -60,7 +57,7 @@ export function Backup() {
         <div className="setting-row">
           <div>
             <strong>백업 불러오기</strong>
-            <p className="muted small">저장해 둔 백업 파일로 지금 데이터를 통째로 바꿔요. 바꾸기 전에 내용을 한 번 더 확인해요.</p>
+            <p className="muted small">지금 데이터를 통째로 바꿔요</p>
           </div>
           <button type="button" className="btn" onClick={importBackup}>
             <Upload size={16} /> 파일 선택
@@ -73,12 +70,8 @@ export function Backup() {
           <h3>
             <ShieldCheck size={18} /> 자동 백업
           </h3>
-          <span className="muted small">따로 켤 필요 없어요</span>
+          <span className="muted small">매일 자동 · 30일 보관</span>
         </header>
-        <p className="muted small">
-          매일 처음 저장하기 직전 상태를 데이터 폴더 안 '자동백업'에 30일치 보관하고, 예시 데이터 · 백업 불러오기 · 전체 삭제 · 복원 직전에도 따로
-          남겨요. 아래에서 고르면 바로 그 상태로 돌아가요.
-        </p>
         <div className="btn-row">
           <button type="button" className="btn small" onClick={() => desktop.openDataFolder()}>
             <FolderOpen size={14} /> 데이터 폴더 열기
@@ -139,7 +132,6 @@ function BackupList({ summary }: { summary: string }) {
         <h3>
           <History size={18} /> 자동백업에서 복원
         </h3>
-        <span className="muted small">최근 12개</span>
       </header>
       {!files ? (
         <p className="muted small">불러오는 중…</p>
@@ -153,13 +145,13 @@ function BackupList({ summary }: { summary: string }) {
                 <span className="muted small">{Math.max(1, Math.round(f.size / 1024))}KB</span>
               </div>
               <button type="button" className="btn small" disabled={!!busy} onClick={() => restore(f)}>
-                {busy === f.name ? '복원 중…' : '이 백업으로 복원'}
+                {busy === f.name ? '복원 중…' : '복원'}
               </button>
             </li>
           ))}
         </ul>
       ) : (
-        <p className="muted small">아직 백업이 없어요. 데이터를 저장하면 내일부터 일별 백업이 생겨요.</p>
+        <p className="muted small">아직 백업이 없어요</p>
       )}
     </section>
   )

@@ -44,9 +44,8 @@ const GROUPS: Group[] = [
             q: '"확인되지 않은 개발자" 또는 "손상되었기 때문에 열 수 없습니다" 라고 떠요',
             a: (
               <>
-                Essay가 아직 애플 서명을 받지 않아서 뜨는 안내예요. <b>시스템 설정 → 개인정보 보호 및 보안</b>으로 가서 아래쪽 Essay 항목의{' '}
-                <b>[그래도 열기]</b>를 누르세요. 한 번만 하면 돼요. 그래도 안 되면 터미널에서{' '}
-                <code>xattr -cr /Applications/Essay.app</code> 을 실행한 뒤 다시 여세요.
+                <b>시스템 설정 → 개인정보 보호 및 보안</b>에서 Essay의 <b>[그래도 열기]</b>를 누르세요. 안 되면 터미널에서{' '}
+                <code>xattr -cr /Applications/Essay.app</code> 실행 뒤 다시 여세요.
               </>
             ),
           }
@@ -63,7 +62,7 @@ const GROUPS: Group[] = [
         q: '설치 버튼을 눌렀는데 창이 바로 닫히거나 빨간 글씨가 떠요',
         a: (
           <>
-            인터넷 연결을 확인하고 다시 눌러 보세요. 회사 컴퓨터라면 보안 프로그램이나 프록시가 다운로드를 막을 수 있어요. 그땐 관리자에게{' '}
+            인터넷 연결을 확인하고 다시 눌러 보세요. 회사 컴퓨터라면 관리자에게{' '}
             <code>claude.ai</code> 와 <code>antigravity.google</code>
             {HAS_GPT && (
               <>
@@ -78,8 +77,7 @@ const GROUPS: Group[] = [
         q: '설치가 끝났는데 Essay에 계속 "설치 필요"라고 떠요',
         a: (
           <>
-            ① 카드의 <b>[연결 확인]</b>을 누르세요. ② 그래도 안 되면 Essay를 <b>완전히 종료</b>했다가 다시 켜세요. ③ 그래도 안 되면 아래 "직접 명령어로
-            하기"의 확인 명령으로 설치됐는지 보세요.
+            <b>[연결 확인]</b>을 누르고, 안 되면 Essay를 <b>완전히 종료</b>했다가 다시 켜세요.
           </>
         ),
       },
@@ -92,8 +90,7 @@ const GROUPS: Group[] = [
         q: '인증 코드를 넣었는데 "로그인이 끝나지 않았어요"가 떠요',
         a: (
           <>
-            코드 앞뒤가 잘렸거나 60초가 지난 경우예요. 카드의 <b>[로그인]</b>을 다시 누르고, 이번엔 브라우저의 <b>[Copy to Clipboard]</b> 버튼으로
-            복사하세요. 두 번째부터는 Google 로그인이 바로 넘어가요.
+            코드가 잘렸거나 60초가 지났어요. <b>[로그인]</b>을 다시 누르고 <b>[Copy to Clipboard]</b>로 복사하세요.
           </>
         ),
       },
@@ -101,8 +98,7 @@ const GROUPS: Group[] = [
         q: 'Claude 로그인했는데 요금이나 크레딧 얘기가 나와요',
         a: (
           <>
-            <b>Anthropic Console</b> 계정으로 로그인한 거예요. 그건 유료 API 계정이에요. <b>[로그인 창 열기]</b>를 다시 눌러 이번엔{' '}
-            <b>Claude 앱(Pro · Max 구독) 계정</b>을 고르세요.
+            <b>Anthropic Console</b>(유료 API) 계정이에요. <b>[로그인 창 열기]</b>를 다시 눌러 <b>Claude 구독 계정</b>을 고르세요.
           </>
         ),
       },
@@ -112,8 +108,7 @@ const GROUPS: Group[] = [
               q: 'GPT가 "API 키로 로그인돼 있어요"라고 해요',
               a: (
                 <>
-                  Codex CLI에 OpenAI API 키로 로그인한 상태예요. 그대로 쓰면 API 요금이 나가서 Essay가 막아 둬요. 연결 카드의 <b>[로그인]</b>을 누르면
-                  API 키 로그인을 지우고 ChatGPT 계정 로그인을 시작해요.
+                  API 키로 쓰면 요금이 나가서 막아 뒀어요. <b>[로그인]</b>을 누르면 ChatGPT 계정으로 다시 로그인해요.
                 </>
               ),
             },
@@ -121,8 +116,7 @@ const GROUPS: Group[] = [
               q: 'GPT [로그인]을 눌렀는데 브라우저가 안 열려요',
               a: (
                 <>
-                  카드에 나온 <b>[로그인 페이지 다시 열기]</b>를 누르세요. 그래도 안 되면 <b>[취소]</b> 뒤 다시 누르거나, 실패 안내 아래의{' '}
-                  <b>[{TERMINAL} 창에서 로그인]</b>으로 해 보세요. 브라우저에서 로그인을 마치면 Essay가 저절로 알아채요.
+                  <b>[로그인 페이지 다시 열기]</b>를 누르세요. 안 되면 <b>[{TERMINAL} 창에서 로그인]</b>으로 해 보세요.
                 </>
               ),
             },
@@ -132,7 +126,7 @@ const GROUPS: Group[] = [
         q: '잘 쓰다가 갑자기 "로그인이 필요해요"가 떠요',
         a: (
           <>
-            구독 로그인은 가끔 만료돼요. 홈 위쪽 <b>[연결 관리]</b> → 카드에서 다시 <b>[로그인]</b>하면 돼요. 글은 그대로 남아 있어요.
+            로그인이 만료됐어요. 홈 <b>[연결 관리]</b>에서 다시 <b>[로그인]</b>하세요. 글은 그대로예요.
           </>
         ),
       },
@@ -145,24 +139,23 @@ const GROUPS: Group[] = [
         q: '"사용량 한도" 또는 "limit" 오류가 나요',
         a: (
           <>
-            구독의 시간당·일일 한도를 다 쓴 거예요. 잠시 뒤 다시 하거나, 홈 AI 바에서 <b>"빠르고 한도 절약"</b> 모델로 바꿔 보세요.
+            구독 한도를 다 썼어요. 잠시 뒤 다시 하거나 <b>"빠르고 한도 절약"</b> 모델로 바꿔 보세요.
           </>
         ),
       },
       {
         q: '"요청문이 너무 길어서 넘길 수 없어요" (Gemini)',
-        a: <>연결한 경험이나 공고 메모가 너무 많을 때 나요. 연결한 항목을 줄이거나, AI 바에서 Claude로 바꿔 보세요.</>,
+        a: <>연결한 경험이나 공고 메모를 줄이거나 Claude로 바꿔 보세요.</>,
       },
       {
         q: '"다른 AI 작업이 진행 중"이에요',
-        a: <>AI는 한 번에 하나만 실행돼요. 끝나기를 기다리거나 [취소]를 누른 뒤 다시 하세요.</>,
+        a: <>AI는 한 번에 하나씩 돌아요. 끝나거나 [취소]한 뒤 다시 하세요.</>,
       },
       {
         q: '원인을 더 자세히 알고 싶어요',
         a: (
           <>
-            <b>데이터 → [로그 폴더 열기]</b>의 <code>ai-last-run.json</code> 파일을 문제를 알릴 때 함께 보내 주세요. 여러분이 쓴 글은 들어
-            있지 않아요.{' '}
+            로그 폴더의 <code>ai-last-run.json</code>을 함께 보내 주세요. 쓴 글은 들어 있지 않아요.{' '}
             <button type="button" className="link-btn" onClick={() => desktop.openLogsFolder()}>
               <FileText size={12} /> 로그 폴더 열기
             </button>
@@ -178,14 +171,14 @@ const COMMANDS: { title: string; lines: { cmd: string; note?: string }[] }[] = [
     title: 'Gemini (Antigravity CLI) 설치 → 로그인',
     lines: [
       { cmd: IS_MAC ? 'curl -fsSL https://antigravity.google/cli/install.sh | bash' : 'irm https://antigravity.google/cli/install.ps1 | iex', note: '설치' },
-      { cmd: 'agy', note: '실행하면 브라우저가 열려요. 로그인 → 인증 코드 복사 → 창에 붙여넣고 Enter' },
+      { cmd: 'agy', note: '로그인 → 인증 코드를 창에 붙여넣고 Enter' },
     ],
   },
   {
     title: 'Claude Code 설치 → 로그인',
     lines: [
       { cmd: IS_MAC ? 'curl -fsSL https://claude.ai/install.sh | bash' : 'irm https://claude.ai/install.ps1 | iex', note: '설치' },
-      { cmd: 'claude auth login --claudeai', note: '브라우저에서 Claude 구독 계정으로 로그인' },
+      { cmd: 'claude auth login --claudeai', note: 'Claude 구독 계정으로 로그인' },
     ],
   },
   ...(HAS_GPT
@@ -194,7 +187,7 @@ const COMMANDS: { title: string; lines: { cmd: string; note?: string }[] }[] = [
           title: 'GPT (Codex CLI) 설치 → 로그인',
           lines: [
             { cmd: IS_MAC ? 'curl -fsSL https://chatgpt.com/codex/install.sh | sh' : 'irm https://chatgpt.com/codex/install.ps1 | iex', note: '설치' },
-            { cmd: 'codex login', note: '브라우저에서 ChatGPT 계정으로 로그인' },
+            { cmd: 'codex login', note: 'ChatGPT 계정으로 로그인' },
           ],
         },
       ]
@@ -202,7 +195,7 @@ const COMMANDS: { title: string; lines: { cmd: string; note?: string }[] }[] = [
   {
     title: '설치됐는지 확인',
     lines: [
-      { cmd: 'agy --version', note: '버전 숫자가 나오면 설치된 거예요' },
+      { cmd: 'agy --version', note: '숫자가 나오면 OK' },
       { cmd: 'claude --version' },
       ...(HAS_GPT ? [{ cmd: 'codex login status', note: '"Logged in using ChatGPT" 가 나오면 돼요' }] : []),
     ],
@@ -212,7 +205,7 @@ const COMMANDS: { title: string; lines: { cmd: string; note?: string }[] }[] = [
 export function HelpContent() {
   const copy = async (cmd: string) => {
     await desktop.copyText(cmd)
-    toast(`복사했어요. ${TERMINAL} 창에서 ${PASTE_HINT}으로 붙여넣고 Enter`)
+    toast('복사했어요')
   }
   return (
     <div className="help">
@@ -229,8 +222,8 @@ export function HelpContent() {
       ))}
 
       <section className="help-group">
-        <h3>직접 명령어로 하기 (버튼이 안 될 때만)</h3>
-        <p className="muted small">{TERMINAL} 창을 열고, 명령을 복사해 {PASTE_HINT}으로 붙여넣은 뒤 Enter. 한 줄씩.</p>
+        <h3>직접 명령어로 하기</h3>
+        <p className="muted small">버튼이 안 될 때만. 한 줄씩 붙여넣고({PASTE_HINT}) Enter</p>
         <div className="btn-row">
           <button type="button" className="btn small" onClick={() => desktop.ai.openTerminal('open-shell')}>
             <TerminalSquare size={14} /> {TERMINAL} 열기
@@ -254,7 +247,6 @@ export function HelpContent() {
 
       <section className="help-group">
         <h3>그래도 안 되면</h3>
-        <p className="muted small">어떤 화면에서 무엇을 했는지 적어 보내 주시면 고쳐 드려요.</p>
         <div className="btn-row">
           <button type="button" className="btn small" onClick={openFeedbackDialog}>
             의견 보내기

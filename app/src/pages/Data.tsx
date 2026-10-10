@@ -37,7 +37,7 @@ export function DataPage() {
       <header className="page-head">
         <div>
           <h1>데이터</h1>
-          <p className="muted">모든 데이터는 이 컴퓨터의 문서 폴더에 파일로 저장돼요. 인터넷으로 보내지 않아요. 바꾸기 전 상태는 [백업]의 자동백업에 남아요.</p>
+          <p className="muted">이 컴퓨터에만 저장돼요</p>
         </div>
       </header>
 
@@ -75,7 +75,7 @@ export function DataPage() {
           <button type="button" className="btn small" onClick={() => desktop.openDataFolder()}>
             <FolderOpen size={14} /> 데이터 폴더 열기
           </button>
-          <button type="button" className="btn small ghost" onClick={() => desktop.openLogsFolder()} title="AI 실행 기록(ai-last-run.json)이 있어요">
+          <button type="button" className="btn small ghost" onClick={() => desktop.openLogsFolder()} title="AI 실행 기록">
             <FileText size={14} /> 로그 폴더 열기
           </button>
         </div>
@@ -85,7 +85,7 @@ export function DataPage() {
         <div className="setting-row">
           <div>
             <strong>예전 자소서로 한 번에 채우기</strong>
-            <p className="muted small">지금까지 쓴 자소서 · 이력서 파일을 넣으면 AI가 경험 · 스펙 · 과거 답변을 뽑아 채우고 맞춤 공고 조건도 잡아요.</p>
+            <p className="muted small">AI가 경험 · 스펙을 채워요</p>
           </div>
           <button type="button" className="btn primary" onClick={openImportDialog}>
             <FileUp size={16} /> 파일 넣기
@@ -94,7 +94,7 @@ export function DataPage() {
         <div className="setting-row">
           <div>
             <strong>예시 데이터</strong>
-            <p className="muted small">가상의 자소서 · 경험 · 스펙으로 기능을 둘러봐요. 지금 데이터가 있으면 먼저 백업해 두세요.</p>
+            <p className="muted small">지금 데이터가 바뀌어요</p>
           </div>
           <button type="button" className="btn" onClick={loadSample}>
             <Sparkles size={16} /> 불러오기
@@ -103,7 +103,7 @@ export function DataPage() {
         <div className="setting-row">
           <div>
             <strong>전체 삭제</strong>
-            <p className="muted small">모든 자소서, 경험, 스펙, 맞춤 공고를 지워요. 백업 파일은 그대로 남아요.</p>
+            <p className="muted small">백업 파일은 남아요</p>
           </div>
           <button type="button" className="btn ghost danger" onClick={resetAll} disabled={isEmptyData(data)}>
             <RotateCcw size={16} /> 초기화

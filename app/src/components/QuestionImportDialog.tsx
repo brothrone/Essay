@@ -102,14 +102,10 @@ export function QuestionImportDialog({
       <div className="qi">
         <section className="qi-section">
           <h4>공고에서 불러오기</h4>
-          <p className="muted small">
-            공고 주소를 넣고 버튼을 누르면 AI가 공고를 읽어 문항을 바로 채워요. 공고에 문항이 없으면 찾지 못했다고 알려 드려요. 창을 닫아도
-            계속 읽어요.
-          </p>
           <input
             type="url"
             value={project.jobUrl}
-            placeholder="https:// 로 시작하는 공고 주소 (없으면 회사명으로 찾아요)"
+            placeholder="공고 주소 (없으면 회사명으로 찾아요)"
             aria-label="공고 주소"
             onChange={(e) => onPatch({ jobUrl: e.target.value.trim() })}
           />
@@ -122,9 +118,9 @@ export function QuestionImportDialog({
               <Users size={16} /> 다른 지원자가 모은 {company || '이 회사'} 문항
             </h4>
             {!community.consent?.questions ? (
-              <p className="muted small">설정 → 개선 돕기에서 '회사별 자소서 문항 모음'을 켜면 볼 수 있어요.</p>
+              <p className="muted small">설정 → 개선 돕기에서 켤 수 있어요</p>
             ) : company.length < 2 ? (
-              <p className="muted small">위에 회사명을 적으면 찾아봐요.</p>
+              <p className="muted small">회사명을 적으면 찾아봐요</p>
             ) : !sets ? (
               <p className="muted small">찾는 중…</p>
             ) : sets.length ? (
@@ -139,7 +135,7 @@ export function QuestionImportDialog({
                 ))}
               </div>
             ) : (
-              <p className="muted small">아직 모인 문항이 없어요.</p>
+              <p className="muted small">아직 모인 문항이 없어요</p>
             )}
           </section>
         )}

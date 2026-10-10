@@ -127,7 +127,7 @@ export function ChatPanel({
     setRunning(false)
     setLive('')
     if (!r.ok || !parsed) {
-      setError(!r.ok && r.cancelled ? '멈췄어요. 아래에서 다시 보낼 수 있어요.' : !r.ok ? r.error : '답을 읽지 못했어요.')
+      setError(!r.ok && r.cancelled ? '멈췄어요.' : !r.ok ? r.error : '답을 읽지 못했어요.')
       return
     }
     const reply: ChatMessage = {
@@ -161,7 +161,7 @@ export function ChatPanel({
     if (!m?.answer) return
     setUndo({ answer: q.answer, at: m.at })
     onPatch({ answer: m.answer, chat: chat.map((c, j) => (j === i ? { ...c, applied: true } : c)) }, 'AI 대화 적용 전')
-    toast('답변에 적용했어요. 이전 답변은 편집 기록에 남아요')
+    toast('답변에 적용했어요')
   }
   const revert = () => {
     if (!undo) return
@@ -228,10 +228,7 @@ export function ChatPanel({
             <span className="chat-empty-icon">
               <MessagesSquare size={22} />
             </span>
-            <strong>바꾸고 싶은 점을 말로 적어 보세요</strong>
-            <p>
-              문항 · 공고 메모 · 연결한 경험 · 지금 답변을 AI가 함께 보고 답해요. 고친 답변은 [답변에 적용]을 눌러야 바뀌어요.
-            </p>
+            <strong>바꾸고 싶은 점을 적어 보세요</strong>
           </div>
         )}
 
@@ -266,7 +263,7 @@ export function ChatPanel({
           <div className="chat-msg ai pending">
             <div className="chat-text">
               {fixing ? (
-                <span className="muted">고친 답변이 글자수 제한을 넘어서 맞추는 중…</span>
+                <span className="muted">글자수 맞추는 중…</span>
               ) : (
                 <>
                   {liveReply || (writingAnswer ? '' : <span className="muted">생각하는 중…</span>)}
@@ -275,7 +272,7 @@ export function ChatPanel({
               )}
             </div>
             <span className="chat-meta">
-              <LoaderCircle size={12} className="spin" /> {elapsed}초 · 보통 30초~1분 걸려요
+              <LoaderCircle size={12} className="spin" /> {elapsed}초
             </span>
           </div>
         )}
@@ -292,7 +289,7 @@ export function ChatPanel({
         )}
         {unanswered && !error && (
           <p className="muted small">
-            이 말에 대한 답을 받지 못했어요.{' '}
+            답을 받지 못했어요.{' '}
             <button type="button" className="link-btn" onClick={resend}>
               다시 보내기
             </button>
@@ -302,7 +299,7 @@ export function ChatPanel({
 
       <div className="chat-compose">
         {available === false ? (
-          <p className="ai-hint">이 컴퓨터에서 {providerName} AI를 찾지 못했어요. 설정 → AI 설정에서 연결하면 대화할 수 있어요.</p>
+          <p className="ai-hint">{providerName} 연결이 필요해요 (설정 → AI 설정)</p>
         ) : (
           <>
             {!running && (
@@ -320,7 +317,7 @@ export function ChatPanel({
                 rows={2}
                 value={text}
                 maxLength={4000}
-                placeholder="예: 두 번째 문단을 수치가 드러나게 고쳐 줘 (Enter 보내기, Shift+Enter 줄바꿈)"
+                placeholder="예: 두 번째 문단에 수치를 넣어 줘 (Enter 보내기)"
                 aria-label="AI에게 보낼 말"
                 onChange={(e) => setText(e.target.value)}
                 onKeyDown={onKey}

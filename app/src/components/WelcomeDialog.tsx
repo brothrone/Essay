@@ -129,42 +129,41 @@ function WelcomeWizard({ onClose }: { onClose: () => void }) {
             <Logo size={44} />
             <div>
               <h3>내 AI 구독으로 자소서를 씁니다.</h3>
-              <p className="muted">{HAS_GPT ? 'Google AI · Claude · ChatGPT' : 'Google AI나 Claude'} 구독에 로그인하면 끝. API 키도, 추가 요금도 없습니다.</p>
+              <p className="muted">로그인만 하면 끝. 추가 요금 없어요.</p>
             </div>
           </div>
           <ul className="welcome-points">
             <li>
-              <strong>자소서 사이트 구독료 없음</strong>
-              <p>이미 쓰는 Claude · Google AI{HAS_GPT && ' · ChatGPT'} 구독(또는 무료 Google 계정) 한도 안에서 씁니다.</p>
+              <strong>추가 구독료 없음</strong>
+              <p>쓰던 구독 한도 안에서</p>
             </li>
             <li>
               <strong>최신 모델</strong>
-              <p>Claude, Gemini{HAS_GPT && ', GPT'} 최신 모델을 직접 고릅니다.</p>
+              <p>Claude · Gemini{HAS_GPT && ' · GPT'}</p>
             </li>
             <li>
               <strong>데이터는 이 컴퓨터에만</strong>
-              <p>자소서와 스펙은 문서 폴더의 파일로 남습니다.</p>
+              <p>문서 폴더에 저장</p>
             </li>
             <li>
               <strong>경험에서 글로</strong>
-              <p>STAR로 정리한 경험을 문항 옆에 두고 씁니다. 회사 이름이 섞이면 잡아 줍니다.</p>
+              <p>STAR 경험을 옆에 두고</p>
             </li>
             <li>
               <strong>예전 자소서로 시작</strong>
-              <p>파일을 넣으면 경험과 스펙이 채워집니다.</p>
+              <p>경험 · 스펙 자동 채우기</p>
             </li>
             <li>
               <strong>공고는 웹 전체에서</strong>
-              <p>사람인, 잡코리아, 원티드, 공공기관을 한 번에.</p>
+              <p>사람인 · 잡코리아 · 원티드</p>
             </li>
           </ul>
-          <p className="muted small">준비는 AI 프로그램 설치와 로그인, 10분이면 됩니다.</p>
         </div>
       )}
 
       {step === 1 && (
         <div className="welcome">
-          <p className="muted">쓰고 있는 구독을 고르세요. 여러 개도 됩니다.</p>
+          <p className="muted">쓰는 구독을 고르세요 (여러 개 가능)</p>
           <div className="ai-choice-list">
             {CHOICES.map((c) => (
               <button
@@ -183,19 +182,13 @@ function WelcomeWizard({ onClose }: { onClose: () => void }) {
               </button>
             ))}
           </div>
-          <p className="muted small">
-            구독이 없으면 {HAS_GPT ? 'Gemini 무료나 무료 ChatGPT 계정.' : 'Gemini 무료.'}
-            {choices.length > 1 && <> 기본 AI는 먼저 고른 {CHOICES.find((c) => c.value === choices[0])!.name}.</>}
-          </p>
+          <p className="muted small">구독이 없으면 {HAS_GPT ? 'Gemini 무료 · ChatGPT 무료' : 'Gemini 무료'}</p>
         </div>
       )}
 
       {step === 2 && (
         <div className="welcome">
-          <p className="muted">
-            위에서부터 차례로 누르세요.
-            {choices.includes('gemini-free') && <> 무료 Google 계정도 Antigravity CLI 로 로그인하면 돼요.</>}
-          </p>
+          <p className="muted">위에서부터 차례로 누르세요</p>
           {providers.map((p) => (
             <AiSetup key={p} provider={p} status={status} checking={checking} refresh={refresh} title={providerInfo(p).name} />
           ))}
@@ -213,14 +206,14 @@ function WelcomeWizard({ onClose }: { onClose: () => void }) {
           <p className={ready || anyReady ? 'import-ok big' : 'muted'}>
             {ready ? (
               <>
-                <Check size={16} /> AI가 연결됐습니다.
+                <Check size={16} /> AI가 연결됐어요
               </>
             ) : anyReady ? (
               <>
-                <Check size={16} /> 하나가 연결됐습니다. 나머지는 홈의 [연결 관리]에서.
+                <Check size={16} /> 하나가 연결됐어요
               </>
             ) : (
-              <>AI는 나중에 홈의 [연결 관리]에서 연결할 수 있습니다. 자소서 작성은 AI 없이도 됩니다.</>
+              <>AI는 나중에 홈 [연결 관리]에서 연결해요</>
             )}
           </p>
           <div className="welcome-import">
@@ -228,14 +221,10 @@ function WelcomeWizard({ onClose }: { onClose: () => void }) {
               <FileUp size={22} />
             </span>
             <div>
-              <strong>마지막으로, 지금까지 쓴 자소서를 넣어 주세요</strong>
-              <p className="muted small">
-                예전 자소서 · 이력서 파일을 넣거나 붙여넣으면 AI가 경험(STAR) · 스펙 · 학력 · 어학 · 수상을 뽑아 채우고, 맞춤 공고 조건까지 잡아요.
-                한 번만 하면 이후 초안 쓰기와 공고 추천이 내 이야기로 맞춰집니다.
-              </p>
+              <strong>예전 자소서를 넣어 주세요</strong>
+              <p className="muted small">AI가 경험 · 스펙을 뽑아 채워요</p>
             </div>
           </div>
-          <p className="muted small">이 안내는 F1 도움말과 설정에서 다시 볼 수 있습니다.</p>
         </div>
       )}
 

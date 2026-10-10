@@ -85,15 +85,15 @@ export function JobSearchProvider({ children }: { children: ReactNode }) {
       const drop = (j: JobPosting, reason: string, kind: DroppedJob['kind'] = 'out') =>
         dropped.push({ company: j.company, title: j.title, url: j.url, reason, kind })
       let verified = found.filter((j) => {
-        if (isGroundingUrl(j.url)) return drop(j, '공고 주소를 확인하지 못했어요 (링크로 직접 확인해 보세요)', 'check'), false
-        if (!isPostingUrl(j.url)) return drop(j, '공고 상세 주소를 찾지 못했어요 (회사 채용 페이지에서 확인해 보세요)', 'check'), false
+        if (isGroundingUrl(j.url)) return drop(j, '공고 주소를 확인하지 못했어요', 'check'), false
+        if (!isPostingUrl(j.url)) return drop(j, '공고 상세 주소를 찾지 못했어요', 'check'), false
         if (isArticleUrl(j.url)) return drop(j, '채용 공고가 아니라 기사 · 블로그 글이에요'), false
         if (!j.company || /미확인|확인\s*필요|알\s*수\s*없|비공개|unknown/i.test(j.company)) return drop(j, '회사명을 확인하지 못했어요'), false
         if (j.deadline && j.deadline < today) return drop(j, `마감일(${j.deadline})이 지났어요`), false
         return true
       })
       if (verified.length) {
-        setState((st) => ({ ...st, steps: [...st.steps, `공고 ${verified.length}개를 직접 열어 접수 중인지 확인하는 중`].slice(-12) }))
+        setState((st) => ({ ...st, steps: [...st.steps, `공고 ${verified.length}개 접수 여부 확인 중`].slice(-12) }))
         try {
           const checks = await ai.checkPostings(
             verified.map((j) => j.url),
@@ -126,14 +126,14 @@ export function JobSearchProvider({ children }: { children: ReactNode }) {
           seen.add(k)
           return true
         })
-      verified.slice(query.count).forEach((j) => drop(j, `최대 ${query.count}개를 넘어 점수가 낮은 것을 뺐어요`))
+      verified.slice(query.count).forEach((j) => drop(j, `${query.count}개를 넘어 뺐어요`))
       verified = verified.slice(0, query.count)
       const known = new Set(latest.current.jobs.filter((j) => !j.closed).map(jobKey))
       const added = verified.filter((j) => !known.has(jobKey(j))).length
       mergeJobs(verified, query)
       setState((st) => ({ ...st, running: false, lastAdded: added, lastDropped: dropped.length, lastDroppedList: dropped }))
-      const droppedNote = dropped.length ? ` · 마감됐거나 확인할 수 없는 ${dropped.length}개는 뺐어요` : ''
-      toast(added ? `확인된 맞춤 공고 ${added}개를 새로 찾았어요${droppedNote}` : `새로 찾은 확실한 공고가 없어요${droppedNote}. 키워드나 지역을 넓혀 보세요`)
+      const droppedNote = dropped.length ? ` · ${dropped.length}개는 뺐어요` : ''
+      toast(added ? `공고 ${added}개를 새로 찾았어요${droppedNote}` : `새 공고를 찾지 못했어요${droppedNote}`)
     },
     [ai, mergeJobs, setJobQuery],
   )
@@ -150,7 +150,7 @@ export function JobSearchProvider({ children }: { children: ReactNode }) {
     const notPosting = live.filter((j) => !/^https?:\/\//.test(j.url) || isGroundingUrl(j.url) || !isPostingUrl(j.url) || isArticleUrl(j.url))
     notPosting.forEach((j) => updateJob(j.id, { closed: true, checkedAt: now }))
     const due = live.filter((j) => !notPosting.includes(j) && (!j.checkedAt || now - j.checkedAt > RECHECK_MS))
-    if (notPosting.length && !due.length) toast(`맞춤 공고 중 공고 주소가 확인되지 않는 ${notPosting.length}개를 뺐어요`)
+    if (notPosting.length && !due.length) toast(`주소가 확인 안 된 공고 ${notPosting.length}개를 뺐어요`)
     if (!due.length) return
     rechecking.current = true
     try {
@@ -171,7 +171,7 @@ export function JobSearchProvider({ children }: { children: ReactNode }) {
         removed++
         updateJob(j.id, { closed: true, checkedAt: now, ...deadline })
       })
-      if (removed) toast(`맞춤 공고 중 마감됐거나 접수 중인지 확인되지 않는 ${removed}개를 뺐어요`)
+      if (removed) toast(`마감됐거나 확인 안 된 공고 ${removed}개를 뺐어요`)
     } catch {
       /* 다음에 다시 */
     } finally {

@@ -72,7 +72,7 @@ export function Jobs({ mode = 'search' }: { mode?: 'search' | 'saved' }) {
     updateJob(job.id, { status: 'started', projectId: p.id, deadline: p.deadline, ...(req.url ? { url: req.url } : {}) })
     if (job.company || req.url) {
       reader.start(p.id, { prompt: req.prompt, kind: req.kind, mode: 'new', projectId: p.id, label: job.company })
-      toast('AI가 공고를 읽어 자소서 문항을 채우는 중이에요. 다른 화면으로 가도 계속돼요')
+      toast('AI가 공고를 읽는 중이에요')
     }
     navigate(`/projects/${p.id}`)
   }
@@ -80,7 +80,7 @@ export function Jobs({ mode = 'search' }: { mode?: 'search' | 'saved' }) {
   // 저장해도 새 공고 목록에서 사라지지 않고 버튼만 '저장됨'으로 채워진다
   const toggleSave = (job: JobPosting) => {
     updateJob(job.id, { saved: !job.saved })
-    toast(job.saved ? '저장을 풀었어요' : '저장했어요. 왼쪽 [저장된 공고]에서 모아 볼 수 있어요')
+    toast(job.saved ? '저장을 풀었어요' : '저장했어요')
   }
 
   const card = (job: JobPosting) => (
@@ -102,7 +102,6 @@ export function Jobs({ mode = 'search' }: { mode?: 'search' | 'saved' }) {
         <header className="page-head">
           <div>
             <h1>저장된 공고</h1>
-            <p className="muted">맞춤 공고에서 저장한 공고를 마감이 가까운 순으로 모았어요.</p>
           </div>
         </header>
         {count ? (
@@ -119,7 +118,7 @@ export function Jobs({ mode = 'search' }: { mode?: 'search' | 'saved' }) {
           <Empty
             icon={<Bookmark size={28} />}
             title="저장한 공고가 없어요"
-            desc="맞춤 공고에서 마음에 드는 공고의 [저장]을 누르면 여기에 모여요"
+            desc="맞춤 공고에서 [저장]을 눌러요"
             action={
               <Link className="btn" to="/jobs">
                 <Radar size={16} /> 맞춤 공고로 가기
@@ -137,7 +136,6 @@ export function Jobs({ mode = 'search' }: { mode?: 'search' | 'saved' }) {
       <header className="page-head">
         <div>
           <h1>맞춤 공고</h1>
-          <p className="muted">내 스펙과 경험을 바탕으로 AI가 지금 접수 중인 공고를 웹에서 찾아 골라 줘요</p>
         </div>
       </header>
 
@@ -169,7 +167,7 @@ export function Jobs({ mode = 'search' }: { mode?: 'search' | 'saved' }) {
         <Empty
           icon={<Radar size={28} />}
           title={tab === 'new' ? '아직 찾은 공고가 없어요' : '여기에 표시할 공고가 없어요'}
-          desc={tab === 'new' ? '조건을 확인하고 [AI로 찾기]를 눌러 보세요' : undefined}
+          desc={tab === 'new' ? '[AI로 찾기]를 눌러 보세요' : undefined}
         />
       )}
     </div>
@@ -216,7 +214,7 @@ function JobSearchForm({ onSearched }: { onSearched: () => void }) {
             id="jq-k"
             value={query.keywords}
             onChange={(e) => setQuery({ ...query, keywords: e.target.value })}
-            placeholder="예: 항공우주, 기계 설계, 품질"
+            placeholder="예: 기계 설계, 품질"
           />
         </div>
         <div className="field">
@@ -253,9 +251,7 @@ function JobSearchForm({ onSearched }: { onSearched: () => void }) {
       </div>
       {!search.running && (
         <p className="muted small">
-          AI가 사람인 · 잡코리아 · 원티드 · 잡알리오 등을 검색한 뒤, 찾은 공고 페이지를 직접 열어 지금 접수 중인 것만 남겨요. 조건에 맞는 확실한
-          공고가 적으면 고른 개수보다 적게 나와요. 구독 사용량에서 차감되고, 이름 · 연락처는 보내지 않아요.
-          {lastFound > 0 && ` · 마지막으로 찾은 때: ${fmtRelative(lastFound)}`}
+          접수 중인 공고만 남겨요{lastFound > 0 && ` · 마지막 검색 ${fmtRelative(lastFound)}`}
         </p>
       )}
       {!search.running && search.lastAdded !== null && (
@@ -304,13 +300,13 @@ function DroppedList({ list, added }: { list: DroppedJob[]; added: number }) {
     <>
       {check.length > 0 && (
         <details className="dropped-list" open={added === 0}>
-          <summary>마감 여부를 확인하지 못한 공고 {check.length}개 · 직접 확인해 보세요</summary>
+          <summary>마감 확인 못 한 공고 {check.length}개</summary>
           <ul>{check.map(row)}</ul>
         </details>
       )}
       {out.length > 0 && (
         <details className="dropped-list">
-          <summary>마감 · 중복 등으로 뺀 공고 {out.length}개</summary>
+          <summary>뺀 공고 {out.length}개</summary>
           <ul>{out.map(row)}</ul>
         </details>
       )}
@@ -347,7 +343,7 @@ function JobCard({
         </span>
       </div>
       <div className="tag-row">
-        {job.deadline ? <Dday date={job.deadline} /> : <span className="badge tone-gray">상시 · 마감일 미정</span>}
+        {job.deadline ? <Dday date={job.deadline} /> : <span className="badge tone-gray">상시</span>}
         {job.deadline && <span className="muted small">{fmtDate(job.deadline)}</span>}
         {job.kind && <span className="badge tone-violet">{job.kind}</span>}
         {job.location && <span className="badge tone-gray">{job.location}</span>}
@@ -363,7 +359,7 @@ function JobCard({
         <div className="ai-running">
           <LoaderCircle size={16} className="spin" />
           <span>
-            {reading!.status === 'waiting' ? '다른 AI 작업이 끝나면 공고를 읽어요' : '공고를 읽어 문항을 채우는 중…'} {elapsed}초
+            {reading!.status === 'waiting' ? '대기 중…' : '공고 읽는 중…'} {elapsed}초
             {reading!.status === 'running' && reading!.steps.at(-1) && ` · ${reading!.steps.at(-1)}`}
           </span>
           <button type="button" className="btn ghost small" onClick={() => onCancel(reading!.key)}>
@@ -380,7 +376,7 @@ function JobCard({
           <button
             type="button"
             className="btn primary small"
-            title={job.url ? '바로 자소서를 만들고, AI가 뒤에서 공고를 읽어 문항을 채워요' : undefined}
+            title={job.url ? 'AI가 공고를 읽어 문항을 채워요' : undefined}
             onClick={onStart}
           >
             <PenLine size={14} /> 자소서 시작
@@ -396,7 +392,7 @@ function JobCard({
             type="button"
             className={'btn small ' + (job.saved ? 'save-on' : 'ghost')}
             aria-pressed={job.saved}
-            title={job.saved ? '저장을 풀어요' : '[저장된 공고]에 모아 둬요'}
+            title={job.saved ? '저장 풀기' : '저장'}
             onClick={onToggleSave}
           >
             <Bookmark size={14} fill={job.saved ? 'currentColor' : 'none'} /> {job.saved ? '저장됨' : '저장'}

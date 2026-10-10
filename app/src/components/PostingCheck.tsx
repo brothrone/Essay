@@ -58,34 +58,32 @@ export function PostingCheck({ project, onPatch }: { project: Project; onPatch: 
       )}
       {!running && (
         <button type="button" className="btn ghost small" aria-expanded={pasteOpen} onClick={() => setPasteOpen((v) => !v)}>
-          <ClipboardPaste size={14} /> 공고 내용 붙여넣기
+          <ClipboardPaste size={14} /> 본문 붙여넣기
         </button>
       )}
       {pasteOpen && !running && (
         <div className="posting-paste">
-          <p className="muted small">로그인해야 보이는 공고처럼 링크로 못 읽을 때, 채용 페이지 본문을 복사해 붙여넣으면 문항 · 마감일 · 공고 메모를 채워요.</p>
+          <p className="muted small">링크로 못 읽을 때 본문을 붙여넣어요</p>
           <AutoTextarea
             minRows={4}
             maxLength={15000}
             value={pasted}
             onChange={(e) => setPasted(e.target.value)}
-            placeholder={`채용 페이지에서 ${kbd('A')} → ${kbd('C')} 로 복사한 내용을 그대로 붙여넣으세요`}
+            placeholder={`채용 페이지에서 ${kbd('A')} → ${kbd('C')} 후 붙여넣기`}
             aria-label="공고 본문"
           />
           <button type="button" className="btn primary small" disabled={pasted.trim().length < 40} onClick={readPasted}>
-            AI로 정리해 채우기
+            AI로 채우기
           </button>
         </div>
       )}
       {running && (
         <p className="muted small">
-          {task!.status === 'waiting' ? '다른 AI 작업이 끝나면 공고를 읽어요…' : 'AI가 공고를 읽어 문항을 채우는 중…'} {elapsed}초
+          {task!.status === 'waiting' ? '대기 중…' : 'AI가 공고 읽는 중…'} {elapsed}초
           {task!.status === 'running' && task!.steps.at(-1) && ` · ${task!.steps.at(-1)}`}{' '}
           <button type="button" className="link-btn" onClick={() => reader.cancel(task!.key)}>
             취소
           </button>
-          <br />
-          다른 화면으로 가도 계속 읽고, 끝나면 이 자소서에 바로 넣어요.
         </p>
       )}
       {task?.status === 'error' && (
@@ -100,9 +98,8 @@ export function PostingCheck({ project, onPatch }: { project: Project; onPatch: 
         <div className="ai-result">
           <div className="ai-result-meta">
             <strong className={info.isOpen === false ? 'over' : ''}>
-              {info.isOpen === false ? '마감된 공고예요' : info.isOpen ? '지금 접수 중이에요' : '접수 상태는 확인하지 못했어요'}
+              {info.isOpen === false ? '마감된 공고예요' : info.isOpen ? '지금 접수 중이에요' : '접수 상태를 확인하지 못했어요'}
             </strong>
-            <span className="muted small">방금 확인</span>
           </div>
           <ul className="check-list">
             <li>
@@ -111,12 +108,12 @@ export function PostingCheck({ project, onPatch }: { project: Project; onPatch: 
                   <Check size={13} /> 자소서 문항 {applied.questions}개를 넣었어요
                 </>
               ) : info.questions.length ? (
-                '자소서 문항은 이미 모두 들어 있어요'
+                '문항이 이미 다 들어 있어요'
               ) : (
-                '공고에서 자소서 문항을 찾지 못했어요. 왼쪽 [문항 불러오기]에서 직접 골라 넣을 수 있어요'
+                '공고에서 문항을 찾지 못했어요'
               )}
               {info.questions.length > 0 && info.questionsSource && info.questionsSource !== '공고 페이지' && (
-                <span className="muted"> · 출처: {info.questionsSource} (이번 공고 문항과 같은지 확인하세요)</span>
+                <span className="muted"> · 출처: {info.questionsSource} (확인해 주세요)</span>
               )}
             </li>
             <li>
@@ -124,7 +121,7 @@ export function PostingCheck({ project, onPatch }: { project: Project; onPatch: 
               {applied?.deadline && <span className="muted"> · 넣었어요</span>}
               {conflicts?.deadline && <span className="badge tone-amber">저장된 마감일과 달라요</span>}
             </li>
-            {info.notes && <li>공고 내용 정리 {applied?.notes ? '· 공고 메모에 넣었어요' : ''}</li>}
+            {info.notes && <li>공고 정리 {applied?.notes ? '· 메모에 넣었어요' : ''}</li>}
           </ul>
           <div className="ai-result-actions">
             {conflicts?.deadline && (
@@ -145,9 +142,6 @@ export function PostingCheck({ project, onPatch }: { project: Project; onPatch: 
               닫기
             </button>
           </div>
-          {info.isOpen === false && project.status === 'writing' && (
-            <p className="muted small">지원하지 않을 거라면 위쪽 상태 메뉴에서 바꿔 두세요.</p>
-          )}
         </div>
       )}
     </div>

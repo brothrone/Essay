@@ -89,11 +89,11 @@ export function PostingReaderProvider({ children }: { children: ReactNode }) {
         updateProject(p.id, (cur) => applyPosting(cur, info, t.mode).next)
         const name = p.company || info.company || t.label || '자소서'
         const what = applied.questions
-          ? `${name} 자소서에 자소서 문항 ${applied.questions}개를 넣었어요`
+          ? `${name}: 문항 ${applied.questions}개를 넣었어요`
           : info.questions.length
-            ? `${name}: 공고를 다시 읽었어요. 새로 추가할 문항은 없어요`
-            : `${name}: 공고에서 자소서 문항을 찾지 못했어요. 왼쪽 [문항 불러오기]에서 직접 골라 넣을 수 있어요`
-        toast(info.isOpen === false ? `${what}. 다만 마감된 공고로 보여요 — 마감일을 확인해 주세요` : what)
+            ? `${name}: 새 문항은 없어요`
+            : `${name}: 문항을 찾지 못했어요`
+        toast(info.isOpen === false ? `${what} · 마감된 공고 같아요` : what)
       }
       const attempt = (tries: number) => {
         const t = tasksRef.current[key]
@@ -140,7 +140,7 @@ export function PostingReaderProvider({ children }: { children: ReactNode }) {
       if (!info) {
         track('posting_read_fail')
         const t = commit(key, () => ({ status: 'error', error: '공고 내용을 읽지 못했어요. 잠시 뒤 다시 시도하거나 직접 적어 주세요.' }))
-        if (t?.projectId) toast('공고 내용을 읽지 못했어요. [공고 정보]에서 다시 확인할 수 있어요')
+        if (t?.projectId) toast('공고를 읽지 못했어요')
         return
       }
       commit(key, () => ({ status: 'done', info }))

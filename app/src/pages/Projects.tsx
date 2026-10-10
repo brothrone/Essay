@@ -59,7 +59,6 @@ export function Projects() {
       <header className='page-head'>
         <div>
           <h1>자소서 프로젝트</h1>
-          <p className='muted'>공고별로 문항과 답변, 진행 상태를 관리해요</p>
         </div>
         <button type='button' className='btn primary' onClick={() => openNew()}>
           <Plus size={16} /> 새 자소서
@@ -193,7 +192,7 @@ export function Projects() {
           desc={
             data.projects.length
               ? '검색어나 필터를 바꿔 보세요'
-              : '지원할 공고를 등록하고 문항별로 답변을 작성해 보세요'
+              : '새 자소서로 시작해 보세요'
           }
           action={
             !data.projects.length && (

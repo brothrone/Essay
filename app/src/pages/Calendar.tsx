@@ -66,7 +66,6 @@ export function Calendar() {
       <header className="page-head">
         <div>
           <h1>마감 달력</h1>
-          <p className="muted">자소서 마감일과 저장한 공고의 마감일을 한눈에 봐요. 날짜를 누르면 그 자소서 · 공고로 가요.</p>
         </div>
       </header>
 

@@ -37,7 +37,7 @@ export function answerWarnings(data: AppData, project: Project, q: Question): An
     out.push({
       kind: 'company',
       level: 'warn',
-      text: `다른 지원처 이름이 들어 있어요: ${[...others].join(', ')} — 다른 자소서에서 옮겨 온 문장인지 확인하세요.`,
+      text: `다른 회사 이름이 있어요: ${[...others].join(', ')}`,
     })
 
   if ([...text].length >= 150) {
@@ -54,12 +54,12 @@ export function answerWarnings(data: AppData, project: Project, q: Question): An
       out.push({
         kind: 'similar',
         level: 'warn',
-        text: `'${best.company}' ${best.index + 1}번 답변과 ${Math.round(best.score * 100)}% 비슷해요 — 이 회사·직무에 맞게 바꿨는지 확인하세요.`,
+        text: `'${best.company}' ${best.index + 1}번 답변과 ${Math.round(best.score * 100)}% 비슷해요`,
       })
   }
 
   const marks = text.match(/\(확인 필요[^)]*\)/g)?.length ?? 0
-  if (marks) out.push({ kind: 'check', level: 'warn', text: `AI가 표시한 '(확인 필요)'가 ${marks}군데 남아 있어요. 사실을 확인하고 지워 주세요.` })
+  if (marks) out.push({ kind: 'check', level: 'warn', text: `'(확인 필요)'가 ${marks}군데 남아 있어요` })
 
   // 공고 분석 키워드가 있으면 답변에 얼마나 녹였는지 (억지 나열이 아니라 '하나도 없음'만 알린다)
   const keywords = postingKeywords(project.notes)
@@ -70,7 +70,7 @@ export function answerWarnings(data: AppData, project: Project, q: Question): An
       out.push({
         kind: 'keywords',
         level: 'tip',
-        text: `공고 키워드(${keywords.slice(0, 5).join(', ')}…)가 답변에 하나도 없어요. 문항과 맞는 키워드 1~2개를 경험 설명에 자연스럽게 녹여 보세요.`,
+        text: `공고 키워드가 없어요: ${keywords.slice(0, 5).join(', ')}…`,
       })
   }
 
@@ -79,7 +79,7 @@ export function answerWarnings(data: AppData, project: Project, q: Question): An
     out.push({
       kind: 'cliche',
       level: 'tip',
-      text: `상투어가 있어요: ${found.join(', ')} — 인사담당자가 'AI 글'로 느끼기 쉬운 표현이에요. 구체적인 행동이나 수치로 바꿔 보세요.`,
+      text: `상투어가 있어요: ${found.join(', ')} — 구체적으로 바꿔 보세요`,
     })
 
   // 두괄식 점검: 첫 문단(소제목 제외)의 첫 문장이 질문·배경 설명으로 시작하면 힌트
@@ -90,7 +90,7 @@ export function answerWarnings(data: AppData, project: Project, q: Question): An
       out.push({
         kind: 'lead',
         level: 'tip',
-        text: '첫 문장이 배경 설명으로 시작해요. 결론(이 문항에 대한 내 답)을 먼저 쓰고 배경은 뒤로 보내면 읽는 사람이 바로 핵심을 잡아요.',
+        text: '결론을 첫 문장에 써 보세요',
       })
   }
 

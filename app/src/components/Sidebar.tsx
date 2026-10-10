@@ -68,7 +68,7 @@ export function Sidebar({ onNew }: { onNew: () => void }) {
             </NavLink>
           ))
         ) : (
-          <p className="recent-empty">최근 연 자소서가 여기에 표시돼요</p>
+          <p className="recent-empty">아직 없어요</p>
         )}
       </div>
 

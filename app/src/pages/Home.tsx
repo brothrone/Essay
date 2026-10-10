@@ -48,10 +48,10 @@ export function Home() {
     for (const p of data.projects) {
       const n = daysUntil(p.deadline)
       if (p.status === 'writing' && n !== null && n < 0)
-        list.push({ key: p.id, text: `${p.company} 마감이 지났어요. 진행 상태를 바꿔 주세요`, to: `/projects/${p.id}` })
+        list.push({ key: p.id, text: `${p.company} 마감이 지났어요`, to: `/projects/${p.id}` })
     }
     const incomplete = data.experiences.filter((e) => !e.situation || !e.action || !e.result).length
-    if (incomplete) list.push({ key: 'star', text: `STAR가 비어 있는 경험이 ${incomplete}개 있어요`, to: '/experiences' })
+    if (incomplete) list.push({ key: 'star', text: `STAR가 빈 경험 ${incomplete}개`, to: '/experiences' })
     return list
   }, [data])
 
@@ -87,7 +87,7 @@ export function Home() {
           <button type="button" className="chip-btn" onClick={openNew}>
             공고 링크 · 마감일과 함께 시작하기
           </button>
-          <button type="button" className="chip-btn accent-chip" onClick={openImportDialog} title="예전 자소서를 넣으면 경험·스펙·맞춤 공고 조건이 자동으로 채워져요">
+          <button type="button" className="chip-btn accent-chip" onClick={openImportDialog} title="경험 · 스펙 자동 채우기">
             <FileUp size={14} /> 예전 자소서로 한 번에 채우기
           </button>
           {isEmptyData(data) && (
@@ -134,7 +134,7 @@ export function Home() {
               ))}
             </ul>
           ) : (
-            <Empty title="작성 중인 자소서가 없어요" desc="위에 회사명을 입력하고 바로 시작해 보세요" />
+            <Empty title="작성 중인 자소서가 없어요" desc="위에 회사명을 입력해 시작해요" />
           )}
         </section>
 
@@ -214,7 +214,7 @@ export function Home() {
             </ul>
           ) : (
             <div className="mini-jobs-empty">
-              <p className="muted small">내 스펙에 맞는, 지금 접수 중인 공고를 AI가 찾아 줘요.</p>
+              <p className="muted small">내 스펙에 맞는 공고를 찾아 줘요</p>
               <Link to="/jobs" className="btn small">
                 <Sparkles size={14} /> 맞춤 공고 찾기
               </Link>
@@ -229,7 +229,7 @@ export function Home() {
               경험 관리 <ArrowRight size={14} />
             </Link>
           </header>
-          <p className="muted small">자주 나오는 역량 문항에 쓸 경험이 있는지 확인해 보세요. 회색은 아직 경험이 없는 역량이에요.</p>
+          <p className="muted small">회색은 경험이 없는 역량이에요</p>
           <div className="tag-cloud">
             {COMPETENCY_TAGS.map((t) => {
               const n = tagCounts.get(t) ?? 0
@@ -263,7 +263,7 @@ export function Home() {
                 ))}
             </ul>
           ) : (
-            <p className="muted small">제출한 자소서의 결과(서류 · 면접 · 최종)를 자소서 프로젝트에서 바꾸면 여기에 모여요.</p>
+            <p className="muted small">자소서 결과를 바꾸면 여기에 모여요</p>
           )}
         </section>
       </div>

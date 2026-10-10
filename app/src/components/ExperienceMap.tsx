@@ -216,7 +216,7 @@ export function ExperienceMap({
             유형별
           </button>
         </div>
-        <span className="muted small">역량이나 경험을 누르면 오른쪽에 자세히 보여요 · 휠로 확대, 끌어서 이동</span>
+        <span className="muted small">휠로 확대 · 끌어서 이동</span>
         <div className="exp-map-zoom">
           <button type="button" className="icon-btn" onClick={() => zoom(1.2)} aria-label="확대">
             <Plus size={16} />
@@ -432,7 +432,7 @@ function MapPanel({
             <span className="muted small"> {stars === 4 ? '모두 채움' : `${4 - stars}칸 비어 있어요`}</span>
           </dd>
           <dt>쓴 문항</dt>
-          <dd>{usage.get(e.id) ? `${usage.get(e.id)}개 문항에 연결됨` : '아직 연결한 문항이 없어요'}</dd>
+          <dd>{usage.get(e.id) ? `${usage.get(e.id)}개` : '없음'}</dd>
         </dl>
         <button type="button" className="btn primary small" onClick={() => onOpen(e.id)}>
           경험 편집 <ArrowUpRight size={14} />
@@ -454,7 +454,7 @@ function MapPanel({
             <X size={15} />
           </button>
         </header>
-        <p className="muted small">이 {mode === 'tag' ? '역량' : '유형'}에 쓸 수 있는 경험 {list.length}개</p>
+        <p className="muted small">경험 {list.length}개</p>
         <ul className="map-panel-list">
           {list.map((e) => (
             <li key={e.id}>

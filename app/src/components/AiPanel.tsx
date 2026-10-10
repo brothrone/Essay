@@ -167,7 +167,7 @@ export function AiPanel({
       key: 'draft',
       icon: <PenLine size={18} />,
       title: '초안 쓰기',
-      desc: '문항 · 공고 메모 · 연결한 경험 · 스펙으로 초안을 요청해요',
+      desc: '내 경험으로 초안',
       disabled: false,
       make: () => draftPrompt(data, project, q, exps),
     },
@@ -175,7 +175,7 @@ export function AiPanel({
       key: 'feedback',
       icon: <MessageSquareText size={18} />,
       title: '피드백 받기',
-      desc: '인사 담당자 관점으로 지금 답변의 고칠 점을 물어봐요',
+      desc: '고칠 점 찾기',
       disabled: !hasAnswer,
       make: () => feedbackPrompt(data, project, q, exps),
     },
@@ -183,7 +183,7 @@ export function AiPanel({
       key: 'fit',
       icon: <Scissors size={18} />,
       title: '글자수 맞추기',
-      desc: q.limit ? `내용은 두고 ${q.limit.toLocaleString()}${unit} 안으로 다듬어요` : '내용은 두고 문장을 다듬어요',
+      desc: q.limit ? `${q.limit.toLocaleString()}${unit} 안으로` : '문장 다듬기',
       disabled: !hasAnswer,
       make: () => fitPrompt(q),
     },
@@ -191,7 +191,7 @@ export function AiPanel({
       key: 'interview',
       icon: <MessagesSquare size={18} />,
       title: '면접 꼬리질문',
-      desc: '이 답변에서 면접관이 파고들 질문 5개와 답변 방향을 물어봐요',
+      desc: '예상 질문 5개',
       disabled: !hasAnswer,
       make: () => interviewPrompt(data, project, q, exps),
     },
@@ -199,7 +199,7 @@ export function AiPanel({
       key: 'gap',
       icon: <ListChecks size={18} />,
       title: '스펙 비교',
-      desc: '공고 요건과 내 스펙 · 경험을 견줘 부족한 점과 강조할 강점을 물어봐요',
+      desc: '공고 요건과 견주기',
       disabled: false,
       make: () => specGapPrompt(data, project),
     },
@@ -255,14 +255,11 @@ export function AiPanel({
             </select>
           </div>
           {available === false ? (
-            <p className="ai-hint">
-              이 컴퓨터에서 {providerInfo.cli} 명령어를 찾지 못했어요. 설정 → AI 설정에서 설치 방법을 확인하거나, 아래
-              &lsquo;요청문 복사&rsquo;로 AI 채팅에 붙여넣어 쓰세요.
-            </p>
+            <p className="ai-hint">{providerInfo.name}가 설치 안 돼 있어요. 설정 → AI 설정에서 설치해요.</p>
           ) : (
             <>
               {exps.length === 0 && !hasAnswer && (
-                <p className="ai-hint">오른쪽 [경험] 탭에서 이 문항에 쓸 경험을 연결하면 내 경험으로 초안을 써요.</p>
+                <p className="ai-hint">[경험] 탭에서 경험을 연결하면 더 좋아요</p>
               )}
 
               <div className="ai-direct-buttons">
@@ -294,7 +291,7 @@ export function AiPanel({
                   type="button"
                   className="btn small"
                   disabled={!!running || !hasAnswer}
-                  title="이 답변으로 면접에서 나올 꼬리질문 5개와 답변 방향"
+                  title="예상 꼬리질문 5개"
                   onClick={() => run('interview', interviewPrompt(data, project, q, exps))}
                 >
                   <MessagesSquare size={14} /> 면접 질문
@@ -303,7 +300,7 @@ export function AiPanel({
                   type="button"
                   className="btn small"
                   disabled={!!running}
-                  title="공고의 자격 요건 · 우대 사항과 내 스펙 · 경험을 견줘 부족한 점과 강조할 강점을 짚어요"
+                  title="공고 요건과 내 스펙 견주기"
                   onClick={() => run('gap', specGapPrompt(data, project))}
                 >
                   <ListChecks size={14} /> 스펙 비교
@@ -321,7 +318,7 @@ export function AiPanel({
                 </div>
               )}
               {running && live?.retry && !live.text && (
-                <p className="muted small">AI 서버가 바빠서 다시 시도하고 있어요…</p>
+                <p className="muted small">서버가 바빠 다시 시도 중…</p>
               )}
               {running && live?.text && (
                 <div className="ai-live">{live.text.replace(/<\/?(answer|note)>/g, '').trim()}</div>
@@ -342,10 +339,10 @@ export function AiPanel({
                       className="btn small"
                       onClick={() => {
                         onPatch({ memo: q.memo.trim() ? `${q.memo.trimEnd()}\n\n[스펙 비교]\n${result.answer}` : `[스펙 비교]\n${result.answer}` })
-                        toast('이 문항의 작성 메모에 저장했어요')
+                        toast('메모에 저장했어요')
                       }}
                     >
-                      <Check size={14} /> 작성 메모에 저장
+                      <Check size={14} /> 메모에 저장
                     </button>
                     <button type="button" className="btn ghost small" onClick={() => copyText(result.answer)}>
                       <Copy size={14} /> 복사
@@ -369,7 +366,7 @@ export function AiPanel({
                       className="btn small"
                       onClick={() => onPatch({ memo: q.memo.trim() ? `${q.memo.trimEnd()}\n\n[면접 꼬리질문]\n${result.answer}` : `[면접 꼬리질문]\n${result.answer}` })}
                     >
-                      <Check size={14} /> 작성 메모에 저장
+                      <Check size={14} /> 메모에 저장
                     </button>
                     <button type="button" className="btn ghost small" onClick={() => copyText(result.answer)}>
                       <Copy size={14} /> 복사
@@ -394,7 +391,7 @@ export function AiPanel({
                       className="btn primary small"
                       onClick={() => run('revise', revisePrompt(data, project, q, exps, result.answer))}
                     >
-                      <Wand2 size={14} /> 이 피드백으로 고쳐 쓰기
+                      <Wand2 size={14} /> 반영해 고치기
                     </button>
                     <button type="button" className="btn ghost small" onClick={() => copyText(result.answer)}>
                       <Copy size={14} /> 복사
@@ -438,12 +435,7 @@ export function AiPanel({
       </section>
 
       <details className="ai-copy">
-        <summary>다른 AI 채팅에 붙여넣어 쓰기 (요청문 복사)</summary>
-        <ol className="ai-steps">
-          <li>아래 버튼으로 요청문을 복사해요</li>
-          <li>쓰고 있는 AI 채팅(Claude · Gemini · ChatGPT)에 붙여넣어요</li>
-          <li>나온 글을 답변 칸에 붙여넣고 내 말투로 다듬어요</li>
-        </ol>
+        <summary>요청문 복사 (다른 AI 채팅용)</summary>
         <div className="ai-actions">
           {copyActions.map((a) => (
             <button
@@ -451,12 +443,12 @@ export function AiPanel({
               key={a.key}
               className="ai-action"
               disabled={a.disabled}
-              onClick={() => copyText(a.make(), `${a.title} 요청문을 복사했어요. AI 채팅에 붙여넣으세요`)}
+              onClick={() => copyText(a.make(), `${a.title} 요청문을 복사했어요`)}
             >
               <span className="ai-action-icon">{a.icon}</span>
               <span className="ai-action-text">
                 <strong>{a.title}</strong>
-                <span>{a.disabled ? '답변을 먼저 써야 쓸 수 있어요' : a.desc}</span>
+                <span>{a.disabled ? '답변을 먼저 써요' : a.desc}</span>
               </span>
               <Copy size={16} />
             </button>
@@ -470,9 +462,7 @@ export function AiPanel({
             <ExternalLink size={14} /> Gemini 열기
           </a>
         </div>
-        <p className="muted small">
-          연결한 경험 {exps.length}개와 공고 메모가 들어가요. 이름 · 연락처 · 주소 같은 개인정보는 넣지 않아요.
-        </p>
+        <p className="muted small">이름 · 연락처 같은 개인정보는 빠져요</p>
       </details>
     </div>
   )
@@ -527,7 +517,6 @@ function AnswerResult({
           <X size={14} /> 닫기
         </button>
       </div>
-      <p className="muted small">적용하면 지금 답변이 바뀌어요. 바로 아래에서 되돌릴 수 있어요.</p>
     </div>
   )
 }

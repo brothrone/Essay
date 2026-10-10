@@ -61,19 +61,19 @@ function FeedbackDialog({ onClose }: { onClose: () => void }) {
   const openIssue = () => {
     const url = `${issuesUrl}?${new URLSearchParams({ title, body }).toString()}`
     window.open(url, '_blank')
-    toast('브라우저에서 내용을 확인하고 [Submit new issue]를 누르면 보내져요')
+    toast('브라우저에서 [Submit new issue]를 누르세요')
   }
   const openForm = async () => {
     await desktop.copyText(`${title}\n\n${body}`)
     window.open(formUrl, '_blank')
-    toast('내용을 복사해 뒀어요. 설문지에 붙여넣어 주세요')
+    toast('복사했어요. 설문지에 붙여넣어 주세요')
   }
   const send = async () => {
     setSending(true)
     const r = await desktop.community.sendFeedback({ kind, message: text.trim(), contact: contact.trim(), withInfo })
     setSending(false)
     if (r.ok) {
-      toast('보냈어요. 고마워요! 다음 버전에 반영할게요')
+      toast('보냈어요. 고마워요!')
       onClose()
     } else toast(`보내지 못했어요: ${r.error || '잠시 뒤 다시 시도해 주세요'}`)
   }
@@ -111,7 +111,7 @@ function FeedbackDialog({ onClose }: { onClose: () => void }) {
     >
       <div className="feedback">
         <p className="muted small">
-          <MessageSquareHeart size={14} /> 불편한 점이나 바라는 기능을 적어 주세요. 개발자가 읽고 다음 버전에 반영해요. 쓴 자소서 내용은 붙이지 마세요.
+          <MessageSquareHeart size={14} /> 자소서 내용은 붙이지 마세요
         </p>
         <div className="segmented">
           {KINDS.map((k) => (
@@ -127,8 +127,8 @@ function FeedbackDialog({ onClose }: { onClose: () => void }) {
           onChange={(e) => setText(e.target.value)}
           placeholder={
             kind === 'bug'
-              ? '어떤 화면에서 무엇을 눌렀더니 어떻게 됐는지 적어 주세요. (예: 맞춤 공고에서 [AI로 찾기]를 누르면 3분 뒤 오류가 떠요)'
-              : '자유롭게 적어 주세요.'
+              ? '어디서 무엇을 눌렀더니 어떻게 됐나요?'
+              : '자유롭게 적어 주세요'
           }
         />
         {direct && (
@@ -136,7 +136,7 @@ function FeedbackDialog({ onClose }: { onClose: () => void }) {
             type="text"
             value={contact}
             onChange={(e) => setContact(e.target.value)}
-            placeholder="답장 받을 메일 (선택) · 적으면 개발자가 답장할 수 있어요"
+            placeholder="답장 받을 메일 (선택)"
             maxLength={200}
           />
         )}
@@ -147,13 +147,10 @@ function FeedbackDialog({ onClose }: { onClose: () => void }) {
           </span>
         </label>
         {direct ? (
-          <p className="muted small">
-            계정 없이 개발자에게만 보내져요. 다른 사람에게는 공개되지 않아요.
-          </p>
+          <p className="muted small">개발자에게만 보내져요</p>
         ) : (
         <p className="muted small">
-          [GitHub로 보내기]는 브라우저에서 GitHub 이슈 작성 화면을 내용이 채워진 채로 열어요(GitHub 계정 필요, 글은 공개돼요).
-          {formUrl ? ' 계정이 없으면 [설문지로 보내기]를 쓰세요.' : ' 계정이 없으면 [내용 복사]로 복사해 두세요.'}
+          GitHub는 계정이 필요하고 글이 공개돼요.
         </p>
         )}
       </div>

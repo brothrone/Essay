@@ -16,7 +16,7 @@ const PROFILE_FIELDS: { key: keyof Profile; label: string; type?: string; placeh
   { key: 'targetJob', label: '희망 직무', placeholder: '예: 서비스 기획, 데이터 분석' },
   { key: 'address', label: '주소' },
   { key: 'links', label: '포트폴리오 · 링크', placeholder: 'GitHub, 노션, 블로그 등' },
-  { key: 'skills', label: '보유 스킬', placeholder: '예: SolidWorks, Python, Excel (쉼표로 구분)' },
+  { key: 'skills', label: '보유 스킬', placeholder: '예: Python, Excel' },
 ]
 
 export function Specs() {
@@ -41,9 +41,8 @@ export function Specs() {
       <header className="page-head">
         <div>
           <h1>스펙 관리</h1>
-          <p className="muted">지원서 입력란을 채울 때 필요한 정보를 한곳에 모아 두세요</p>
         </div>
-        <button type="button" className="btn" onClick={() => copyText(specsToText(data), '스펙 전체를 텍스트로 복사했어요')}>
+        <button type="button" className="btn" onClick={() => copyText(specsToText(data), '스펙을 복사했어요')}>
           <ClipboardCopy size={16} /> 텍스트로 복사
         </button>
       </header>
@@ -60,7 +59,6 @@ export function Specs() {
       <section className="card">
         <header className="card-head">
           <h3>기본 정보</h3>
-          <span className="muted small">입력하면 바로 저장돼요</span>
         </header>
         <div className="form-grid three">
           {PROFILE_FIELDS.map((f) => (
@@ -197,7 +195,7 @@ function SpecModal({ item, onClose }: { item: SpecItem; onClose: () => void }) {
             onChange={(v) => setDraft((d) => ({ ...d, [f.key]: v }))}
           />
         ))}
-        {autoExpiry && <p className="muted small full">유효기간은 응시일 기준 2년으로 자동 계산돼요: {fmtDate(autoExpiry)}</p>}
+        {autoExpiry && <p className="muted small full">유효기간 {fmtDate(autoExpiry)} (응시일 + 2년)</p>}
         <button type="submit" hidden />
       </form>
     </Modal>

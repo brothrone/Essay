@@ -77,8 +77,8 @@ export function NewProjectModal({ onClose }: { onClose: () => void }) {
       jobUrl: f.jobUrl.trim() || info.url,
     }))
     setImported({ notes: info.notes, questions: info.questions.map((q) => newQuestion(q)), source: info.questionsSource })
-    if (info.isOpen === false) setImportError('이 공고는 마감된 것으로 보여요. 마감일을 확인해 주세요.')
-    else if (info.isOpen === null && task.kind === 'company') setImportError('지금 접수 중인 공고는 찾지 못했어요. 찾은 내용은 참고용이에요.')
+    if (info.isOpen === false) setImportError('마감된 공고 같아요. 마감일을 확인해 주세요.')
+    else if (info.isOpen === null && task.kind === 'company') setImportError('접수 중인 공고는 찾지 못했어요. 참고용으로만 보세요.')
   }, [task])
 
   // 시작하지 않고 창을 닫으면 읽던 것을 멈추고 정리한다
@@ -97,8 +97,8 @@ export function NewProjectModal({ onClose }: { onClose: () => void }) {
     if (!isHttpUrl(url)) {
       setImportError(
         form.jobUrl.trim()
-          ? '공고 페이지 주소가 아니에요. 브라우저 주소창의 https:// 로 시작하는 주소를 그대로 붙여넣어 주세요. 링크가 없으면 [회사명으로 찾기]를 써 보세요.'
-          : '공고 페이지 주소를 먼저 붙여넣어 주세요.',
+          ? '공고 주소가 아니에요. https:// 로 시작하는 주소를 붙여넣어 주세요.'
+          : '공고 주소를 먼저 붙여넣어 주세요.',
       )
       return
     }
@@ -108,14 +108,14 @@ export function NewProjectModal({ onClose }: { onClose: () => void }) {
   // 로그인해야 보이는 공고 등: 복사한 공고 본문을 정리한다
   const importFromText = () => {
     if (pasted.trim().length < 40) {
-      setImportError(`공고 본문을 조금 더 붙여넣어 주세요. 채용 페이지에서 ${kbd('A')} → ${kbd('C')} 로 통째로 복사해도 돼요.`)
+      setImportError(`공고 본문을 더 붙여넣어 주세요 (${kbd('A')} → ${kbd('C')})`)
       return
     }
     importWith(postingTextPrompt(pasted, toDateInput(new Date())), 'text')
   }
   const importFromCompany = () => {
     if (form.company.trim().length < 2) {
-      setImportError('회사명을 먼저 적어 주세요. 직무까지 적으면 더 정확해요.')
+      setImportError('회사명을 먼저 적어 주세요.')
       return
     }
     importWith(companyLookupPrompt(form.company.trim(), form.position.trim(), toDateInput(new Date())), 'company')
@@ -177,7 +177,7 @@ export function NewProjectModal({ onClose }: { onClose: () => void }) {
       // 아직 읽는 중: 이 자소서에 연결해 두면 끝나는 대로 문항 · 공고 메모 · 마감일을 채운다
       attached.current = true
       reader.attach(draftKey, project.id)
-      toast('AI가 공고를 마저 읽고 이 자소서에 문항을 채워요. 다른 화면으로 가도 계속돼요')
+      toast('AI가 공고를 마저 읽고 문항을 채워요')
     } else if (!imported && source === 'paste' && pasted.trim().length >= 40) {
       // 붙여넣고 바로 시작: 뒤에서 정리해 채운다
       reader.start(project.id, {
@@ -187,7 +187,7 @@ export function NewProjectModal({ onClose }: { onClose: () => void }) {
         projectId: project.id,
         label: project.company,
       })
-      toast('AI가 붙여넣은 공고를 정리해 자소서 문항을 채우는 중이에요. 다른 화면으로 가도 계속돼요')
+      toast('AI가 공고를 정리하는 중이에요')
     } else if (!imported && isHttpUrl(url)) {
       // 링크만 넣고 바로 시작: 뒤에서 읽어 채운다
       reader.start(project.id, {
@@ -197,7 +197,7 @@ export function NewProjectModal({ onClose }: { onClose: () => void }) {
         projectId: project.id,
         label: project.company,
       })
-      toast('AI가 공고를 읽어 자소서 문항을 채우는 중이에요. 다른 화면으로 가도 계속돼요')
+      toast('AI가 공고를 읽는 중이에요')
     }
     onClose()
     navigate(`/projects/${project.id}`)
@@ -248,26 +248,24 @@ export function NewProjectModal({ onClose }: { onClose: () => void }) {
         <section className="field full np-ai" aria-label="공고 정보 자동으로 채우기">
           <header className="np-ai-head">
             <span className="field-label">
-              <Sparkles size={14} /> 공고 정보 AI로 채우기 <span className="muted">(선택)</span>
+              <Sparkles size={14} /> AI로 공고 채우기 <span className="muted">(선택)</span>
             </span>
             <div className="segmented small" role="tablist" aria-label="공고를 가져올 방법">
               <button type="button" role="tab" aria-selected={source === 'link'} className={source === 'link' ? 'on' : ''} onClick={() => setSource('link')} disabled={busy}>
-                <Link2 size={13} /> 공고 링크 붙여넣기
+                <Link2 size={13} /> 링크
               </button>
               <button type="button" role="tab" aria-selected={source === 'search'} className={source === 'search' ? 'on' : ''} onClick={() => setSource('search')} disabled={busy}>
-                <Search size={13} /> 회사명으로 찾기
+                <Search size={13} /> 회사명 검색
               </button>
               <button type="button" role="tab" aria-selected={source === 'paste'} className={source === 'paste' ? 'on' : ''} onClick={() => setSource('paste')} disabled={busy}>
-                <ClipboardPaste size={13} /> 공고 내용 붙여넣기
+                <ClipboardPaste size={13} /> 본문 붙여넣기
               </button>
             </div>
           </header>
 
           {source === 'paste' ? (
             <>
-              <p className="muted small np-ai-desc">
-                로그인해야 보이는 공고처럼 링크로 못 읽을 때 써요. 채용 페이지 본문을 복사해 붙여넣으면 회사 · 직무 · 마감일 · 자소서 문항 · 공고 분석을 정리해요.
-              </p>
+              <p className="muted small np-ai-desc">링크로 못 읽을 때 본문을 붙여넣어요</p>
               <AutoTextarea
                 minRows={4}
                 maxLength={15000}
@@ -276,7 +274,7 @@ export function NewProjectModal({ onClose }: { onClose: () => void }) {
                   setPasted(e.target.value)
                   if (importError) setImportError('')
                 }}
-                placeholder={`채용 페이지에서 ${kbd('A')} → ${kbd('C')} 로 복사한 내용을 그대로 붙여넣으세요`}
+                placeholder={`채용 페이지에서 ${kbd('A')} → ${kbd('C')} 후 붙여넣기`}
                 aria-label="공고 본문"
               />
               <div className="np-paste-foot">
@@ -288,9 +286,6 @@ export function NewProjectModal({ onClose }: { onClose: () => void }) {
             </>
           ) : source === 'link' ? (
             <>
-              <p className="muted small np-ai-desc">
-                사람인 · 잡코리아 · 원티드 · 회사 채용 페이지 주소를 넣으면 AI가 그 페이지를 읽어 회사 · 직무 · 마감일 · 자소서 문항 · 공고 분석을 채워요.
-              </p>
               <div className="url-row">
                 <input
                   id="np-url"
@@ -307,7 +302,7 @@ export function NewProjectModal({ onClose }: { onClose: () => void }) {
                       if (!busy) importFromLink()
                     }
                   }}
-                  placeholder="https://www.saramin.co.kr/... (공고 페이지 주소)"
+                  placeholder="공고 주소 (https://...)"
                   aria-label="공고 링크"
                 />
                 <button type="button" className="btn primary small" disabled={busy} onClick={importFromLink}>
@@ -317,9 +312,6 @@ export function NewProjectModal({ onClose }: { onClose: () => void }) {
             </>
           ) : (
             <>
-              <p className="muted small np-ai-desc">
-                링크가 없을 때 써요. 위에 적은 회사명 · 직무로 지금 접수 중인 공고를 웹에서 찾아 마감일 · 자소서 문항 · 공고 분석(핵심 역량 · 키워드)을 채워요.
-              </p>
               <div className="url-row">
                 <span className="np-search-target muted small">
                   {form.company.trim() ? (
@@ -328,7 +320,7 @@ export function NewProjectModal({ onClose }: { onClose: () => void }) {
                       {form.position.trim() && <> · {form.position.trim()}</>} 공고를 찾아요
                     </>
                   ) : (
-                    '위 회사명 칸을 먼저 채워 주세요'
+                    '회사명을 먼저 적어 주세요'
                   )}
                 </span>
                 <button type="button" className="btn primary small" disabled={busy} onClick={importFromCompany}>
@@ -343,14 +335,14 @@ export function NewProjectModal({ onClose }: { onClose: () => void }) {
               <LoaderCircle size={14} className="spin" />
               <span>
                 {task!.status === 'waiting'
-                  ? '다른 AI 작업이 끝나면 시작해요…'
+                  ? '다른 AI 작업 대기 중…'
                   : `AI가 ${task!.kind === 'company' ? '공고를 찾는' : task!.kind === 'text' ? '공고 내용을 정리하는' : '공고 페이지를 읽는'} 중… ${elapsed}초`}
                 {task!.status === 'running' && task!.steps.at(-1) && ` · ${task!.steps.at(-1)}`}{' '}
                 <button type="button" className="link-btn" onClick={() => reader.cancel(draftKey)}>
                   취소
                 </button>
                 <br />
-                기다리지 않고 [시작하기]를 눌러도 돼요. AI가 뒤에서 마저 읽고 새 자소서에 문항을 채워요.
+                [시작하기]를 눌러도 계속 읽어요
               </span>
             </p>
           )}
@@ -358,11 +350,10 @@ export function NewProjectModal({ onClose }: { onClose: () => void }) {
             <p className="import-ok">
               <Check size={14} />{' '}
               {imported.questions.length
-                ? `공고 내용과 자소서 문항 ${imported.questions.length}개를 채웠어요.`
-                : '공고 내용을 채웠어요. 공고에서 자소서 문항은 찾지 못했어요.'}{' '}
-              아래 칸을 확인하고 [시작하기]를 누르면 [공고 정보]에 정리돼요.
+                ? `문항 ${imported.questions.length}개를 채웠어요.`
+                : '공고 내용을 채웠어요. 문항은 찾지 못했어요.'}
               {imported.questions.length > 0 && imported.source && imported.source !== '공고 페이지' && (
-                <span className="muted"> 문항 출처: {imported.source} — 이번 공고 문항과 같은지 확인하세요.</span>
+                <span className="muted"> 출처: {imported.source} — 확인해 주세요</span>
               )}
             </p>
           )}
@@ -383,7 +374,7 @@ export function NewProjectModal({ onClose }: { onClose: () => void }) {
         </div>
         {canFind && sets.length > 0 && !imported?.questions.length && (
           <div className="field full">
-            <span className="field-label">다른 지원자가 공고에서 모은 {form.company.trim()} 문항 (선택)</span>
+            <span className="field-label">다른 지원자가 모은 {form.company.trim()} 문항 (선택)</span>
             <div className="community-sets">
               {sets.map((x) => (
                 <div key={x.id}>
@@ -413,7 +404,7 @@ export function NewProjectModal({ onClose }: { onClose: () => void }) {
         )}
         <div className="field full">
           <span className="field-label">
-            자주 나오는 문항 미리 넣기 (선택){imported?.questions.length ? <span className="muted"> · 불러온 문항 뒤에 추가돼요</span> : null}
+            자주 나오는 문항 (선택)
           </span>
           <div className="preset-list">
             {QUESTION_PRESETS.map((p, i) => (

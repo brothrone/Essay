@@ -22,7 +22,7 @@ export function UpdateBanner() {
   return (
     <div className="update-banner" role="status">
       <Download size={16} />
-      <span>{manual ? `새 버전 ${status.version}이 나왔어요. 받아서 응용 프로그램 폴더에 덮어쓰면 돼요.` : `새 버전 ${status.version} 준비됨. 다시 시작하면 적용돼요.`}</span>
+      <span>{manual ? `새 버전 ${status.version} · 받아서 응용 프로그램 폴더에 덮어써요` : `새 버전 ${status.version} 준비됨`}</span>
       <button type="button" className="btn small primary" onClick={() => desktop.update.install()}>
         {manual ? <Download size={14} /> : <RotateCcw size={14} />} {manual ? '다운로드' : '다시 시작'}
       </button>
@@ -50,17 +50,17 @@ export function UpdateCard() {
       case 'checking':
         return '확인 중…'
       case 'available':
-        return status.manual ? `새 버전 ${status.version}이 나왔어요. 받아서 응용 프로그램 폴더에 덮어쓰면 돼요.` : `${status.version} 내려받기 시작`
+        return status.manual ? `새 버전 ${status.version} · 받아서 응용 프로그램 폴더에 덮어써요` : `${status.version} 내려받기 시작`
       case 'downloading':
         return `${status.version} 내려받는 중 · ${status.percent ?? 0}%`
       case 'ready':
-        return `${status.version} 준비됨. 다시 시작하면 적용돼요.`
+        return `${status.version} 준비됨`
       case 'none':
         return '최신 버전이에요.'
       case 'error':
         return `확인 실패 (${status.message})`
       default:
-        return '켤 때와 6시간마다 자동으로 확인하고, 새 버전은 조용히 받아 다시 시작할 때 적용해요.'
+        return '자동으로 확인해요'
     }
   })()
   return (

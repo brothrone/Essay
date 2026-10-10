@@ -148,7 +148,7 @@ function ImportModal({ onClose }: { onClose: () => void }) {
           <>
             <span className="muted small mr-auto">
               {total ? `${total}개 · ${chars.toLocaleString()}자` : '파일을 고르거나 글을 붙여넣으세요'}
-              {!ready && status && ' · AI 연결이 먼저 필요해요 (홈 → AI 연결하기)'}
+              {!ready && status && ' · AI 연결이 먼저 필요해요'}
             </span>
             <button type="button" className="btn ghost" onClick={onClose}>
               취소
@@ -191,13 +191,10 @@ function ImportModal({ onClose }: { onClose: () => void }) {
     >
       {phase === 'input' && (
         <div className="import-body">
-          <p className="muted small">
-            지금까지 쓴 자기소개서·이력서를 넣으면 AI가 <b>경험(STAR) · 스펙 · 희망 직무 · 과거 자소서 답변</b>을 뽑아 채워요. 뽑은 학력·직무로{' '}
-            <b>맞춤 공고 조건</b>도 자동으로 잡혀요. 파일은 txt · md · docx. 한글(hwp)·PDF는 내용을 복사해서 붙여넣어 주세요.
-          </p>
+          <p className="muted small">txt · md · docx (hwp · PDF는 붙여넣기)</p>
           <div className="btn-row">
             <button type="button" className="btn" onClick={pickFiles}>
-              <FolderOpen size={16} /> 파일 선택 (여러 개 가능)
+              <FolderOpen size={16} /> 파일 선택
             </button>
           </div>
           {docs.length > 0 && (
@@ -222,7 +219,7 @@ function ImportModal({ onClose }: { onClose: () => void }) {
               rows={8}
               value={paste}
               onChange={(e) => setPaste(e.target.value)}
-              placeholder={'자소서 전체를 그대로 붙여넣으세요. 문항과 답변이 섞여 있어도 돼요.\n여러 편이면 [목록에 추가]를 누르고 다음 글을 붙여넣으세요.'}
+              placeholder="자소서를 그대로 붙여넣으세요"
             />
             {paste.trim() && (
               <div className="btn-row">
@@ -232,10 +229,7 @@ function ImportModal({ onClose }: { onClose: () => void }) {
               </div>
             )}
           </div>
-          <p className="muted small">
-            이름·연락처·주소는 저장하지 않아요. 글은 이 컴퓨터의 {provider === 'claude' ? 'Claude Code' : provider === 'gpt' ? 'Codex CLI' : 'Antigravity CLI'}로만 보내고 인터넷 서버에 따로 올리지
-            않아요. 긴 글은 조각으로 나눠 여러 번 보내서 시간이 좀 걸려요(한 편당 30초~1분).
-          </p>
+          <p className="muted small">이름 · 연락처는 저장 안 하고, 글은 내 AI로만 보내요</p>
         </div>
       )}
 
@@ -247,14 +241,14 @@ function ImportModal({ onClose }: { onClose: () => void }) {
               AI가 읽는 중… {progress.name} ({progress.done}/{progress.total})
             </span>
           </div>
-          <p className="muted small">창을 닫지 마세요. 다른 화면으로 가도 되지만 이 창을 닫으면 중단돼요.</p>
+          <p className="muted small">창을 닫으면 중단돼요</p>
         </div>
       )}
 
       {phase === 'preview' && plan && (
         <div className="import-body">
           <p>
-            <Wand2 size={16} /> 이렇게 채울게요. 필요 없는 묶음은 체크를 끄세요.
+            <Wand2 size={16} /> 필요 없는 묶음은 체크를 끄세요
           </p>
           <ul className="import-plan">
             <PlanRow
@@ -274,7 +268,7 @@ function ImportModal({ onClose }: { onClose: () => void }) {
             <PlanRow
               on={include.projects}
               onToggle={(v) => setInclude({ ...include, projects: v })}
-              title={`과거 자소서 ${plan.projects.length}편 (제출완료로 보관 → '다른 답변'에서 재활용)`}
+              title={`과거 자소서 ${plan.projects.length}편`}
               sub={plan.projects.map((p) => `${p.company} ${p.position}`.trim()).join(' · ')}
               skipped={plan.skipped.projects}
             />
@@ -287,7 +281,7 @@ function ImportModal({ onClose }: { onClose: () => void }) {
                   ? [plan.profile.name && `이름: ${plan.profile.name}`, plan.profile.targetJob && `희망 직무: ${plan.profile.targetJob}`, plan.profile.skills && `스킬: ${plan.profile.skills}`]
                       .filter(Boolean)
                       .join(' · ')
-                  : '이미 채워져 있어 바꾸지 않아요'
+                  : '이미 있어 그대로 둬요'
               }
             />
           </ul>
@@ -298,7 +292,7 @@ function ImportModal({ onClose }: { onClose: () => void }) {
                 맞춤 공고 조건 → 키워드 <b>{q.keywords}</b> · {q.career}
               </p>
             ) : (
-              <p className="muted small">맞춤 공고 조건을 잡을 학력·직무 정보를 못 찾았어요. 맞춤 공고 화면에서 직접 입력하세요.</p>
+              <p className="muted small">맞춤 공고 조건은 찾지 못했어요</p>
             )
           })()}
           {errors.length > 0 && <p className="ai-error">{errors.join('\n')}</p>}
